@@ -11,7 +11,6 @@ import bflow.wallet.ServiceWallet;
 import bflow.wallet.entities.Wallet;
 import bflow.wallet.entities.WalletUser;
 import jakarta.transaction.Transactional;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
@@ -19,11 +18,15 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.util.UUID;
 
+/**
+ * Service class for managing transfer operations between wallets.
+ */
 @Service
 @Transactional
 @RequiredArgsConstructor
 public class ServiceTransfers {
-    private final RepositoryTransfers  repositoryTransfers;
+    /** The repository for transfer database operations. */
+    private final RepositoryTransfers repositoryTransfers;
 
     /** The repository for wallet database operations. */
     private final RepositoryWallet repositoryWallet;
@@ -34,10 +37,17 @@ public class ServiceTransfers {
     /** The repository for user database operations. */
     private final RepositoryUser repositoryUser;
 
+    /** The service handling wallet business logic. */
     private final ServiceWallet serviceWallet;
 
+    /**
+     * Processes a transfer between two wallets.
+     * @param request the transfer request.
+     * @param userId the user ID.
+     * @return the transfer response.
+     */
     public TransferenceResponse transfer(
-            @Valid final TransferenceRequest request,
+            final TransferenceRequest request,
             final UUID userId
     ) {
         final BigDecimal amount = request.getAmount();
@@ -64,7 +74,9 @@ public class ServiceTransfers {
         Wallet toWallet = destinationWallet.getWallet();
 
         if (fromWallet.getId().equals(toWallet.getId())) {
-            throw new IllegalStateException("Cannot transfer to the same wallet");
+            throw new IllegalStateException(
+                    "Cannot transfer to the same wallet"
+            );
         }
 
         if (fromWallet.getBalance().compareTo(amount) < 0) {
@@ -80,10 +92,17 @@ public class ServiceTransfers {
         return mapToResponse(transfer);
     }
 
+    /**
+     * Builds a Transfer entity from request data.
+     * @param fromWallet the source wallet.
+     * @param toWallet the destination wallet.
+     * @param request the transfer request.
+     * @return the transfer entity.
+     */
     private Transfer buildTransfer(
-            Wallet fromWallet,
-            Wallet toWallet,
-            TransferenceRequest request
+            final Wallet fromWallet,
+            final Wallet toWallet,
+            final TransferenceRequest request
     ) {
         Transfer transfer = new Transfer();
         transfer.setFromWalletId(fromWallet);
@@ -94,7 +113,12 @@ public class ServiceTransfers {
         return transfer;
     }
 
-    private TransferenceResponse mapToResponse(Transfer transfer) {
+    /**
+     * Maps a Transfer entity to a TransferenceResponse DTO.
+     * @param transfer the transfer entity.
+     * @return the transfer response.
+     */
+    private TransferenceResponse mapToResponse(final Transfer transfer) {
         TransferenceResponse response = new TransferenceResponse();
 
         response.setId(transfer.getId());

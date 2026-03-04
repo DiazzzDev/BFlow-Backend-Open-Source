@@ -1,6 +1,5 @@
 package bflow.wallet;
 
-import bflow.tranfers.DTO.TransferenceRequest;
 import bflow.wallet.DTO.WalletRequest;
 import bflow.wallet.DTO.WalletResponse;
 import bflow.wallet.entities.Wallet;
@@ -8,7 +7,6 @@ import bflow.wallet.entities.WalletUser;
 import bflow.wallet.enums.WalletRole;
 import bflow.auth.repository.RepositoryUser;
 import bflow.auth.entities.User;
-import jakarta.validation.Valid;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -36,11 +34,18 @@ public class ServiceWallet {
     /** The repository for user database operations. */
     private final RepositoryUser repositoryUser;
 
+    /**
+     * Retrieves all wallets for a user with pagination.
+     * @param userId the user ID.
+     * @param pageable the pagination information.
+     * @return a page of wallet responses.
+     */
     public Page<WalletResponse> getUserWallets(
             final UUID userId,
             final Pageable pageable
     ) {
-        Page<WalletUser> page = repositoryWalletUser.findByUser_Id(userId, pageable);
+        Page<WalletUser> page = repositoryWalletUser
+                .findByUserId(userId, pageable);
         return page.map(this::convertToDTO);
     }
 
@@ -132,7 +137,12 @@ public class ServiceWallet {
                 .build();
     }
 
-    private WalletResponse convertToDTO(WalletUser walletUser) {
+    /**
+     * Converts a WalletUser entity to a WalletResponse DTO.
+     * @param walletUser the wallet-user relationship.
+     * @return the wallet response DTO.
+     */
+    private WalletResponse convertToDTO(final WalletUser walletUser) {
 
         Wallet wallet = walletUser.getWallet();
 

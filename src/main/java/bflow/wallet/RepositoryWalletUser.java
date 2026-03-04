@@ -18,5 +18,11 @@ public interface RepositoryWalletUser extends JpaRepository<WalletUser, UUID> {
      */
     Optional<WalletUser> findByWalletIdAndUserId(UUID walletId, UUID userId);
 
-    Page<WalletUser> findByUser_Id(UUID userId, Pageable pageable);
+    /**
+     * Finds wallet-user relationships by user ID with pagination.
+     * @param userId the user UUID.
+     * @param pageable the pagination information.
+     * @return a page of wallet-user relationships.
+     */
+    Page<WalletUser> findByUserId(UUID userId, Pageable pageable);
 }

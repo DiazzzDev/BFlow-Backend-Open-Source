@@ -1,6 +1,5 @@
 package bflow.wallet;
 
-import bflow.tranfers.DTO.TransferenceRequest;
 import bflow.wallet.DTO.WalletRequest;
 import bflow.wallet.DTO.WalletResponse;
 import bflow.common.response.ApiResponse;
@@ -33,6 +32,13 @@ public class ControllerWallet {
     /** The service handling wallet business logic. */
     private final ServiceWallet objServiceW;
 
+    /**
+     * Retrieves all wallets for the authenticated user.
+     * @param authentication the authenticated user's principal.
+     * @param pageable the pagination information.
+     * @param request the HTTP request for path information.
+     * @return a ResponseEntity containing paginated wallet data.
+     */
     @GetMapping
     public ResponseEntity<ApiResponse<Page<WalletResponse>>> getUserWallets(
             final Authentication authentication,
