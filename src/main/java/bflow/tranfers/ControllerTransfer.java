@@ -4,6 +4,7 @@ import bflow.common.response.ApiResponse;
 import bflow.tranfers.DTO.TransferenceRequest;
 import bflow.tranfers.DTO.TransferenceResponse;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -36,7 +37,7 @@ public class ControllerTransfer {
      */
     @PostMapping
     public ResponseEntity<ApiResponse<TransferenceResponse>> transfer(
-            @RequestBody final TransferenceRequest request,
+            @Valid @RequestBody final TransferenceRequest request,
             final Authentication authentication,
             final HttpServletRequest httpRequest
     ) {
