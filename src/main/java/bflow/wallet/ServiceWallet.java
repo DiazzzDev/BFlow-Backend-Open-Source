@@ -7,6 +7,7 @@ import bflow.wallet.entities.WalletUser;
 import bflow.wallet.enums.WalletRole;
 import bflow.auth.repository.RepositoryUser;
 import bflow.auth.entities.User;
+import jakarta.validation.Valid;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -126,15 +127,38 @@ public class ServiceWallet {
         repositoryWalletUser.save(walletUser);
 
         // Map Wallet entity to WalletResponse DTO
-        return WalletResponse.builder()
-                .id(savedWallet.getId())
-                .name(savedWallet.getName())
-                .description(savedWallet.getDescription())
-                .currency(savedWallet.getCurrency())
-                .balance(savedWallet.getBalance())
-                .initialValue(savedWallet.getInitialValue())
-                .createdAt(savedWallet.getCreatedAt())
-                .build();
+        return convertToDTO(walletUser);
+    }
+
+    public WalletResponse patchWallet(
+            final UUID walletId,
+            @Valid final WalletRequest request,
+            final UUID userId
+    ) {
+
+        // Retrieve wallet
+        WalletUser walletUser = repositoryWalletUser
+                .findByWalletIdAndUserId(walletId, userId)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "User does not have access to this wallet"
+                ));
+
+        Wallet wallet = walletUser.getWallet();
+
+        if (walletUser.getRole() != WalletRole.OWNER) {
+            throw new AccessDeniedException("Only owners can update the wallet");
+        }
+
+        // Update fields
+        if (request.getName() != null) {
+            wallet.setName(request.getName().trim());
+        }
+
+        if (request.getDescription() != null) {
+            wallet.setDescription(request.getDescription());
+        }
+
+        return convertToDTO(walletUser);
     }
 
     /**

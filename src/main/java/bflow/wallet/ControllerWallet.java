@@ -5,12 +5,7 @@ import bflow.wallet.DTO.WalletResponse;
 import bflow.common.response.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.security.core.Authentication;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -31,7 +26,7 @@ import java.util.UUID;
 public class ControllerWallet {
 
     /** The service handling wallet business logic. */
-    private final ServiceWallet objServiceW;
+    private final ServiceWallet serviceWallet;
 
     /**
      * Retrieves all wallets for the authenticated user.
@@ -53,7 +48,7 @@ public class ControllerWallet {
         UUID userId = UUID.fromString(authentication.getName());
 
         // Retrieve wallet with access validation
-        Page<WalletResponse> wallets = objServiceW
+        Page<WalletResponse> wallets = serviceWallet
                 .getUserWallets(userId, pageable);
 
         // Return success response
@@ -91,7 +86,7 @@ public class ControllerWallet {
         UUID userId = UUID.fromString(userIdString);
 
         // Retrieve wallet with access validation
-        WalletResponse walletResponse = objServiceW
+        WalletResponse walletResponse = serviceWallet
                 .getWalletById(id, userId);
 
         // Return success response
@@ -125,7 +120,7 @@ public class ControllerWallet {
         UUID userId = UUID.fromString(userIdString);
 
         // Create wallet with user as owner
-        WalletResponse walletResponse = objServiceW
+        WalletResponse walletResponse = serviceWallet
                 .createWallet(request, userId);
 
         // Build Location URI
@@ -138,6 +133,40 @@ public class ControllerWallet {
         // Return success response with 201 CREATED
         ApiResponse<WalletResponse> response = ApiResponse.success(
                 "Wallet created successfully",
+                walletResponse,
+                httpRequest.getRequestURI()
+        );
+
+        return ResponseEntity
+                .created(location)
+                .body(response);
+    }
+
+    @PatchMapping("/{id}")
+    public ResponseEntity<ApiResponse<WalletResponse>> patchWallet(
+            @PathVariable final UUID id,
+            @Valid @RequestBody final WalletRequest request,
+            final Authentication authentication,
+            final HttpServletRequest httpRequest
+    ) {
+        // Extract user UUID from JWT token (principal)
+        String userIdString = (String) authentication.getPrincipal();
+        UUID userId = UUID.fromString(userIdString);
+
+        // Create wallet with user as owner
+        WalletResponse walletResponse = serviceWallet
+                .patchWallet(id, request, userId);
+
+        // Build Location URI
+        URI location = ServletUriComponentsBuilder
+                .fromContextPath(httpRequest)
+                .path("/api/v1/wallets/{id}")
+                .buildAndExpand(walletResponse.getId())
+                .toUri();
+
+        // Return success response with 201 CREATED
+        ApiResponse<WalletResponse> response = ApiResponse.success(
+                "Wallet modified successfully",
                 walletResponse,
                 httpRequest.getRequestURI()
         );
