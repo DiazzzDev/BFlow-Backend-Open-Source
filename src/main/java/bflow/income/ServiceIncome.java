@@ -2,6 +2,7 @@ package bflow.income;
 
 import bflow.auth.entities.User;
 import bflow.auth.repository.RepositoryUser;
+import bflow.auth.services.UserServiceImpl;
 import bflow.common.exception.ResourceNotFoundException;
 import bflow.common.exception.WalletAccessDeniedException;
 import bflow.income.DTO.IncomeRequest;
@@ -54,6 +55,11 @@ public class ServiceIncome {
     private final ServiceWallet serviceWallet;
 
     /**
+     * Service for user business logic operations.
+     */
+    private final UserServiceImpl userService;
+
+    /**
      * Creates a new income entry for the specified wallet and user.
      *
      * @param request the income request containing income details
@@ -66,6 +72,8 @@ public class ServiceIncome {
             final IncomeRequest request,
             final UUID userId
     ) {
+        //Check if user has an active account
+        userService.validateUserActive(userId);
 
         // Validate wallet access (supports shared wallets)
         WalletUser walletUser = repositoryWalletUser
@@ -115,6 +123,9 @@ public class ServiceIncome {
             final IncomeRequest request,
             final UUID userId
     ) {
+        //Check if user has an active account
+        userService.validateUserActive(userId);
+
         Income income = repositoryIncome.findById(incomeId)
                 .orElseThrow(() ->
                         new ResourceNotFoundException("Income not found")
@@ -202,6 +213,8 @@ public class ServiceIncome {
             final UUID incomeId,
             final UUID userId
     ) {
+        //Check if user has an active account
+        userService.validateUserActive(userId);
 
         Income income = repositoryIncome.findById(incomeId)
                 .orElseThrow(() ->

@@ -1,5 +1,7 @@
 package bflow.auth.services;
 
+import bflow.auth.DTO.user.UpdateUserProfileRequest;
+import bflow.auth.DTO.user.UserProfileResponse;
 import bflow.auth.entities.User;
 import bflow.auth.enums.AuthProvider;
 import java.util.UUID;
@@ -35,4 +37,28 @@ public interface UserService {
             String providerId,
             AuthProvider provider
     );
+
+    /**
+     * Retrieves the user profile for a given user ID.
+     * @param userId the unique identifier of the user.
+     * @return the user profile response.
+     */
+    UserProfileResponse getProfile(UUID userId);
+
+    /**
+     * Updates the user profile with new information.
+     * @param userId the unique identifier of the user.
+     * @param request the update profile request containing new data.
+     * @return the updated user profile response.
+     */
+    UserProfileResponse updateProfile(
+            UUID userId,
+            UpdateUserProfileRequest request
+    );
+
+    /**
+     * Performs a soft delete of a user account (soft delete).
+     * @param userId the unique identifier of the user.
+     */
+    void softDelete(UUID userId);
 }

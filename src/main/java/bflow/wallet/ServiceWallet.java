@@ -1,5 +1,6 @@
 package bflow.wallet;
 
+import bflow.auth.services.UserServiceImpl;
 import bflow.wallet.DTO.WalletRequest;
 import bflow.wallet.DTO.WalletResponse;
 import bflow.wallet.entities.Wallet;
@@ -7,6 +8,7 @@ import bflow.wallet.entities.WalletUser;
 import bflow.wallet.enums.WalletRole;
 import bflow.auth.repository.RepositoryUser;
 import bflow.auth.entities.User;
+import jakarta.validation.Valid;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,6 +21,7 @@ import java.util.UUID;
 
 /**
  * Service class for managing wallet business logic and transactions.
+ * Handles wallet operations, balance management, and user access control.
  */
 @Service
 @Transactional
@@ -34,6 +37,9 @@ public class ServiceWallet {
     /** The repository for user database operations. */
     private final RepositoryUser repositoryUser;
 
+    /** Service for user business logic operations. */
+    private final UserServiceImpl userService;
+
     /**
      * Retrieves all wallets for a user with pagination.
      * @param userId the user ID.
@@ -44,6 +50,9 @@ public class ServiceWallet {
             final UUID userId,
             final Pageable pageable
     ) {
+        //Check if user has an active account
+        userService.validateUserActive(userId);
+
         Page<WalletUser> page = repositoryWalletUser
                 .findByUserId(userId, pageable);
         return page.map(this::convertToDTO);
@@ -61,6 +70,9 @@ public class ServiceWallet {
             final UUID walletId,
             final UUID userId
     ) {
+        //Check if user has an active account
+        userService.validateUserActive(userId);
+
         // Validate access: check if user is linked to this wallet
         WalletUser walletUser = repositoryWalletUser
                 .findByWalletIdAndUserId(walletId, userId)
@@ -95,6 +107,9 @@ public class ServiceWallet {
             final WalletRequest request,
             final UUID userId
     ) {
+        //Check if user has an active account
+        userService.validateUserActive(userId);
+
         // Retrieve authenticated user
         User user = repositoryUser.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException(
@@ -126,15 +141,50 @@ public class ServiceWallet {
         repositoryWalletUser.save(walletUser);
 
         // Map Wallet entity to WalletResponse DTO
-        return WalletResponse.builder()
-                .id(savedWallet.getId())
-                .name(savedWallet.getName())
-                .description(savedWallet.getDescription())
-                .currency(savedWallet.getCurrency())
-                .balance(savedWallet.getBalance())
-                .initialValue(savedWallet.getInitialValue())
-                .createdAt(savedWallet.getCreatedAt())
-                .build();
+        return convertToDTO(walletUser);
+    }
+
+    /**
+     * Updates an existing wallet with new information.
+     * Only the wallet owner can update wallet details.
+     * @param walletId the unique identifier of the wallet to update.
+     * @param request the wallet update request containing new values.
+     * @param userId the unique identifier of the authenticated user.
+     * @return the updated wallet response.
+     * @throws AccessDeniedException if the user is not the wallet owner.
+     */
+    public WalletResponse patchWallet(
+            final UUID walletId,
+            @Valid final WalletRequest request,
+            final UUID userId
+    ) {
+        //Check if user has an active account
+        userService.validateUserActive(userId);
+
+        // Retrieve wallet
+        WalletUser walletUser = repositoryWalletUser
+                .findByWalletIdAndUserId(walletId, userId)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "User does not have access to this wallet"
+                ));
+
+        Wallet wallet = walletUser.getWallet();
+
+        if (walletUser.getRole() != WalletRole.OWNER) {
+            String errorMessage = "Only owners can update the wallet";
+            throw new AccessDeniedException(errorMessage);
+        }
+
+        // Update fields
+        if (request.getName() != null) {
+            wallet.setName(request.getName().trim());
+        }
+
+        if (request.getDescription() != null) {
+            wallet.setDescription(request.getDescription());
+        }
+
+        return convertToDTO(walletUser);
     }
 
     /**
