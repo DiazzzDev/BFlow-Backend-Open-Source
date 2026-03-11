@@ -129,6 +129,12 @@ public class UserServiceImpl implements UserService {
                 .orElseThrow(() -> new IllegalStateException("User not found"));
     }
 
+    /**
+    * Implementation of {@link UserService}.
+    *
+    * <p>This class is not intended to be extended.
+    * It is proxied by Spring for transactional behavior.
+    */
     @Override
     public UserProfileResponse updateProfile(
             final UUID userId,
