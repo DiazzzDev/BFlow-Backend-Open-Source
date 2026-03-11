@@ -1,0 +1,103 @@
+package bflow.income.DTO;
+
+import bflow.income.enums.IncomeType;
+import jakarta.annotation.Nullable;
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.Digits;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
+import lombok.Getter;
+import lombok.Setter;
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.UUID;
+
+/**
+ * Data transfer object for creating or updating income entries.
+ */
+@Getter
+@Setter
+public class IncomeRequest {
+    /**
+     * Minimum length for income title.
+     */
+    private static final int TITLE_MIN_LENGTH = 5;
+
+    /**
+     * Maximum length for income title.
+     */
+    private static final int TITLE_MAX_LENGTH = 50;
+
+    /**
+     * Maximum length for income description.
+     */
+    private static final int DESCRIPTION_MAX_LENGTH = 100;
+
+    /**
+     * Integer digits precision for amount field.
+     */
+    private static final int AMOUNT_INTEGER_DIGITS = 15;
+
+    /**
+     * Fractional digits precision for amount field.
+     */
+    private static final int AMOUNT_FRACTION_DIGITS = 2;
+
+    /**
+     * Title of the income entry.
+     */
+    @NotBlank
+    @Size(min = TITLE_MIN_LENGTH, max = TITLE_MAX_LENGTH,
+            message = "")
+    private String title;
+
+    /**
+     * Optional description of the income entry.
+     */
+    @Nullable
+    @Size(max = DESCRIPTION_MAX_LENGTH,
+            message = "")
+    private String description;
+
+    /**
+     * Amount of the income.
+     */
+    @Digits(integer = AMOUNT_INTEGER_DIGITS,
+            fraction = AMOUNT_FRACTION_DIGITS)
+    @DecimalMin(value = "0.01")
+    private BigDecimal amount;
+
+    /**
+     * Date of the income transaction.
+     */
+    @NotNull
+    private LocalDate date;
+
+    /**
+     * Identifier of the wallet associated with this income.
+     */
+    @NotNull
+    private UUID walletId;
+
+    /**
+     * Type of income (e.g., salary, bonus, investment).
+     */
+    @NotNull
+    private IncomeType type;
+
+    /**
+     * Whether this income is taxable.
+     */
+    private Boolean taxable = false;
+
+    /**
+     * Whether this income recurs.
+     */
+    private Boolean recurring = false;
+
+    /**
+     * Pattern for recurring income (e.g., MONTHLY, YEARLY).
+     */
+    private String recurrencePattern;
+}

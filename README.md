@@ -1,28 +1,109 @@
-# BFlow - API
+## BFlow - API
 
-Hello and welcome to BFlow!!
-BFlow (Budget Flow) is an open-source expense & budget tracking backend built with Spring Boot, PostgreSQL (Supabase for deploy) and Redis, designed with clean domain-driven structure and real-world business rules. Its a personal tool to help you out to manage your expenses.
+BFlow is a multi-wallet financial control system designed to help individuals and small groups understand, organize and master how their money actually moves.
 
-## REQUIREMENTS
+## Why BFlow Exists
 
+BFlow was born from a real and daily problem: financial disorder.
+
+Managing money across multiple wallets, cards, cash, and shared funds becomes chaotic very quickly. 
+Small daily expenses (“gastos hormiga”) silently destroy weekly budgets, and by mid-week it’s unclear how much money is actually available.
+
+Many people — especially students — try to solve this with:
+- Custom Excel sheets
+- Notes
+- Or nothing at all
+
+Existing apps often require bank credentials, feel intrusive, or are not designed for flexible multi-wallet and shared budgeting scenarios.
+
+BFlow aims to provide clarity without complexity.
+
+## The Problem It Solves
+
+- Lack of visibility across multiple wallets and payment sources.
+- No clear understanding of remaining budget mid-week.
+- No structured way to manage shared savings (e.g., group trips).
+- Difficulty identifying spending patterns.
+- Distrust in financial apps that request banking credentials unnecessarily.
+
+BFlow focuses on intentional financial tracking without requiring bank integrations.
+
+## Vision
+
+BFlow is not just a CRUD expense tracker.
+
+The vision is to evolve into:
+
+- A multi-wallet budgeting system
+- Shared wallets with role-based access
+- Monthly financial summaries
+- Advanced filtering and spending analytics
+- Recurring income automation (e.g., salary simulation via cron jobs)
+- Clean, enterprise-grade backend architecture
+- Potential SaaS evolution once domain integrity is fully validated
+
+This project is both:
+- A personal financial tool
+- A portfolio-grade system built with scalability and security in mind
+
+## Current Status
+
+MVP in active development.
+
+Implemented:
+- User authentication (JWT RS256)
+- Multi-wallet support
+- Expense registration
+- Basic transactional consistency
+
+Planned:
+- Redis-based caching
+- Idempotency layer for future payment integration
+- Budget rules engine
+- Shared wallet roles
+
+## Architecture & Engineering Philosophy
+
+Current Stack
+
+- Spring Boot
+- PostgreSQL
+- JWT with RSA (RS256)
+
+### Planned Additions
+
+- Redis (caching, idempotency, rate limiting)
+
+The focus is on:
+- Clear business rules
+- Secure multi-user wallet access
+- Transactional consistency
+- Scalability-oriented design
+- Real-world financial logic
+
+## Non-Goals (MVP Phase)
+
+- No direct bank integrations
+- No AI-based financial predictions (yet)
+- No premature microservices architecture
+
+The MVP focuses strictly on correctness, security, and domain integrity.
+
+## Getting started
+
+### Requirements
 - Docker Desktop (you can install it from [Docker](https://www.docker.com/products/docker-desktop/))
 - VSCode
 - Dev Containers extension [here](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers)
 
-## SETUP
+### Setup
 
 - Open Docker Desktop during the process, this is important.
-
 - Open VSCode and open the project folder
-
 - A notification will appear on the corner
-
-- Click on the "Reopen in Container" option, then wait until everything is setup. (Around 7-10 min in the first time)
-
+- Click on the "Reopen in Container" option, then wait until everything is setup. (This may take 8–10 minutes on first run)
 - In the process there will be a pop-up asking for your WakaTime Api Key (This is a tool that I personally use, if you dont use it just click 'Enter' and nothing will happend). If you want to use WakaTime too you can add it to your dashboards [here](https://wakatime.com/settings/api-key)
-
 - Watch the containers in Docker Desktop, everyone has to run. (The status is now green on docker)
-
 - Once everything is downloaded you can run the application with the following command:
 
 ```bash
