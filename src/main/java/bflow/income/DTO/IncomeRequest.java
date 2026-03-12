@@ -2,11 +2,7 @@ package bflow.income.DTO;
 
 import bflow.income.enums.IncomeType;
 import jakarta.annotation.Nullable;
-import jakarta.validation.constraints.DecimalMin;
-import jakarta.validation.constraints.Digits;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.*;
 import lombok.Getter;
 import lombok.Setter;
 import java.math.BigDecimal;
@@ -47,57 +43,75 @@ public class IncomeRequest {
     /**
      * Title of the income entry.
      */
-    @NotBlank
+    @NotBlank(message = "Income title is required")
     @Size(min = TITLE_MIN_LENGTH, max = TITLE_MAX_LENGTH,
-            message = "")
+            message = "Title must be between 5 and 50 characters")
+    @Pattern(
+            regexp = "^[\\p{L}0-9 .,'\\-()!?]+$",
+            message = "Title contains invalid characters"
+    )
     private String title;
 
     /**
      * Optional description of the income entry.
      */
-    @Nullable
     @Size(max = DESCRIPTION_MAX_LENGTH,
-            message = "")
+            message = "Description cannot exceed 100 characters")
+    @Pattern(
+            regexp = "^[\\p{L}0-9 .,'\\-()!?]*$",
+            message = "Description contains invalid characters"
+    )
     private String description;
 
     /**
      * Amount of the income.
      */
+    @NotNull(message = "Amount is required")
     @Digits(integer = AMOUNT_INTEGER_DIGITS,
-            fraction = AMOUNT_FRACTION_DIGITS)
-    @DecimalMin(value = "0.01")
+            fraction = AMOUNT_FRACTION_DIGITS,
+            message = "Amount format is invalid")
+    @DecimalMin(value = "0.01", message = "Amount must be greater than 0")
+    @DecimalMax(value = "999999999999999.99",
+            message = "Amount exceeds allowed limit")
     private BigDecimal amount;
 
     /**
      * Date of the income transaction.
      */
-    @NotNull
+    @NotNull(message = "Date is required")
+    @PastOrPresent(message = "Income date cannot be in the future")
     private LocalDate date;
 
     /**
      * Identifier of the wallet associated with this income.
      */
-    @NotNull
+    @NotNull(message = "Wallet id is required")
     private UUID walletId;
 
     /**
      * Type of income (e.g., salary, bonus, investment).
      */
-    @NotNull
+    @NotNull(message = "Income type is required")
     private IncomeType type;
 
     /**
      * Whether this income is taxable.
      */
+    @NotNull
     private Boolean taxable = false;
 
     /**
      * Whether this income recurs.
      */
+    @NotNull
     private Boolean recurring = false;
 
     /**
      * Pattern for recurring income (e.g., MONTHLY, YEARLY).
      */
+    @Pattern(
+            regexp = "^(DAILY|WEEKLY|MONTHLY|YEARLY)?$",
+            message = "Invalid recurrence pattern"
+    )
     private String recurrencePattern;
 }
