@@ -1,5 +1,7 @@
 package bflow.wallet;
 
+import bflow.expenses.DTO.ExpenseResponse;
+import bflow.income.DTO.IncomeResponse;
 import bflow.wallet.DTO.WalletRequest;
 import bflow.wallet.DTO.WalletResponse;
 import bflow.common.response.ApiResponse;
@@ -99,6 +101,78 @@ public final class ControllerWallet {
         ApiResponse<WalletResponse> response = ApiResponse.success(
                 "Wallet retrieved successfully",
                 walletResponse,
+                request.getRequestURI()
+        );
+
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(response);
+    }
+
+    /**
+    * Retrieves all expenses associated with a wallet.
+    *
+    * @param id the wallet identifier.
+    * @param pageable pagination configuration.
+    * @param authentication the authenticated user.
+    * @param request the HTTP request context.
+    * @return a paginated list of wallet expenses.
+    */
+    @GetMapping("/{id}/expenses")
+    public ResponseEntity<ApiResponse<Page<ExpenseResponse>>> getWalletExpenses(
+            @PathVariable final UUID id,
+            final Pageable pageable,
+            final Authentication authentication,
+            final HttpServletRequest request
+    ) {
+        // Extract user UUID from JWT token (principal)
+        String userIdString = (String) authentication.getPrincipal();
+        UUID userId = UUID.fromString(userIdString);
+
+        // Retrieve wallet with access validation
+        Page<ExpenseResponse> expenseResponse = serviceWallet
+                .getWalletExpenses(id, userId, pageable);
+
+        // Return success response
+        ApiResponse<Page<ExpenseResponse>> response = ApiResponse.success(
+                "Wallet expenses retrieved successfully",
+                expenseResponse,
+                request.getRequestURI()
+        );
+
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(response);
+    }
+
+    /**
+    * Retrieves all incomes associated with a wallet.
+    *
+    * @param id the wallet identifier.
+    * @param pageable pagination configuration.
+    * @param authentication the authenticated user.
+    * @param request the HTTP request context.
+    * @return a paginated list of wallet incomes.
+    */
+    @GetMapping("/{id}/incomes")
+    public ResponseEntity<ApiResponse<Page<IncomeResponse>>> getWalletIncomes(
+            @PathVariable final UUID id,
+            final Pageable pageable,
+            final Authentication authentication,
+            final HttpServletRequest request
+    ) {
+        // Extract user UUID from JWT token (principal)
+        String userIdString = (String) authentication.getPrincipal();
+        UUID userId = UUID.fromString(userIdString);
+
+        // Retrieve wallet with access validation
+        Page<IncomeResponse> incomeResponse = serviceWallet
+                .getWalletIncomes(id, userId, pageable);
+
+        // Return success response
+        ApiResponse<Page<IncomeResponse>> response = ApiResponse.success(
+                "Wallet incomes retrieved successfully",
+                incomeResponse,
                 request.getRequestURI()
         );
 

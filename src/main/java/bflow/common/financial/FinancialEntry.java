@@ -9,6 +9,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.MappedSuperclass;
+import jakarta.validation.constraints.Positive;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
@@ -57,6 +58,7 @@ public abstract class FinancialEntry {
     /**
      * Amount of this financial entry.
      */
+    @Positive
     @Column(nullable = false,
             precision = AMOUNT_PRECISION, scale = 2)
     private BigDecimal amount;

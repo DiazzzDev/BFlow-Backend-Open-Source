@@ -18,6 +18,10 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
+
+import java.time.Instant;
 import java.util.Set;
 import java.util.UUID;
 
@@ -62,4 +66,14 @@ public class User {
     @Column(nullable = false)
     @Builder.Default
     private UserStatus status = UserStatus.ACTIVE;
+
+    /** Timestamp when the user account was created. */
+    @CreationTimestamp
+    @Column(nullable = false, updatable = false)
+    private Instant createdAt;
+
+    /** Timestamp when the user account was last updated. */
+    @UpdateTimestamp
+    @Column(nullable = false)
+    private Instant updatedAt;
 }
