@@ -202,8 +202,8 @@ public class ServiceTransfers {
             final User user
             ) {
         Transfer transfer = new Transfer();
-        transfer.setFromWalletId(fromWallet);
-        transfer.setToWalletId(toWallet);
+        transfer.setFromWallet(fromWallet);
+        transfer.setToWallet(toWallet);
         transfer.setAmount(request.getAmount());
         transfer.setDescription(request.getDescription());
         transfer.setUser(user);
@@ -221,11 +221,11 @@ public class ServiceTransfers {
 
         response.setId(transfer.getId());
 
-        response.setFromWalletId(transfer.getFromWalletId().getId());
-        response.setFromWalletName(transfer.getFromWalletId().getName());
+        response.setFromWalletId(transfer.getFromWallet().getId());
+        response.setFromWalletName(transfer.getFromWallet().getName());
 
-        response.setToWalletId(transfer.getToWalletId().getId());
-        response.setToWalletName(transfer.getToWalletId().getName());
+        response.setToWalletId(transfer.getToWallet().getId());
+        response.setToWalletName(transfer.getToWallet().getName());
 
         response.setAmount(transfer.getAmount());
         response.setDescription(transfer.getDescription());

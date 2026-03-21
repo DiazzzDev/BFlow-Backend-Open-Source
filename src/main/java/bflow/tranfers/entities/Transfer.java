@@ -36,12 +36,12 @@ public class Transfer {
     /** The source wallet. */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "from_wallet_id", nullable = false)
-    private Wallet fromWalletId;
+    private Wallet fromWallet;
 
     /** The destination wallet. */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "to_wallet_id", nullable = false)
-    private Wallet toWalletId;
+    private Wallet toWallet;
 
     /** The transferred amount. */
     @Column

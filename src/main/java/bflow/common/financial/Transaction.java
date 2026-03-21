@@ -1,6 +1,7 @@
 package bflow.common.financial;
 
 import bflow.auth.entities.User;
+import bflow.category.entity.Category;
 import bflow.wallet.entities.Wallet;
 import jakarta.persistence.Column;
 import jakarta.persistence.FetchType;
@@ -25,7 +26,7 @@ import java.util.UUID;
 @Getter
 @Setter
 @MappedSuperclass
-public abstract class FinancialEntry {
+public abstract class Transaction {
     /**
      * Maximum length for description field.
      */
@@ -77,6 +78,13 @@ public abstract class FinancialEntry {
     private Wallet wallet;
 
     /**
+     * Category associated with this financial entry.
+     */
+    @ManyToOne
+    @JoinColumn(name = "category_id")
+    private Category category;
+
+    /**
      * User who contributed this financial entry.
      */
     @ManyToOne(fetch = FetchType.LAZY)
@@ -84,9 +92,33 @@ public abstract class FinancialEntry {
     private User contributor;
 
     /**
+     * Example: manual, receipt, voice, import, prediction.
+     */
+    @Column(nullable = false)
+    private String source;
+
+    /**
      * Timestamp when this entry was created.
      */
     @CreationTimestamp
     @Column(nullable = false, updatable = false)
     private Instant createdAt;
+
+    /**
+     * The number of times this entry has been edited.
+     */
+    @Column(nullable = false)
+    private Integer editCount = 0;
+
+    /**
+     * The number of times the category has been changed for this entry.
+     */
+    @Column(nullable = false)
+    private Integer categorizationChanges = 0;
+
+    /**
+     * The confidence score for the categorization of this entry.
+     */
+    @Column
+    private Double confidenceScore;
 }

@@ -2,6 +2,7 @@ package bflow.wallet;
 
 import bflow.expenses.DTO.ExpenseResponse;
 import bflow.income.DTO.IncomeResponse;
+import bflow.wallet.DTO.UpdateWalletRequest;
 import bflow.wallet.DTO.WalletRequest;
 import bflow.wallet.DTO.WalletResponse;
 import bflow.common.response.ApiResponse;
@@ -233,7 +234,7 @@ public final class ControllerWallet {
     @PatchMapping("/{id}")
     public ResponseEntity<ApiResponse<WalletResponse>> patchWallet(
             @PathVariable final UUID id,
-            @Valid @RequestBody final WalletRequest request,
+            @Valid @RequestBody final UpdateWalletRequest request,
             final Authentication authentication,
             final HttpServletRequest httpRequest
     ) {

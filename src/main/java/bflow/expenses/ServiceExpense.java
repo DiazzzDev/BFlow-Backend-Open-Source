@@ -3,8 +3,13 @@ package bflow.expenses;
 import bflow.auth.entities.User;
 import bflow.auth.repository.RepositoryUser;
 import bflow.auth.services.UserServiceImpl;
+import bflow.category.entity.Category;
+import bflow.category.enums.CategoryType;
+import bflow.category.RepositoryCategory;
+import bflow.category.CategoryValidator;
 import bflow.common.exception.ResourceNotFoundException;
 import bflow.common.exception.WalletAccessDeniedException;
+import bflow.common.financial.TransactionMapper;
 import bflow.expenses.DTO.ExpenseRequest;
 import bflow.expenses.DTO.ExpenseResponse;
 import bflow.expenses.entity.Expense;
@@ -55,6 +60,16 @@ public class ServiceExpense {
     private final UserServiceImpl userService;
 
     /**
+     * Repository for category entity operations.
+     */
+    private final RepositoryCategory repositoryCategory;
+
+    /**
+     * Validator for category operations.
+     */
+    private final CategoryValidator categoryValidator;
+
+    /**
      * Creates a new expense entry for the specified wallet and user.
      *
      * @param request the expense request containing expense details
@@ -95,7 +110,7 @@ public class ServiceExpense {
         // Subtract expense from wallet balance using service method
         serviceWallet.subtractBalance(wallet, expense.getAmount());
 
-        Expense savedExpense = repositoryExpense.save(expense);
+        Expense savedExpense = repositoryExpense.saveAndFlush(expense);
 
         return mapToResponse(savedExpense);
     }
@@ -157,6 +172,21 @@ public class ServiceExpense {
         BigDecimal oldAmount = expense.getAmount();
         BigDecimal newAmount = request.getAmount();
 
+        // Resolve and validate category update
+        Category category = repositoryCategory
+                .findById(request.getCategoryId())
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Category not found"
+                        )
+                );
+
+        if (category.getType() != CategoryType.EXPENSE) {
+            throw new IllegalArgumentException(
+                    "Category must be of type EXPENSE"
+            );
+        }
+
         if (oldWallet.getId().equals(newWallet.getId())) {
 
             // Same wallet → apply difference using service method
@@ -184,7 +214,7 @@ public class ServiceExpense {
         expense.setDescription(request.getDescription());
         expense.setAmount(newAmount);
         expense.setDate(request.getDate());
-        expense.setType(request.getType());
+        expense.setCategory(category);
         expense.setTaxDeductible(
                 Boolean.TRUE.equals(request.getTaxDeductible())
         );
@@ -248,6 +278,16 @@ public class ServiceExpense {
             final Wallet wallet,
             final User contributor
     ) {
+        // Resolve and validate category
+        Category category = repositoryCategory
+                .findById(request.getCategoryId())
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Category not found"
+                        )
+                );
+
+        categoryValidator.validateExpenseCategory(category);
 
         Expense expense = new Expense();
 
@@ -260,9 +300,10 @@ public class ServiceExpense {
         expense.setDate(request.getDate());
         expense.setWallet(wallet);
         expense.setContributor(contributor);
+        expense.setCategory(category);
+        expense.setSource(request.getSource());
 
         // ---- Expense specific fields ----
-        expense.setType(request.getType());
         expense.setTaxDeductible(
                 Boolean.TRUE.equals(request.getTaxDeductible())
         );
@@ -292,8 +333,9 @@ public class ServiceExpense {
         response.setDescription(expense.getDescription());
         response.setAmount(expense.getAmount());
         response.setDate(expense.getDate());
-
-        response.setExpenseType(expense.getType().name());
+        response.setCategory(
+            TransactionMapper.mapCategoryToResponse(expense.getCategory())
+        );
 
         response.setTaxDeductible(expense.getTaxDeductible());
         response.setRecurring(expense.getRecurring());
@@ -309,8 +351,13 @@ public class ServiceExpense {
                 expense.getContributor().getEmail()
         );
 
+        response.setSource(expense.getSource());
+        response.setConfidenceScore(expense.getConfidenceScore());
         response.setCreatedAt(expense.getCreatedAt());
+        response.setCategorizationChanges(expense.getCategorizationChanges());
+        response.setEditCount(expense.getEditCount());
 
         return response;
     }
+
 }

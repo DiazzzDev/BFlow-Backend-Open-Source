@@ -1,5 +1,6 @@
 package bflow.income.DTO;
 
+import bflow.category.DTO.CategoryResponse;
 import lombok.Getter;
 import lombok.Setter;
 import java.math.BigDecimal;
@@ -41,7 +42,7 @@ public class IncomeResponse {
     /**
      * The type of income (e.g., SALARY, BONUS).
      */
-    private String incomeType;
+    private CategoryResponse category;
 
     /**
      * The unique identifier of the associated wallet.
@@ -64,8 +65,28 @@ public class IncomeResponse {
     private String contributorName;
 
     /**
+     * The source of the income (e.g., manual, receipt, voice, import).
+     */
+    private String source;
+
+    /**
      * The timestamp when the income was created.
      */
     private Instant createdAt;
+
+    /**
+     * The number of times this income entry has been edited.
+     */
+    private Integer editCount;
+
+    /**
+     * The number of times the income category has been changed.
+     */
+    private Integer categorizationChanges;
+
+    /**
+     * The confidence score for the income categorization.
+     */
+    private Double confidenceScore;
 }
 

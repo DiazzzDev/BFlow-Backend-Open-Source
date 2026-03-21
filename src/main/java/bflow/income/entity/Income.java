@@ -1,11 +1,8 @@
 package bflow.income.entity;
 
-import bflow.common.financial.FinancialEntry;
-import bflow.income.enums.IncomeType;
+import bflow.common.financial.Transaction;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.Column;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
@@ -23,14 +20,7 @@ import lombok.Setter;
 @ToString
 @AllArgsConstructor
 @NoArgsConstructor
-public class Income extends FinancialEntry {
-
-    /**
-     * The type of income (e.g., SALARY, BONUS, FREELANCE).
-     */
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private IncomeType type;
+public class Income extends Transaction {
 
     /**
      * Whether this income is taxable.

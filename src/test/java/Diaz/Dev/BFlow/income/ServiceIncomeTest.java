@@ -9,7 +9,9 @@ import bflow.income.DTO.IncomeResponse;
 import bflow.income.RepositoryIncome;
 import bflow.income.ServiceIncome;
 import bflow.income.entity.Income;
-import bflow.income.enums.IncomeType;
+import bflow.category.entity.Category;
+import bflow.category.enums.CategoryType;
+import bflow.category.RepositoryCategory;
 import bflow.wallet.RepositoryWallet;
 import bflow.wallet.RepositoryWalletUser;
 import bflow.wallet.ServiceWallet;
@@ -54,6 +56,12 @@ class ServiceIncomeTest {
     private RepositoryUser repositoryUser;
 
     @Mock
+    private RepositoryCategory repositoryCategory;
+
+    @Mock
+    private bflow.category.CategoryValidator categoryValidator;
+
+    @Mock
     private ServiceWallet serviceWallet;
 
     @Mock
@@ -64,14 +72,17 @@ class ServiceIncomeTest {
 
     private UUID userId;
     private UUID walletId;
+    private UUID categoryId;
     private User user;
     private Wallet wallet;
     private WalletUser walletUser;
+    private Category category;
 
     @BeforeEach
     void setUp() {
         userId = UUID.randomUUID();
         walletId = UUID.randomUUID();
+        categoryId = UUID.randomUUID();
 
         user = new User();
         user.setId(userId);
@@ -91,6 +102,13 @@ class ServiceIncomeTest {
         walletUser.setUser(user);
         walletUser.setWallet(wallet);
         walletUser.setRole(WalletRole.OWNER);
+
+        category = new Category();
+        category.setId(categoryId);
+        category.setName("Salary");
+        category.setType(CategoryType.INCOME);
+        category.setSystemDefined(true);
+        category.setCreatedAt(Instant.now());
     }
 
     @Test
@@ -98,13 +116,14 @@ class ServiceIncomeTest {
         // Arrange
         IncomeRequest request = new IncomeRequest();
         request.setWalletId(walletId);
+        request.setCategoryId(categoryId);
         request.setTitle("Test Income Title");
         request.setAmount(BigDecimal.valueOf(500));
         request.setDescription("Test income");
 
         Income income = new Income();
         income.setId(UUID.randomUUID());
-        income.setType(IncomeType.SALARY);
+        income.setCategory(category);
         income.setContributor(user);
         income.setWallet(wallet);
         income.setAmount(BigDecimal.valueOf(500));
@@ -112,11 +131,13 @@ class ServiceIncomeTest {
         income.setCreatedAt(Instant.now());
 
         doNothing().when(userService).validateUserActive(userId);
+        doNothing().when(categoryValidator).validateIncomeCategory(category);
         when(repositoryUser.findById(userId)).thenReturn(Optional.of(user));
         when(repositoryWalletUser.findByWalletIdAndUserId(walletId, userId))
                 .thenReturn(Optional.of(walletUser));
+        when(repositoryCategory.findById(categoryId)).thenReturn(Optional.of(category));
         doNothing().when(serviceWallet).addBalance(any(), any());
-        when(repositoryIncome.save(any(Income.class))).thenReturn(income);
+        when(repositoryIncome.saveAndFlush(any(Income.class))).thenReturn(income);
 
         // Act
         IncomeResponse result = serviceIncome.newIncome(request, userId);
@@ -124,6 +145,6 @@ class ServiceIncomeTest {
         // Assert
         assertNotNull(result);
         verify(userService).validateUserActive(userId);
-        verify(repositoryIncome).save(any(Income.class));
+        verify(repositoryIncome).saveAndFlush(any(Income.class));
     }
 }

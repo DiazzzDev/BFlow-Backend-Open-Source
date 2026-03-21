@@ -40,7 +40,7 @@ public interface RepositoryTransfers extends JpaRepository<Transfer, UUID> {
         SELECT t
         FROM Transfer t
         WHERE t.user.id = :userId
-        AND (t.fromWalletId.id = :walletId OR t.toWalletId.id = :walletId)
+        AND (t.fromWallet.id = :walletId OR t.toWallet.id = :walletId)
     """)
     Page<Transfer> findTransfersByWallet(
             UUID userId,

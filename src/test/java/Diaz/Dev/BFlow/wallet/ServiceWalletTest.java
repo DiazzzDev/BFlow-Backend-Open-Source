@@ -4,6 +4,7 @@ import bflow.auth.entities.User;
 import bflow.auth.enums.UserStatus;
 import bflow.auth.repository.RepositoryUser;
 import bflow.auth.services.UserServiceImpl;
+import bflow.wallet.DTO.UpdateWalletRequest;
 import bflow.wallet.DTO.WalletRequest;
 import bflow.wallet.DTO.WalletResponse;
 import bflow.wallet.RepositoryWallet;
@@ -147,7 +148,7 @@ class ServiceWalletTest {
         memberUser.setWallet(wallet);
         memberUser.setRole(WalletRole.MEMBER);
 
-        WalletRequest request = new WalletRequest();
+        UpdateWalletRequest request = new UpdateWalletRequest();
         request.setName("New Name");
 
         doNothing().when(userService).validateUserActive(userId);

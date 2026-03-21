@@ -9,7 +9,9 @@ import bflow.expenses.DTO.ExpenseResponse;
 import bflow.expenses.RepositoryExpense;
 import bflow.expenses.ServiceExpense;
 import bflow.expenses.entity.Expense;
-import bflow.expenses.enums.ExpenseType;
+import bflow.category.entity.Category;
+import bflow.category.enums.CategoryType;
+import bflow.category.RepositoryCategory;
 import bflow.wallet.RepositoryWallet;
 import bflow.wallet.RepositoryWalletUser;
 import bflow.wallet.ServiceWallet;
@@ -54,6 +56,12 @@ class ServiceExpenseTest {
     private RepositoryWallet repositoryWallet;
 
     @Mock
+    private RepositoryCategory repositoryCategory;
+
+    @Mock
+    private bflow.category.CategoryValidator categoryValidator;
+
+    @Mock
     private ServiceWallet serviceWallet;
 
     @Mock
@@ -64,14 +72,17 @@ class ServiceExpenseTest {
 
     private UUID userId;
     private UUID walletId;
+    private UUID categoryId;
     private User user;
     private Wallet wallet;
     private WalletUser walletUser;
+    private Category category;
 
     @BeforeEach
     void setUp() {
         userId = UUID.randomUUID();
         walletId = UUID.randomUUID();
+        categoryId = UUID.randomUUID();
 
         user = new User();
         user.setId(userId);
@@ -91,6 +102,13 @@ class ServiceExpenseTest {
         walletUser.setUser(user);
         walletUser.setWallet(wallet);
         walletUser.setRole(WalletRole.OWNER);
+
+        category = new Category();
+        category.setId(categoryId);
+        category.setName("Food");
+        category.setType(CategoryType.EXPENSE);
+        category.setSystemDefined(true);
+        category.setCreatedAt(Instant.now());
     }
 
     @Test
@@ -98,13 +116,14 @@ class ServiceExpenseTest {
         // Arrange
         ExpenseRequest request = new ExpenseRequest();
         request.setWalletId(walletId);
+        request.setCategoryId(categoryId);
         request.setTitle("Test Expense Title");
         request.setAmount(BigDecimal.valueOf(100));
         request.setDescription("Test expense");
 
         Expense expense = new Expense();
         expense.setId(UUID.randomUUID());
-        expense.setType(ExpenseType.FOOD);
+        expense.setCategory(category);
         expense.setContributor(user);
         expense.setWallet(wallet);
         expense.setAmount(BigDecimal.valueOf(100));
@@ -112,11 +131,13 @@ class ServiceExpenseTest {
         expense.setCreatedAt(Instant.now());
 
         doNothing().when(userService).validateUserActive(userId);
+        doNothing().when(categoryValidator).validateExpenseCategory(category);
         when(repositoryUser.findById(userId)).thenReturn(Optional.of(user));
         when(repositoryWalletUser.findByWalletIdAndUserId(walletId, userId))
                 .thenReturn(Optional.of(walletUser));
+        when(repositoryCategory.findById(categoryId)).thenReturn(Optional.of(category));
         doNothing().when(serviceWallet).subtractBalance(any(), any());
-        when(repositoryExpense.save(any(Expense.class))).thenReturn(expense);
+        when(repositoryExpense.saveAndFlush(any(Expense.class))).thenReturn(expense);
 
         // Act
         ExpenseResponse result = serviceExpense.newExpense(request, userId);
@@ -124,6 +145,6 @@ class ServiceExpenseTest {
         // Assert
         assertNotNull(result);
         verify(userService).validateUserActive(userId);
-        verify(repositoryExpense).save(any(Expense.class));
+        verify(repositoryExpense).saveAndFlush(any(Expense.class));
     }
 }
