@@ -61,6 +61,9 @@ public abstract class BaseTransactionRequest {
     @NotNull
     private UUID walletId;
 
+    /** Indicates the money source. */
+    private String source;
+
     /** Indicates if transaction recurs. */
     @NotNull
     private Boolean recurring = false;
@@ -68,5 +71,9 @@ public abstract class BaseTransactionRequest {
     /** Recurrence pattern. */
     @Pattern(regexp = "^(DAILY|WEEKLY|MONTHLY|YEARLY)?$")
     private String recurrencePattern;
+
+    /** Associated category id. */
+    @NotNull(message = "Category ID is required")
+    private UUID categoryId;
 
 }

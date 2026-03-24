@@ -95,8 +95,8 @@ class ServiceTransfersTest {
 
         transfer = new Transfer();
         transfer.setId(transferId);
-        transfer.setFromWalletId(wallet1);
-        transfer.setToWalletId(wallet2);
+        transfer.setFromWallet(wallet1);
+        transfer.setToWallet(wallet2);
         transfer.setAmount(BigDecimal.valueOf(100));
         transfer.setDescription("Test transfer");
         transfer.setUser(user);

@@ -3,8 +3,13 @@ package bflow.income;
 import bflow.auth.entities.User;
 import bflow.auth.repository.RepositoryUser;
 import bflow.auth.services.UserServiceImpl;
+import bflow.category.entity.Category;
+import bflow.category.enums.CategoryType;
+import bflow.category.RepositoryCategory;
+import bflow.category.CategoryValidator;
 import bflow.common.exception.ResourceNotFoundException;
 import bflow.common.exception.WalletAccessDeniedException;
+import bflow.common.financial.TransactionMapper;
 import bflow.income.DTO.IncomeRequest;
 import bflow.income.DTO.IncomeResponse;
 import bflow.income.entity.Income;
@@ -60,6 +65,16 @@ public class ServiceIncome {
     private final UserServiceImpl userService;
 
     /**
+     * Repository for category entity operations.
+     */
+    private final RepositoryCategory repositoryCategory;
+
+    /**
+     * Validator for category operations.
+     */
+    private final CategoryValidator categoryValidator;
+
+    /**
      * Creates a new income entry for the specified wallet and user.
      *
      * @param request the income request containing income details
@@ -102,7 +117,7 @@ public class ServiceIncome {
         serviceWallet.addBalance(wallet, income.getAmount());
 
         // Save income into database
-        Income savedIncome = repositoryIncome.save(income);
+        Income savedIncome = repositoryIncome.saveAndFlush(income);
 
         return mapToResponse(savedIncome);
     }
@@ -164,6 +179,21 @@ public class ServiceIncome {
         BigDecimal oldAmount = income.getAmount();
         BigDecimal newAmount = request.getAmount();
 
+        // Resolve and validate category update
+        Category category = repositoryCategory
+                .findById(request.getCategoryId())
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Category not found"
+                        )
+                );
+
+        if (category.getType() != CategoryType.INCOME) {
+            throw new IllegalArgumentException(
+                    "Category must be of type INCOME"
+            );
+        }
+
         if (oldWallet.getId().equals(newWallet.getId())) {
 
             // Same wallet → apply difference using service method
@@ -191,7 +221,7 @@ public class ServiceIncome {
         income.setDescription(request.getDescription());
         income.setAmount(newAmount);
         income.setDate(request.getDate());
-        income.setType(request.getType());
+        income.setCategory(category);
         income.setTaxable(Boolean.TRUE.equals(request.getTaxable()));
         income.setRecurring(Boolean.TRUE.equals(request.getRecurring()));
         income.setRecurrencePattern(request.getRecurrencePattern());
@@ -254,6 +284,16 @@ public class ServiceIncome {
             final Wallet wallet,
             final User contributor
     ) {
+        // Resolve and validate category
+        Category category = repositoryCategory
+                .findById(request.getCategoryId())
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Category not found"
+                        )
+                );
+
+        categoryValidator.validateIncomeCategory(category);
 
         Income income = new Income();
 
@@ -267,7 +307,8 @@ public class ServiceIncome {
         income.setDate(request.getDate());
         income.setWallet(wallet);
         income.setContributor(contributor);
-        income.setType(request.getType());
+        income.setCategory(category);
+        income.setSource(request.getSource());
 
         income.setTaxable(Boolean.TRUE.equals(request.getTaxable()));
         income.setRecurring(Boolean.TRUE.equals(request.getRecurring()));
@@ -291,8 +332,9 @@ public class ServiceIncome {
         response.setDescription(income.getDescription());
         response.setAmount(income.getAmount());
         response.setDate(income.getDate());
-
-        response.setIncomeType(income.getType().name());
+        response.setCategory(
+            TransactionMapper.mapCategoryToResponse(income.getCategory())
+        );
 
         response.setWalletId(income.getWallet().getId().toString());
         response.setWalletName(income.getWallet().getName());
@@ -304,8 +346,13 @@ public class ServiceIncome {
                 income.getContributor().getEmail()
         );
 
+        response.setSource(income.getSource());
+        response.setConfidenceScore(income.getConfidenceScore());
         response.setCreatedAt(income.getCreatedAt());
+        response.setCategorizationChanges(income.getCategorizationChanges());
+        response.setEditCount(income.getEditCount());
 
         return response;
     }
+
 }

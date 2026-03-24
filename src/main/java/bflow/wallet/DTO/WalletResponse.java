@@ -46,6 +46,9 @@ public final class WalletResponse {
     /** The timestamp when the wallet was created. */
     private Instant createdAt;
 
+    /** The timestamp when the wallet was updated. */
+    private Instant updatedAt;
+
     /** The role of the current user in this wallet. */
     private WalletRole role;
 }

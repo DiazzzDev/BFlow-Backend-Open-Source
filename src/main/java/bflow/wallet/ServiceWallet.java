@@ -7,6 +7,8 @@ import bflow.expenses.entity.Expense;
 import bflow.income.DTO.IncomeResponse;
 import bflow.income.RepositoryIncome;
 import bflow.income.entity.Income;
+import bflow.common.financial.TransactionMapper;
+import bflow.wallet.DTO.UpdateWalletRequest;
 import bflow.wallet.DTO.WalletRequest;
 import bflow.wallet.DTO.WalletResponse;
 import bflow.wallet.entities.Wallet;
@@ -92,19 +94,7 @@ public class ServiceWallet {
                         "User does not have access to this wallet"
                 ));
 
-        // Retrieve the wallet from the WalletUser relationship
-        Wallet wallet = walletUser.getWallet();
-
-        // Map Wallet entity to WalletResponse DTO
-        return WalletResponse.builder()
-                .id(wallet.getId())
-                .name(wallet.getName())
-                .description(wallet.getDescription())
-                .currency(wallet.getCurrency())
-                .balance(wallet.getBalance())
-                .initialValue(wallet.getInitialValue())
-                .createdAt(wallet.getCreatedAt())
-                .build();
+        return convertToDTO(walletUser);
     }
 
     /**
@@ -205,7 +195,7 @@ public class ServiceWallet {
         wallet.setBalance(initialValue);
 
         // Save Wallet
-        Wallet savedWallet = repositoryWallet.save(wallet);
+        Wallet savedWallet = repositoryWallet.saveAndFlush(wallet);
 
         // Create WalletUser relationship with OWNER role
         WalletUser walletUser = new WalletUser();
@@ -231,7 +221,7 @@ public class ServiceWallet {
      */
     public WalletResponse patchWallet(
             final UUID walletId,
-            @Valid final WalletRequest request,
+            @Valid final UpdateWalletRequest request,
             final UUID userId
     ) {
         //Check if user has an active account
@@ -281,6 +271,7 @@ public class ServiceWallet {
         dto.setRole(walletUser.getRole());
         dto.setInitialValue(wallet.getInitialValue());
         dto.setCreatedAt(wallet.getCreatedAt());
+        dto.setUpdatedAt(wallet.getUpdatedAt());
 
         return dto;
     }
@@ -395,7 +386,9 @@ public class ServiceWallet {
         dto.setDescription(expense.getDescription());
         dto.setAmount(expense.getAmount());
         dto.setDate(expense.getDate());
-        dto.setExpenseType(expense.getType().toString());
+        dto.setCategory(
+            TransactionMapper.mapCategoryToResponse(expense.getCategory())
+        );
         dto.setTaxDeductible(expense.getTaxDeductible());
         dto.setRecurring(expense.getRecurring());
         dto.setReimbursable(expense.getReimbursable());
@@ -419,7 +412,9 @@ public class ServiceWallet {
         dto.setDescription(income.getDescription());
         dto.setAmount(income.getAmount());
         dto.setDate(income.getDate());
-        dto.setIncomeType(income.getType().toString());
+        dto.setCategory(
+            TransactionMapper.mapCategoryToResponse(income.getCategory())
+        );
         dto.setWalletId(income.getWallet().getId().toString());
         dto.setWalletName(income.getWallet().getName());
         dto.setContributorId(income.getContributor().getId().toString());
@@ -427,4 +422,5 @@ public class ServiceWallet {
         dto.setCreatedAt(income.getCreatedAt());
         return dto;
     }
+
 }

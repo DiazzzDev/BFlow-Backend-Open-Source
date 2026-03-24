@@ -1,11 +1,8 @@
 package bflow.expenses.entity;
 
-import bflow.common.financial.FinancialEntry;
-import bflow.expenses.enums.ExpenseType;
+import bflow.common.financial.Transaction;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.EnumType;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -20,14 +17,7 @@ import lombok.ToString;
 @ToString
 @AllArgsConstructor
 @NoArgsConstructor
-public class Expense extends FinancialEntry {
-
-    /**
-     * Category of the expense.
-     */
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private ExpenseType type;
+public class Expense extends Transaction {
 
     /**
      * Whether this expense is tax deductible.
