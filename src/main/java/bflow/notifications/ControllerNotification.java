@@ -6,20 +6,37 @@ import bflow.notifications.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * REST controller for managing notifications.
+ */
 @RestController
 @RequestMapping("/api/v1/notifications")
 @RequiredArgsConstructor
-public class ControllerNotification {
+public final class ControllerNotification {
 
+    /**
+     * The notification service.
+     */
     private final NotificationService service;
 
+    /**
+     * Get all notifications for the authenticated user.
+     *
+     * @param authentication the authentication object
+     * @return response containing list of notifications
+     */
     @GetMapping
     public ResponseEntity<ApiResponse<List<NotificationResponse>>> getAll(
-            Authentication authentication
+            final Authentication authentication
     ) {
 
         UUID userId = UUID.fromString(
@@ -35,9 +52,15 @@ public class ControllerNotification {
         );
     }
 
+    /**
+     * Get the count of unread notifications.
+     *
+     * @param authentication the authentication object
+     * @return response containing unread count
+     */
     @GetMapping("/unread-count")
     public ResponseEntity<ApiResponse<Long>> unreadCount(
-            Authentication authentication
+            final Authentication authentication
     ) {
 
         UUID userId = UUID.fromString(
@@ -53,10 +76,17 @@ public class ControllerNotification {
         );
     }
 
+    /**
+     * Mark a notification as read.
+     *
+     * @param id the notification ID
+     * @param authentication the authentication object
+     * @return response
+     */
     @PatchMapping("/{id}/read")
     public ResponseEntity<ApiResponse<Void>> markAsRead(
-            @PathVariable UUID id,
-            Authentication authentication
+            @PathVariable final UUID id,
+            final Authentication authentication
     ) {
 
         UUID userId = UUID.fromString(

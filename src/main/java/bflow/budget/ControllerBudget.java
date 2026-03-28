@@ -9,39 +9,62 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * REST controller for managing budgets.
+ */
 @RestController
 @RequestMapping("/api/v1/budgets")
 @RequiredArgsConstructor
-public class ControllerBudget {
+public final class ControllerBudget {
+    /**
+     * The budget service.
+     */
     private final BudgetService budgetService;
 
+    /**
+     * Get all budgets for a specific wallet.
+     *
+     * @param walletId the wallet ID
+     * @param authentication the authentication object
+     * @return response containing list of budgets
+     */
     @GetMapping("/wallet/{walletId}")
     public ResponseEntity<ApiResponse<List<BudgetResponse>>> getBudgetsByWallet(
-            @PathVariable UUID walletId,
+            @PathVariable final UUID walletId,
             final Authentication authentication) {
 
         String userIdString = (String) authentication.getPrincipal();
         UUID userId = UUID.fromString(userIdString);
 
-        List<BudgetResponse> budgets = budgetService.getBudgetsByWallet(walletId, userId);
+        List<BudgetResponse> budgets =
+                budgetService.getBudgetsByWallet(walletId, userId);
 
-        return ResponseEntity.ok(
-                ApiResponse.success(
-                        "Budgets retrieved successfully",
-                        budgets,
-                        "/api/v1/budgets/wallet/" + walletId
-                )
-        );
+        return ResponseEntity.ok(ApiResponse.success(
+                "Budgets retrieved successfully",
+                budgets,
+                "/api/v1/budgets/wallet/" + walletId));
     }
 
+    /**
+     * Get the status of a specific budget.
+     *
+     * @param id the budget ID
+     * @param authentication the authentication object
+     * @return response containing budget status
+     */
     @GetMapping("/{id}/status")
     public ResponseEntity<ApiResponse<BudgetResponse>> getBudgetStatus(
-            @PathVariable UUID id,
+            @PathVariable final UUID id,
             final Authentication authentication) {
 
         String userIdString = (String) authentication.getPrincipal();
@@ -58,24 +81,27 @@ public class ControllerBudget {
         );
     }
 
+    /**
+     * Create a new budget.
+     *
+     * @param request the budget request
+     * @param authentication the authentication object
+     * @return response containing created budget
+     */
     @PostMapping
     public ResponseEntity<ApiResponse<BudgetResponse>> createBudget(
-            @RequestBody @Valid BudgetRequest request,
+            @RequestBody @Valid final BudgetRequest request,
             final Authentication authentication) {
 
         String userIdString = (String) authentication.getPrincipal();
         UUID userId = UUID.fromString(userIdString);
 
         BudgetResponse response =
-                budgetService.createBudget(request, userId, request.getWalletId());
+                budgetService.createBudget(
+                        request, userId, request.getWalletId());
 
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(
-                        ApiResponse.success(
-                                "Budget created successfully",
-                                response,
-                                "/api/v1/budgets"
-                        )
-                );
+        return ResponseEntity.status(HttpStatus.CREATED).body(
+                ApiResponse.success("Budget created successfully", response,
+                        "/api/v1/budgets"));
     }
 }

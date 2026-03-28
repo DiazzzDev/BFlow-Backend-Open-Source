@@ -22,6 +22,14 @@ public interface RepositoryExpense extends JpaRepository<Expense, UUID> {
     */
     Page<Expense> findByWalletId(UUID walletId, Pageable pageable);
 
+    /**
+     * Sum expenses for a wallet within a date range.
+     *
+     * @param walletId the wallet ID
+     * @param start the start date
+     * @param end the end date
+     * @return the sum of expenses
+     */
     @Query("""
         SELECT COALESCE(SUM(e.amount), 0)
         FROM Expense e
@@ -30,6 +38,18 @@ public interface RepositoryExpense extends JpaRepository<Expense, UUID> {
     """)
     BigDecimal sumExpensesByWalletAndDateRange(
             UUID walletId,
+            LocalDate start,
+            LocalDate end
+    );
+
+    @Query("""
+        SELECT COALESCE(SUM(e.amount), 0)
+        FROM Expense e
+        WHERE e.category.id = :categoryId
+        AND e.date BETWEEN :start AND :end
+    """)
+    BigDecimal sumByCategoryAndDateRange(
+            UUID categoryId,
             LocalDate start,
             LocalDate end
     );

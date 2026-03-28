@@ -1,6 +1,7 @@
 package bflow.budget.services;
 
 import bflow.budget.DTO.BudgetResponse;
+import bflow.budget.entity.Budget;
 import bflow.budget.enums.BudgetStatus;
 import bflow.notifications.service.NotificationService;
 import lombok.RequiredArgsConstructor;
@@ -9,23 +10,41 @@ import org.springframework.stereotype.Service;
 
 import java.util.UUID;
 
+/**
+ * Service for evaluating budget alerts.
+ */
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class BudgetAlertService {
+public final class BudgetAlertService {
+    /**
+     * The notification service.
+     */
     private final NotificationService notificationService;
 
-    public void evaluate(BudgetResponse budgetResponse, UUID userId) {
+    /**
+     * Evaluate a budget and send appropriate notifications.
+     *
+     * @param budgetResponse the budget response
+     * @param userId the user ID
+     */
+    public void evaluate(
+            final BudgetResponse budgetResponse, final UUID userId, final Budget budget) {
         if (budgetResponse == null || budgetResponse.getStatus() == null) {
             return;
+        }
+
+        BudgetStatus current = budgetResponse.getStatus();
+        BudgetStatus last = budget.getLastAlertStatus();
+
+        if (current == last) {
+            return; // no more double warnings
         }
 
         switch (budgetResponse.getStatus()) {
             case WARNING ->
                     notificationService.sendBudgetWarning(
-                            userId,
-                            budgetResponse
-                    );
+                            userId, budgetResponse);
 
             case CRITICAL ->
                     notificationService.sendBudgetCritical(
@@ -38,6 +57,12 @@ public class BudgetAlertService {
                             userId,
                             budgetResponse
                     );
+
+            default ->
+                    log.debug("No alert needed for budget status: {}",
+                            budgetResponse.getStatus());
         }
+
+        budget.setLastAlertStatus(current);
     }
 }

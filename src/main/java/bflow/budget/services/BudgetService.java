@@ -6,7 +6,10 @@ import bflow.budget.DTO.BudgetRequest;
 import bflow.budget.DTO.BudgetResponse;
 import bflow.budget.RepositoryBudget;
 import bflow.budget.entity.Budget;
+import bflow.budget.enums.BudgetScope;
+import bflow.budget.enums.BudgetStatus;
 import bflow.common.exception.WalletAccessDeniedException;
+import bflow.notifications.service.NotificationService;
 import bflow.wallet.RepositoryWalletUser;
 import bflow.wallet.entities.Wallet;
 import jakarta.transaction.Transactional;
@@ -19,16 +22,40 @@ import java.util.UUID;
 @Service
 @Transactional
 @RequiredArgsConstructor
-public class BudgetService  {
+public class BudgetService {
+    /**
+     * Repository for budget operations.
+     */
     private final RepositoryBudget repositoryBudget;
+    /**
+     * Service for budget calculations.
+     */
     private final BudgetCalculationService calculationService;
+    /**
+     * Service for budget alerts.
+     */
     private final BudgetAlertService alertService;
+    /**
+     * Repository for wallet user operations.
+     */
     private final RepositoryWalletUser repositoryWalletUser;
 
-    /** Service for user business logic operations. */
+    /**
+     * Service for user business logic operations.
+     */
     private final UserServiceImpl userService;
 
-    public BudgetResponse getBudgetStatus(UUID budgetId, UUID userId) {
+    private final NotificationService notificationService;
+
+    /**
+     * Get the status of a specific budget.
+     *
+     * @param budgetId the budget ID
+     * @param userId the user ID
+     * @return the budget response
+     */
+    public BudgetResponse getBudgetStatus(final UUID budgetId,
+            final UUID userId) {
 
         //Check if user has an active account
         userService.validateUserActive(userId);
@@ -42,17 +69,21 @@ public class BudgetService  {
             );
         }
 
-        BudgetResponse response = calculationService.calculate(budget);
-
-        alertService.evaluate(response, userId);
-
-        return response;
+        return calculationService.calculate(budget);
     }
 
+    /**
+     * Create a new budget.
+     *
+     * @param request the budget request
+     * @param userId the user ID
+     * @param walletId the wallet ID
+     * @return the created budget response
+     */
     public BudgetResponse createBudget(
-            BudgetRequest request,
-            UUID userId,
-            UUID walletId
+            final BudgetRequest request,
+            final UUID userId,
+            final UUID walletId
     ) {
 
         //Check if user has an active account
@@ -78,7 +109,14 @@ public class BudgetService  {
                         )
                 );
 
+        if (request.getScope() == BudgetScope.CATEGORY
+                && request.getCategoryId() == null) {
+            throw new IllegalArgumentException("Category budget requires categoryId");
+        }
+
         budget.setWallet(wallet);
+        budget.setScope(request.getScope());
+        budget.setCategoryId(request.getCategoryId());
 
         User user = new User();
         user.setId(userId);
@@ -89,7 +127,15 @@ public class BudgetService  {
         return calculationService.calculate(saved);
     }
 
-    public List<BudgetResponse> getBudgetsByWallet(UUID walletId, UUID userId) {
+    /**
+     * Get all budgets for a specific wallet.
+     *
+     * @param walletId the wallet ID
+     * @param userId the user ID
+     * @return list of budget responses
+     */
+    public List<BudgetResponse> getBudgetsByWallet(final UUID walletId,
+            final UUID userId) {
 
         //Check if user has an active account
         userService.validateUserActive(userId);
@@ -109,7 +155,12 @@ public class BudgetService  {
                 .toList();
     }
 
-    public void evaluateBudgetsForWallet(UUID walletId) {
+    /**
+     * Evaluate all budgets for a wallet.
+     *
+     * @param walletId the wallet ID
+     */
+    public void evaluateBudgetsForWallet(final UUID walletId) {
 
         List<Budget> budgets = repositoryBudget.findByWalletId(walletId);
 
@@ -133,6 +184,34 @@ public class BudgetService  {
                     continue;
             }
 
+            BudgetResponse response =
+                    calculationService.calculate(budget);
+
+            alertService.evaluate(
+                    response,
+                    budget.getUser().getId(),
+                    budget
+            );
+
+            boolean periodEnded = today.isAfter(end);
+
+            if (periodEnded) {
+
+                BudgetResponse endResponse = calculationService.calculate(budget);
+
+                if (endResponse.getStatus() != BudgetStatus.EXCEEDED) {
+                    notificationService.sendBudgetSuccess(
+                            budget.getUser().getId(),
+                            endResponse
+                    );
+                }
+
+                resetBudgetPeriod(budget);
+                repositoryBudget.save(budget);
+
+                continue;
+            }
+
             boolean isActive =
                     (today.isEqual(start) || today.isAfter(start))
                             && today.isBefore(end);
@@ -140,13 +219,14 @@ public class BudgetService  {
             if (!isActive) {
                 continue;
             }
-
-            BudgetResponse response =
-                    calculationService.calculate(budget);
-
-            alertService.evaluate(
-                    response,
-                    budget.getUser().getId());
         }
+    }
+
+    private void resetBudgetPeriod(Budget budget) {
+
+        LocalDate newStart = LocalDate.now();
+
+        budget.setStartDate(newStart);
+        budget.setLastAlertStatus(null);
     }
 }

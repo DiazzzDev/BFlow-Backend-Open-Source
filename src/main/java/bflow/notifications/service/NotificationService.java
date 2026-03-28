@@ -13,10 +13,20 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
-public class NotificationService {
+public final class NotificationService {
+    /**
+     * Repository for notification operations.
+     */
     private final NotificationRepository repository;
 
-    public void sendBudgetWarning(UUID userId, BudgetResponse budget) {
+    /**
+     * Send a warning notification about budget usage.
+     *
+     * @param userId the user ID
+     * @param budget the budget response
+     */
+    public void sendBudgetWarning(final UUID userId,
+            final BudgetResponse budget) {
         create(
                 userId,
                 NotificationType.BUDGET_WARNING,
@@ -25,7 +35,14 @@ public class NotificationService {
         );
     }
 
-    public void sendBudgetCritical(UUID userId, BudgetResponse budget) {
+    /**
+     * Send a critical notification about budget usage.
+     *
+     * @param userId the user ID
+     * @param budget the budget response
+     */
+    public void sendBudgetCritical(final UUID userId,
+            final BudgetResponse budget) {
         create(
                 userId,
                 NotificationType.BUDGET_CRITICAL,
@@ -34,7 +51,14 @@ public class NotificationService {
         );
     }
 
-    public void sendBudgetExceeded(UUID userId, BudgetResponse budget) {
+    /**
+     * Send a notification about exceeded budget.
+     *
+     * @param userId the user ID
+     * @param budget the budget response
+     */
+    public void sendBudgetExceeded(final UUID userId,
+            final BudgetResponse budget) {
         create(
                 userId,
                 NotificationType.BUDGET_EXCEEDED,
@@ -43,11 +67,19 @@ public class NotificationService {
         );
     }
 
+    /**
+     * Create and save a notification.
+     *
+     * @param userId the user ID
+     * @param type the notification type
+     * @param title the notification title
+     * @param message the notification message
+     */
     private void create(
-            UUID userId,
-            NotificationType type,
-            String title,
-            String message
+            final UUID userId,
+            final NotificationType type,
+            final String title,
+            final String message
     ) {
         Notification notification = new Notification();
 
@@ -59,7 +91,13 @@ public class NotificationService {
         repository.save(notification);
     }
 
-    public List<NotificationResponse> getUserNotifications(UUID userId) {
+    /**
+     * Get all notifications for a user.
+     *
+     * @param userId the user ID
+     * @return list of notification responses
+     */
+    public List<NotificationResponse> getUserNotifications(final UUID userId) {
 
         return repository
                 .findByUserIdOrderByCreatedAtDesc(userId)
@@ -68,11 +106,24 @@ public class NotificationService {
                 .toList();
     }
 
-    public Long getUnreadCount(UUID userId) {
+    /**
+     * Get the count of unread notifications for a user.
+     *
+     * @param userId the user ID
+     * @return count of unread notifications
+     */
+    public Long getUnreadCount(final UUID userId) {
         return repository.countByUserIdAndReadFalse(userId);
     }
 
-    public void markAsRead(UUID notificationId, UUID userId) {
+    /**
+     * Mark a notification as read.
+     *
+     * @param notificationId the notification ID
+     * @param userId the user ID
+     */
+    public void markAsRead(final UUID notificationId,
+            final UUID userId) {
 
         Notification notification = repository.findById(notificationId)
                 .orElseThrow();
@@ -85,7 +136,24 @@ public class NotificationService {
         repository.save(notification);
     }
 
-    private NotificationResponse toResponse(Notification n) {
+    public void sendBudgetSuccess(UUID userId, BudgetResponse budget) {
+        create(
+                userId,
+                NotificationType.BUDGET_SUCCESS,
+                "Budget Completed!",
+                "You successfully stayed within your budget"
+        );
+
+        //emailService.sendBudgetSuccessEmail(userId, budget);
+    }
+
+    /**
+     * Convert a notification entity to a response DTO.
+     *
+     * @param n the notification entity
+     * @return the notification response
+     */
+    private NotificationResponse toResponse(final Notification n) {
 
         NotificationResponse r = new NotificationResponse();
 

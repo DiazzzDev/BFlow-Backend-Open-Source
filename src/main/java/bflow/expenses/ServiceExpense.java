@@ -70,6 +70,9 @@ public class ServiceExpense {
      */
     private final CategoryValidator categoryValidator;
 
+    /**
+     * Service for budget business logic operations.
+     */
     private final BudgetService serviceBudget;
 
     /**
