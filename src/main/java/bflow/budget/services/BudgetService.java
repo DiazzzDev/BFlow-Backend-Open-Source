@@ -184,15 +184,6 @@ public class BudgetService {
                     continue;
             }
 
-            BudgetResponse response =
-                    calculationService.calculate(budget);
-
-            alertService.evaluate(
-                    response,
-                    budget.getUser().getId(),
-                    budget
-            );
-
             boolean periodEnded = today.isAfter(end);
 
             if (periodEnded) {
@@ -219,6 +210,15 @@ public class BudgetService {
             if (!isActive) {
                 continue;
             }
+
+            BudgetResponse response =
+                    calculationService.calculate(budget);
+
+            alertService.evaluate(
+                    response,
+                    budget.getUser().getId(),
+                    budget
+            );
         }
     }
 

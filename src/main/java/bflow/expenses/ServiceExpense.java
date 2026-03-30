@@ -230,6 +230,14 @@ public class ServiceExpense {
         expense.setRecurring(Boolean.TRUE.equals(request.getRecurring()));
         expense.setRecurrencePattern(request.getRecurrencePattern());
 
+        //Check on the budget from the original wallet
+        serviceBudget.evaluateBudgetsForWallet(newWallet.getId());
+
+        //If the wallet was changed we evaluate the new wallet budget
+        if (!oldWallet.getId().equals(newWallet.getId())) {
+            serviceBudget.evaluateBudgetsForWallet(oldWallet.getId());
+        }
+
         return mapToResponse(expense);
     }
 
@@ -270,6 +278,9 @@ public class ServiceExpense {
 
         // Reverse the expense impact on wallet balance using service method
         serviceWallet.addBalance(wallet, expense.getAmount());
+
+        // Recalculate budgets
+        serviceBudget.evaluateBudgetsForWallet(wallet.getId());
 
         repositoryExpense.delete(expense);
     }
