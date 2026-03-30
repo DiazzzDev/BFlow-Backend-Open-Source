@@ -219,6 +219,8 @@ public class BudgetService {
                     budget.getUser().getId(),
                     budget
             );
+
+            repositoryBudget.save(budget);
         }
     }
 
@@ -227,6 +229,6 @@ public class BudgetService {
         LocalDate newStart = LocalDate.now();
 
         budget.setStartDate(newStart);
-        budget.setLastAlertStatus(null);
+        budget.setLastAlertStatus(BudgetStatus.OK);
     }
 }

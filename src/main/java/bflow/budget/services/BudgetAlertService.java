@@ -29,7 +29,10 @@ public final class BudgetAlertService {
      * @param userId the user ID
      */
     public void evaluate(
-            final BudgetResponse budgetResponse, final UUID userId, final Budget budget) {
+            final BudgetResponse budgetResponse,
+            final UUID userId,
+            final Budget budget
+    ) {
         if (budgetResponse == null || budgetResponse.getStatus() == null) {
             return;
         }
@@ -37,30 +40,33 @@ public final class BudgetAlertService {
         BudgetStatus current = budgetResponse.getStatus();
         BudgetStatus last = budget.getLastAlertStatus();
 
+        if (last == null) {
+            last = BudgetStatus.OK;
+        }
+
         if (current == last) {
             return; // no more double warnings
         }
 
-        switch (budgetResponse.getStatus()) {
-            case WARNING ->
-                    notificationService.sendBudgetWarning(
-                            userId, budgetResponse);
+        if (last == BudgetStatus.OK && current == BudgetStatus.CRITICAL) {
+            notificationService.sendBudgetCritical(userId, budgetResponse);
+        }
+        else if (last == BudgetStatus.OK && current == BudgetStatus.EXCEEDED) {
+            notificationService.sendBudgetExceeded(userId, budgetResponse);
+        }
+        else {
+            switch (current) {
+                case WARNING ->
+                        notificationService.sendBudgetWarning(userId, budgetResponse);
 
-            case CRITICAL ->
-                    notificationService.sendBudgetCritical(
-                            userId,
-                            budgetResponse
-                    );
+                case CRITICAL ->
+                        notificationService.sendBudgetCritical(userId, budgetResponse);
 
-            case EXCEEDED ->
-                    notificationService.sendBudgetExceeded(
-                            userId,
-                            budgetResponse
-                    );
+                case EXCEEDED ->
+                        notificationService.sendBudgetExceeded(userId, budgetResponse);
 
-            default ->
-                    log.debug("No alert needed for budget status: {}",
-                            budgetResponse.getStatus());
+                default -> { }
+            }
         }
 
         budget.setLastAlertStatus(current);

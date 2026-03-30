@@ -67,7 +67,7 @@ public final class BudgetCalculationService {
                     budget.getCategoryId(),
                     start,
                     end
-            );;
+            );
         }
 
         if (spent == null) {
@@ -101,7 +101,15 @@ public final class BudgetCalculationService {
 
         response.setBudgetLimit(budget.getAmount());
         response.setSpent(spent);
-        response.setRemaining(budget.getAmount().subtract(spent));
+
+        BigDecimal remaining = budget.getAmount().subtract(spent);
+
+        if (remaining.compareTo(BigDecimal.ZERO) < 0) {
+            remaining = BigDecimal.ZERO;
+        }
+
+        response.setRemaining(remaining);
+
         response.setPercentage(percentage);
         response.setStatus(status);
 
