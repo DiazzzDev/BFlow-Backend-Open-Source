@@ -6,6 +6,8 @@ import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -36,6 +38,14 @@ public class BudgetRequest {
      * Critical threshold default value.
      */
     private static final int CRITICAL_THRESHOLD_DEFAULT = 90;
+
+    /** The maximum permitted budget-name length. */
+    private static final int NAME_MAX_LENGTH = 100;
+
+    /** The name shown to users and used for searching budgets. */
+    @NotBlank
+    @Size(max = NAME_MAX_LENGTH)
+    private String name;
 
     /**
      * The wallet ID for the budget.

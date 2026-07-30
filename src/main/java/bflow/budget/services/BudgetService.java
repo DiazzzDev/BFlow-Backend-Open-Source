@@ -5,13 +5,14 @@ import bflow.auth.services.UserServiceImpl;
 import bflow.budget.DTO.BudgetPatchRequest;
 import bflow.budget.DTO.BudgetRequest;
 import bflow.budget.DTO.BudgetResponse;
+import bflow.budget.DTO.BudgetSearchCriteria;
 import bflow.budget.DTO.BudgetSummaryResponse;
 import bflow.budget.RepositoryBudget;
 import bflow.budget.entity.Budget;
 import bflow.budget.enums.BudgetScope;
 import bflow.budget.enums.BudgetStatus;
 import bflow.budget.enums.PeriodType;
-import bflow.category.entity.Category;
+import bflow.budget.specifications.BudgetSpecifications;
 import bflow.common.exception.BudgetNotFoundException;
 import bflow.common.exception.WalletAccessDeniedException;
 import bflow.notifications.service.NotificationService;
@@ -19,6 +20,9 @@ import bflow.wallet.RepositoryWalletUser;
 import bflow.wallet.entities.Wallet;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -113,6 +117,7 @@ public class BudgetService {
 
         Budget budget = new Budget();
 
+        budget.setName(request.getName().trim());
         budget.setPeriod(request.getPeriod());
         budget.setAmount(request.getAmount());
         budget.setThresholdWarning(request.getThresholdWarning());
@@ -140,11 +145,7 @@ public class BudgetService {
         budget.setWallet(wallet);
         budget.setScope(request.getScope());
 
-        if (request.getCategoryId() != null) {
-            Category category = new Category();
-            category.setId(request.getCategoryId());
-            budget.setCategory(category);
-        }
+        budget.setCategoryId(request.getCategoryId());
 
         User user = new User();
         user.setId(userId);
@@ -153,6 +154,33 @@ public class BudgetService {
         Budget saved = repositoryBudget.saveAndFlush(budget);
 
         return calculationService.calculate(saved);
+    }
+
+    /**
+     * Searches the authenticated user's budgets with optional, composable
+     * criteria. The repository loads wallets with the page query and the
+     * calculation service uses one projection query for all page expenses,
+     * preventing per-budget lazy-load and aggregation queries.
+     *
+     * @param userId authenticated budget owner
+     * @param criteria optional filters supplied by the client
+     * @param pageable requested page and validated sort
+     * @return calculated budget results retaining the original page metadata
+     */
+    public Page<BudgetResponse> searchBudgets(
+            final UUID userId,
+            final BudgetSearchCriteria criteria,
+            final Pageable pageable
+    ) {
+        userService.validateUserActive(userId);
+
+        Page<Budget> budgets = repositoryBudget.findAll(
+                BudgetSpecifications.from(criteria, userId), pageable);
+
+        List<BudgetResponse> responses = calculationService.calculateAll(
+                budgets.getContent());
+
+        return new PageImpl<>(responses, pageable, budgets.getTotalElements());
     }
 
     /**
@@ -334,10 +362,7 @@ public class BudgetService {
                         ? request.getScope()
                         : budget.getScope();
 
-        UUID currentCategoryId =
-                budget.getCategory() != null
-                        ? budget.getCategory().getId()
-                        : null;
+        UUID currentCategoryId = budget.getCategoryId();
 
         UUID finalCategoryId =
                 request.getCategoryId() != null
@@ -391,13 +416,7 @@ public class BudgetService {
 
         budget.setScope(finalScope);
 
-        if (finalCategoryId != null) {
-            Category category = new Category();
-            category.setId(finalCategoryId);
-            budget.setCategory(category);
-        } else {
-            budget.setCategory(null);
-        }
+        budget.setCategoryId(finalCategoryId);
 
         if (shouldResetAlerts) {
             lifecycleService.resetAlerts(budget);

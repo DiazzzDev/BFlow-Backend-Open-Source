@@ -4,7 +4,6 @@ import bflow.auth.entities.User;
 import bflow.budget.enums.BudgetScope;
 import bflow.budget.enums.BudgetStatus;
 import bflow.budget.enums.PeriodType;
-import bflow.category.entity.Category;
 import bflow.wallet.entities.Wallet;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -16,6 +15,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.Index;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -31,11 +31,14 @@ import java.util.UUID;
  * Budget entity class.
  */
 @Entity
-@Table(name = "budgets")
+@Table(name = "budgets", indexes = {
+        @Index(name = "idx_budgets_user_name", columnList = "user_id, name"),
+        @Index(name = "idx_budgets_user_wallet", columnList = "user_id, wallet_id")
+})
 @Getter
 @Setter
 @NoArgsConstructor
-public class Budget {
+public final class Budget {
     /**
      * The budget ID.
      */
@@ -57,6 +60,12 @@ public class Budget {
     @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
+
+    /**
+     * Human-readable budget name, used by the budget search.
+     */
+    @Column(nullable = false, length = 100)
+    private String name;
 
     /**
      * The budget period type.
@@ -93,9 +102,7 @@ public class Budget {
     /**
      * The category ID (if scope is CATEGORY).
      */
-    @ManyToOne
-    @JoinColumn(name = "category_id")
-    private Category category;
+    private UUID categoryId;
 
     /**
      * The current status of the budget.

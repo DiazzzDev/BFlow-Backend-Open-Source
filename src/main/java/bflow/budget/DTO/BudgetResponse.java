@@ -25,6 +25,10 @@ public class BudgetResponse {
      */
     private UUID walletId;
     /**
+     * The budget name.
+     */
+    private String name;
+    /**
      * The budget period type.
      */
     private PeriodType period;

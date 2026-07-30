@@ -3,7 +3,12 @@ package bflow.budget;
 import bflow.budget.entity.Budget;
 import bflow.budget.enums.BudgetScope;
 import bflow.budget.enums.PeriodType;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -14,7 +19,23 @@ import java.util.UUID;
  * Repository interface for Budget entities.
  */
 @Repository
-public interface RepositoryBudget extends JpaRepository<Budget, UUID> {
+public interface RepositoryBudget extends JpaRepository<Budget, UUID>,
+        JpaSpecificationExecutor<Budget> {
+
+    /**
+     * Finds budgets matching a dynamic specification with their wallets loaded.
+     * Loading the wallet in the original query avoids a query per result while
+     * mapping the page to budget responses.
+     *
+     * @param specification the composed search criteria
+     * @param pageable pagination and sorting configuration
+     * @return a page of matching budgets
+     */
+    @Override
+    @EntityGraph(attributePaths = "wallet")
+    Page<Budget> findAll(Specification<Budget> specification,
+                         Pageable pageable);
+
     /**
      * Find all budgets for a specific wallet.
      *

@@ -10,9 +10,35 @@ import org.springframework.stereotype.Repository;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.UUID;
+import java.util.Collection;
+import java.util.List;
 
 @Repository
 public interface RepositoryExpense extends JpaRepository<Expense, UUID> {
+    /**
+     * Retrieves only the values needed to calculate a page of budgets.
+     * This allows budget results to be calculated with one aggregate source
+     * query instead of one query per budget.
+     *
+     * @param walletIds wallets represented in the budget page
+     * @param categoryIds categories represented in the budget page
+     * @param start earliest budget start date
+     * @param end latest budget end date
+     * @return lightweight expense data for page calculations
+     */
+    @Query("""
+        SELECT e.wallet.id AS walletId, e.category.id AS categoryId,
+               e.date AS date, e.amount AS amount
+        FROM Expense e
+        WHERE (e.wallet.id IN :walletIds OR e.category.id IN :categoryIds)
+        AND e.date BETWEEN :start AND :end
+    """)
+    List<BudgetExpenseData> findBudgetExpenseData(
+            Collection<UUID> walletIds,
+            Collection<UUID> categoryIds,
+            LocalDate start,
+            LocalDate end
+    );
     /**
     * Retrieves expenses belonging to a specific wallet.
     *
