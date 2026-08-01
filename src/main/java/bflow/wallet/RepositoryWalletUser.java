@@ -6,6 +6,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 import org.springframework.data.domain.Pageable;
+
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -46,4 +48,30 @@ public interface RepositoryWalletUser extends JpaRepository<WalletUser, UUID> {
      * @return true if a wallet association exists
      */
     boolean existsByUserId(UUID userId);
+
+    long countByUserIdAndRole(UUID userId, WalletRole role);
+
+    long countByWalletId(UUID walletId);
+
+    boolean existsByWalletIdAndUserId(
+            UUID walletId,
+            UUID userId
+    );
+
+    boolean existsByWalletIdAndUserEmail(
+            UUID walletId,
+            String email
+    );
+
+    Optional<WalletUser> findByWalletIdAndUserEmail(
+            UUID walletId,
+            String email
+    );
+
+    void deleteByWalletIdAndUserId(
+            UUID walletId,
+            UUID userId
+    );
+
+    List<WalletUser> findByWalletId(UUID walletId);
 }

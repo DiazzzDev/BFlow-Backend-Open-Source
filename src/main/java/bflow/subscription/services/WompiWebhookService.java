@@ -153,6 +153,16 @@ public class WompiWebhookService {
             );
         }
 
+        repositorySubscription.findByUserIdAndStatus(
+                subscription.getUser().getId(),
+                        SubscriptionStatus.ACTIVE)
+                .filter(other -> !other.getId().equals(subscription.getId()))
+                .ifPresent(other -> {
+                    other.setStatus(SubscriptionStatus.CANCELED);
+                    other.setCanceledAt(Instant.now());
+                    repositorySubscription.save(other);
+                });
+
         Payment payment = new Payment();
         payment.setUser(subscription.getUser());
         payment.setSubscription(subscription);

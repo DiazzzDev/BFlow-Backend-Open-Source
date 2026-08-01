@@ -39,6 +39,22 @@ public final class ControllerBudget {
     /** Service used to resolve the authenticated user. */
     private final CurrentUserService currentUserService;
 
+    @GetMapping
+    public ApiResponse<List<BudgetResponse>> getBudgets(
+            final Authentication authentication
+    ) {
+        UUID userId = currentUserService.getCurrentUserId(authentication);
+
+        List<BudgetResponse> budgets =
+                budgetService.getBudgets(userId);
+
+        return ApiResponse.success(
+                "Budgets retrieved successfully",
+                budgets,
+                "/api/v1/budgets"
+        );
+    }
+
     /**
      * Get all budgets for a specific wallet.
      *

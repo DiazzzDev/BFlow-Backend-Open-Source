@@ -4,6 +4,7 @@ import bflow.auth.services.CurrentUserService;
 import bflow.expenses.DTO.ExpenseResponse;
 import bflow.income.DTO.IncomeResponse;
 import bflow.wallet.DTO.UpdateWalletRequest;
+import bflow.wallet.DTO.WalletMemberResponse;
 import bflow.wallet.DTO.WalletRequest;
 import bflow.wallet.DTO.WalletResponse;
 import bflow.common.response.ApiResponse;
@@ -23,6 +24,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import java.net.URI;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -165,6 +167,28 @@ public final class ControllerWallet {
         );
 
         return response;
+    }
+
+    @GetMapping("/{id}/members")
+    public ApiResponse<List<WalletMemberResponse>> getWalletMembers(
+            @PathVariable final UUID id,
+            final Authentication authentication,
+            final HttpServletRequest request
+    ) {
+
+        UUID userId = currentUserService.getCurrentUserId(authentication);
+
+        List<WalletMemberResponse> members =
+                serviceWallet.getWalletMembers(
+                        id,
+                        userId
+                );
+
+        return ApiResponse.success(
+                "Wallet members retrieved successfully.",
+                members,
+                request.getRequestURI()
+        );
     }
 
     /**

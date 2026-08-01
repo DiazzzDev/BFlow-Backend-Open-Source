@@ -14,6 +14,8 @@ import bflow.recurring.DTO.RecurringResponse;
 import bflow.recurring.RepositoryRecurringTransaction;
 import bflow.recurring.entity.RecurringTransaction;
 import bflow.recurring.enums.RecurringType;
+import bflow.subscription.FeatureCodes;
+import bflow.subscription.services.PlanLimitService;
 import bflow.wallet.RepositoryWalletUser;
 import bflow.wallet.entities.Wallet;
 import bflow.wallet.entities.WalletUser;
@@ -56,6 +58,8 @@ public class RecurringExecutionService {
      * Repository for wallet user associations.
      */
     private final RepositoryWalletUser repositoryWalletUser;
+
+    private final PlanLimitService planLimitService;
 
     /**
      * Execute all due recurring transactions on the current date.
@@ -102,6 +106,10 @@ public class RecurringExecutionService {
             final UUID userId
     ) {
         userService.validateUserActive(userId);
+
+        planLimitService.assertCanCreate(
+                userId, FeatureCodes.RECURRING_TRANSACTIONS,
+                repository.countByUserIdAndActiveTrue(userId));
 
         WalletUser walletUser = repositoryWalletUser
                 .findByWalletIdAndUserId(request.getWalletId(), userId)

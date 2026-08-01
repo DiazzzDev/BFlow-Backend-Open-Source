@@ -18,12 +18,5 @@ public interface RepositoryPlan extends JpaRepository<Plan, UUID> {
      */
     Optional<Plan> findByCode(String code);
 
-    /**
-     * Find a plan by its provider link identifier.
-     *
-     * @param providerLinkId the Wompi provider link identifier
-     * @return optional plan matching the identifier
-     */
-    Optional<Plan> findByProviderLinkId(String providerLinkId);
 }
 

@@ -138,4 +138,6 @@ public interface RepositorySubscription
             String checkoutReference,
             SubscriptionStatus status
     );
+
+    Optional<Subscription> findByUserIdAndStatus(UUID userId, SubscriptionStatus status);
 }

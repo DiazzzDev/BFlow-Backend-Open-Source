@@ -4,8 +4,10 @@ import bflow.auth.services.CurrentUserService;
 import bflow.common.response.ApiResponse;
 import bflow.subscription.dto.CheckoutRequest;
 import bflow.subscription.dto.CheckoutResponse;
+import bflow.subscription.dto.CurrentSubscriptionResponse;
 import bflow.subscription.dto.SubscriptionResponse;
 import bflow.subscription.services.PaymentService;
+import bflow.subscription.services.PlanLimitService;
 import bflow.subscription.services.SubscriptionService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -36,6 +38,8 @@ public final class SubscriptionController {
     /** Service used to resolve the authenticated user identifier. */
     private final CurrentUserService currentUserService;
 
+    private final PlanLimitService planLimitService;
+
     /**
      * Retrieve the subscriptions owned by the currently authenticated user.
      *
@@ -56,6 +60,16 @@ public final class SubscriptionController {
                 result,
                 request.getRequestURI()
         );
+    }
+
+    @GetMapping("/current")
+    public ApiResponse<CurrentSubscriptionResponse> current(
+            final Authentication authentication,
+            final HttpServletRequest request
+    ) {
+        UUID userId = currentUserService.getCurrentUserId(authentication);
+        CurrentSubscriptionResponse result = planLimitService.getCurrentSubscriptionInfo(userId);
+        return ApiResponse.success("Suscripción actual", result, request.getRequestURI());
     }
 
     /**

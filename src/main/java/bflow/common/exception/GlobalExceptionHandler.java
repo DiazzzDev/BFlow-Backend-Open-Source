@@ -4,6 +4,7 @@ import bflow.common.response.ApiResponse;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.IncorrectResultSizeDataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
@@ -431,5 +432,63 @@ public final class GlobalExceptionHandler {
                 message,
                 request.getRequestURI()
         );
+    }
+
+    @ExceptionHandler(PlanLimitExceededException.class)
+    public ResponseEntity<ApiResponse<Void>> handlePlanLimitExceeded(
+            final PlanLimitExceededException ex,
+            final HttpServletRequest request
+    ) {
+        return ResponseEntity
+                .status(HttpStatus.PAYMENT_REQUIRED)
+                .body(ApiResponse.error(ex.getMessage(), request.getRequestURI()));
+    }
+
+    @ExceptionHandler(IncorrectResultSizeDataAccessException.class)
+    public ResponseEntity<ApiResponse<Void>> handleIncorrectResultSize(
+            IncorrectResultSizeDataAccessException ex,
+            HttpServletRequest request
+    ) {
+
+        log.error(
+                "Database inconsistency at {}",
+                request.getRequestURI(),
+                ex
+        );
+
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(ApiResponse.error(
+                        "A data consistency problem was detected.",
+                        request.getRequestURI()
+                ));
+    }
+
+    /**
+     * Handles business conflict exceptions.
+     *
+     * @param ex the exception.
+     * @param request the current request.
+     * @return error response with CONFLICT status.
+     */
+    @ExceptionHandler(ConflictException.class)
+    public ResponseEntity<ApiResponse<Void>> handleConflict(
+        final ConflictException ex,
+        final HttpServletRequest request
+    ) {
+
+        log.warn(
+                "BUSINESS CONFLICT at {} {} - {}",
+                request.getMethod(),
+                request.getRequestURI(),
+                ex.getMessage()
+        );
+
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(ApiResponse.error(
+                        ex.getMessage(),
+                        request.getRequestURI()
+                ));
     }
 }

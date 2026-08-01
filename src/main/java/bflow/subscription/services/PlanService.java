@@ -31,21 +31,4 @@ public class PlanService {
                                 "Free plan not found"
                         ));
     }
-
-    /**
-     * Retrieve the plan identified by the provided plan code.
-     *
-     * @param code plan code
-     * @return the matching Plan entity
-     */
-    public Plan getByCode(final String code) {
-
-        return repositoryPlan
-                .findByCode(code)
-                .orElseThrow(() ->
-                        new NotFoundException(
-                                "Plan not found"
-                        ));
-    }
-
 }

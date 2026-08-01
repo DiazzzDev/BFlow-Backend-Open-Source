@@ -37,4 +37,6 @@ public interface RepositoryRecurringTransaction
      * @return list of recurring transactions
      */
     List<RecurringTransaction> findByUserId(UUID userId);
+
+    long countByUserIdAndActiveTrue(UUID userId);
 }

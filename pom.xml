@@ -156,13 +156,6 @@
             			</exclude>
         			</excludes>
     			</configuration>
-    			<executions>
-        			<execution>
-            			<goals>
-                			<goal>build-info</goal>
-            			</goals>
-        			</execution>
-    			</executions>
 			</plugin>
 			<plugin>
 				<groupId>org.jacoco</groupId>
@@ -200,24 +193,6 @@
 								</rule>
 							</rules>
 						</configuration>
-					</execution>
-				</executions>
-			</plugin>
-			<plugin>
-				<groupId>pl.project13.maven</groupId>
-				<artifactId>git-commit-id-plugin</artifactId>
-				<version>4.9.10</version>
-
-				<configuration>
-					<failOnNoGitDirectory>false</failOnNoGitDirectory>
-					<generateGitPropertiesFile>true</generateGitPropertiesFile>
-				</configuration>
-
-				<executions>
-					<execution>
-						<goals>
-							<goal>revision</goal>
-						</goals>
 					</execution>
 				</executions>
 			</plugin>

@@ -6,7 +6,11 @@ import org.springframework.stereotype.Service;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
 
+import java.time.Instant;
 import java.time.Year;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
+import java.util.Locale;
 
 /**
  * Service for sending email notifications with templated content.
@@ -146,5 +150,47 @@ public final class EmailTemplateService {
         sesEmailService.sendEmail(
                 toEmail, "Your " + planName + " plan is renewing soon", html
         );
-        }
+    }
+
+    public void sendWalletInvitationEmail(
+            final String toEmail,
+            final String inviterName,
+            final String walletName,
+            final String token,
+            final Instant expiresAt
+    ) {
+
+        String invitationUrl =
+                frontendUrl.replaceAll("/+$", "")
+                        + "/invitations/"
+                        + token;
+
+        String formattedExpiresAt =
+                DateTimeFormatter.ofPattern(
+                                "MMMM d, yyyy 'at' h:mm a z",
+                                Locale.ENGLISH
+                        )
+                        .format(expiresAt.atZone(ZoneOffset.UTC));
+
+        Context context = new Context();
+
+        context.setVariable("inviterName", inviterName);
+        context.setVariable("walletName", walletName);
+        context.setVariable("invitationUrl", invitationUrl);
+        context.setVariable("expiresAt", formattedExpiresAt);
+        context.setVariable("year", Year.now().getValue());
+        context.setVariable("supportEmail", supportEmail);
+        context.setVariable("logoUrl", logoUrl);
+
+        String html = templateEngine.process(
+                "wallet-invitation",
+                context
+        );
+
+        sesEmailService.sendEmail(
+                toEmail,
+                inviterName + " invited you to collaborate on a wallet",
+                html
+        );
+    }
 }
