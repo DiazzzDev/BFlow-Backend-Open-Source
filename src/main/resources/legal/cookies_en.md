@@ -1,12 +1,12 @@
 # COOKIE POLICY
 
-**Last updated** April 16, 2026
+**Last updated** August 3, 2026
 
 ## Overview
 
-This Cookie Policy explains how BFlow Studio ("we," "us," "our") uses cookies on our personal finance tracking application, accessible at https://bflow-studio.com ("Application"). Our use of cookies is minimal and focused exclusively on essential security and authentication functions.
+This Cookie Policy explains how BFlow Studio ("we," "us," "our") uses cookies in our personal finance management application, accessible at https://bflow-studio.com ("Application"). Our use of cookies is minimal and focused exclusively on essential security and authentication functions.
 
-**Key takeaway:** We use only strictly necessary cookies for authentication and session management. We do not use cookies for analytics, advertising, behavioral tracking, or profiling.
+**Most important:** We use only strictly necessary cookies for authentication and session management. We do not use cookies for analytics, advertising, behavioral tracking, or profiling.
 
 ---
 
@@ -18,52 +18,43 @@ Cookies are small data files stored on your device when you use a website or app
 
 ## What cookies does BFlow use?
 
-BFlow uses **only strictly necessary (essential) cookies** for authentication and security purposes:
+BFlow uses strictly necessary cookies managed as part of the Amazon Cognito authentication service. These cookies allow you to sign in, maintain an authenticated session, renew authentication when appropriate, and protect the authentication process.
 
-### Essential Authentication Cookies
+In BFlow's current configuration, the authentication service uses tokens with the following approximate validity periods:
 
-We use two types of secure cookies:
+Access token: up to 60 minutes.
+Refresh token: up to 14 days.
 
-1. **Access Token Cookie**
-   - **Purpose:** Authenticates your identity and maintains your active session
-   - **Duration:** Short-lived (expires after a brief period of inactivity)
-   - **Behavior:** Automatically cleared when you log out
+The cookies used by Amazon Cognito to manage the session may have a different duration depending on the service's internal operation.
 
-2. **Refresh Token Cookie**
-   - **Purpose:** Securely refreshes your authentication without requiring you to log in again
-   - **Duration:** Longer-lived to enable convenient session continuity
-   - **Behavior:** Automatically cleared when you log out
+Authentication cookies are set by the Amazon Cognito service as part of the authentication infrastructure used by BFlow. These cookies are used exclusively for authentication and security purposes, and not for advertising, analytics, behavior tracking, or cross-site tracking.
 
-### Security Features of Our Cookies
-
-All our cookies are configured with security best practices:
-
-- **HTTP-only:** Cookies cannot be accessed by JavaScript, protecting them from certain types of attacks
-- **Secure flag:** Cookies are only transmitted over encrypted HTTPS connections
-- **Signed tokens:** All authentication tokens use RS256 cryptographic signing to prevent tampering
-- **First-party only:** Cookies are set and controlled solely by BFlow
+Because BFlow uses Amazon Cognito as its authentication provider, the technical names, number, attributes, or lifetimes of the cookies used by that service may change as a result of updates made by Amazon Web Services (AWS), without changing the purpose of the cookies or the use of cookies for advertising, analytics, or tracking.
 
 ---
 
 ## What BFlow does NOT use cookies for
 
-To ensure your privacy and transparency, we explicitly clarify what we **do not** do:
+To ensure your privacy and transparency, we explicitly clarify what we do not do:
 
 - **No analytics cookies** – We do not use Google Analytics, Mixpanel, or similar services
 - **No advertising cookies** – We do not track you for advertising purposes
-- **No behavioral tracking** – We do not profile your behavior or build usage profiles
-- **No third-party cookies** – We do not allow third-party services to set cookies on your device
-- **No cross-site tracking** – We do not track your activity across other websites
+- **No behavioral tracking** – We do not create profiles of your behavior or use
+- We do not use cookies to track your activity for advertising, profiling, or behavioral analysis across websites.
+
+Amazon Cognito is part of Amazon Web Services (AWS) and acts as BFlow's authentication provider. As a result, certain essential cookies are processed within the infrastructure operated by AWS exclusively to provide the authentication service and maintain session security.
+
+Because the authentication service is provided by Amazon Cognito (AWS), BFlow does not control the internal implementation of the technical cookies used by that service. Any changes made by Amazon Web Services regarding those cookies will apply automatically to the authentication process used by the Application.
 
 ---
 
 ## Do I have to accept these cookies?
 
-Essential cookies are required for the Application to function securely. Unlike non-essential cookies (which we do not use), you cannot selectively disable essential authentication cookies while maintaining access to your account.
+Essential cookies are necessary for the Application to function securely. Unlike non-essential cookies (which we do not use), you cannot selectively disable essential authentication cookies while maintaining access to your account.
 
-If you choose to block or delete these cookies from your browser settings, you will be unable to log in or maintain an authenticated session. However, if you disable cookies and clear them, we can create new ones when you log in again—your choice is fully in your control.
+If you choose to block or delete these cookies from your browser settings, you will not be able to sign in or maintain an authenticated session. However, if you disable and delete cookies, new essential cookies may be set automatically by the authentication service when you sign in again.
 
-**Note:** We do not have a cookie preference center because we only use essential cookies and do not use analytics, advertising, or tracking cookies that would require user consent to disable.
+**Note:** We do not have a cookie preferences center because we only use essential cookies and do not use analytics, advertising, or tracking cookies that require user consent to disable.
 
 ---
 
@@ -72,9 +63,9 @@ If you choose to block or delete these cookies from your browser settings, you w
 Most web browsers allow you to control how cookies are stored. If you want to manage your browser's cookie settings, consult your browser's help documentation:
 
 - [Chrome Help](https://support.google.com/chrome)
-- [Safari Help](https://support.apple.com/en-us/111886)
-- [Firefox Help](https://support.mozilla.org/en-US/products/firefox)
-- [Microsoft Edge Help](https://support.microsoft.com/en-us/edge)
+- [Safari Help](https://support.apple.com/es-es)
+- [Firefox Help](https://support.mozilla.org/es-ES/products/firefox)
+- [Microsoft Edge Help](https://support.microsoft.com/es-es/edge)
 
 **Important:** Disabling cookies in your browser will prevent you from using BFlow, as our authentication cookies are essential.
 
@@ -82,22 +73,22 @@ Most web browsers allow you to control how cookies are stored. If you want to ma
 
 ## Privacy and data protection
 
-Our minimal use of cookies is aligned with privacy best practices and international data protection regulations including GDPR and ePrivacy Directive standards. For complete information on how we handle your data, please refer to our [Privacy Policy](https://bflow-studio.com/privacy).
+Our limited use of cookies seeks to follow good international privacy and information security practices. For complete information about the processing of personal data, please refer to our [Privacy Policy](https://bflow-studio.com/privacy).
 
 ---
 
 ## Changes to this Cookie Policy
 
-We may update this Cookie Policy from time to time to reflect changes in our technology, security practices, or applicable regulations. We will notify you of any material changes by updating the date at the top of this policy. We encourage you to review this policy periodically to stay informed.
+We may update this Cookie Policy from time to time to reflect changes in our technology, security practices, or applicable regulations. We will notify you of any material changes by updating the date at the top of this policy. We recommend that you review this policy periodically to stay informed.
 
 ---
 
 ## Contact us
 
-If you have any questions about our use of cookies, authentication, or privacy practices, please contact us:
+If you believe that any cookie is being used differently than described in this policy, you may contact us through:
 
 **BFlow Studio**  
 support@bflow-studio.com  
 El Salvador
 
-We're committed to transparency and will be happy to address your privacy concerns.
+We are committed to transparency and will be happy to address your privacy concerns.

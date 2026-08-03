@@ -6,6 +6,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 import org.springframework.data.domain.Pageable;
+
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -46,4 +48,78 @@ public interface RepositoryWalletUser extends JpaRepository<WalletUser, UUID> {
      * @return true if a wallet association exists
      */
     boolean existsByUserId(UUID userId);
+
+     /**
+     * Counts the number of wallets where the user has the specified role.
+     *
+     * @param userId the user UUID
+     * @param role the wallet role
+     * @return the number of matching wallet memberships
+     */
+    long countByUserIdAndRole(UUID userId, WalletRole role);
+
+    /**
+     * Counts the total number of members in a wallet.
+     *
+     * @param walletId the wallet UUID
+     * @return the total number of wallet members
+     */
+    long countByWalletId(UUID walletId);
+
+    /**
+     * Checks whether a user belongs to the specified wallet.
+     *
+     * @param walletId the wallet UUID
+     * @param userId the user UUID
+     * @return {@code true} if the user belongs to the wallet,
+     * otherwise {@code false}
+     */
+    boolean existsByWalletIdAndUserId(
+            UUID walletId,
+            UUID userId
+    );
+
+    /**
+     * Checks whether a user with the specified email belongs to the wallet.
+     *
+     * @param walletId the wallet UUID
+     * @param email the user's email address
+     * @return {@code true} if the user belongs to the wallet,
+     * otherwise {@code false}
+     */
+    boolean existsByWalletIdAndUserEmail(
+            UUID walletId,
+            String email
+    );
+
+    /**
+     * Finds a wallet membership by wallet ID and user email.
+     *
+     * @param walletId the wallet UUID
+     * @param email the user's email address
+     * @return an optional containing the wallet membership if found
+     */
+    Optional<WalletUser> findByWalletIdAndUserEmail(
+            UUID walletId,
+            String email
+    );
+
+    /**
+     * Deletes the relationship between a wallet and a user.
+     *
+     * @param walletId the wallet UUID
+     * @param userId the user UUID
+     */
+    void deleteByWalletIdAndUserId(
+            UUID walletId,
+            UUID userId
+    );
+
+    /**
+     * Finds all members associated with the specified wallet.
+     *
+     * @param walletId the wallet UUID
+     * @return a list of wallet members
+     */
+    List<WalletUser> findByWalletId(UUID walletId);
 }

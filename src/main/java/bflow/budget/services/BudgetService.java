@@ -15,12 +15,14 @@ import bflow.category.entity.Category;
 import bflow.common.exception.BudgetNotFoundException;
 import bflow.common.exception.WalletAccessDeniedException;
 import bflow.notifications.service.NotificationService;
+import bflow.subscription.FeatureCodes;
+import bflow.subscription.services.PlanLimitService;
 import bflow.wallet.RepositoryWalletUser;
 import bflow.wallet.entities.Wallet;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-
+import org.springframework.transaction.annotation.Transactional;
+import jakarta.persistence.EntityManager;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
@@ -73,6 +75,16 @@ public class BudgetService {
     private final BudgetOverlapValidationService overlapValidationService;
 
     /**
+     * Service responsible for enforcing subscription plan limits.
+     */
+    private final PlanLimitService planLimitService;
+
+    /**
+     * Entity manager used for persistence operations.
+     */
+    private final EntityManager entityManager;
+
+    /**
      * Get the status of a specific budget.
      *
      * @param budgetId the budget ID
@@ -88,6 +100,20 @@ public class BudgetService {
         Budget budget = getOwnedBudget(budgetId, userId);
 
         return calculationService.calculate(budget);
+    }
+
+    /**
+     * Retrieves all budgets owned by the specified user.
+     *
+     * @param userId the user UUID
+     * @return a list of budgets ordered by the most recently updated
+     */
+    @Transactional(readOnly = true)
+    public List<BudgetResponse> getBudgets(final UUID userId) {
+        return repositoryBudget.findAllByUserIdOrderByUpdatedAtDesc(userId)
+                .stream()
+                .map(this::toResponse)
+                .toList();
     }
 
     /**
@@ -111,6 +137,12 @@ public class BudgetService {
         validationService.validateAmount(request.getAmount());
         validationService.validateStartDate(request.getStartDate());
 
+        planLimitService.assertCanCreate(
+            userId,
+            FeatureCodes.BUDGETS,
+            repositoryBudget.countByUserId(userId)
+        );
+
         Budget budget = new Budget();
 
         budget.setPeriod(request.getPeriod());
@@ -119,8 +151,10 @@ public class BudgetService {
         budget.setThresholdCritical(request.getThresholdCritical());
         budget.setStartDate(request.getStartDate());
 
-        Wallet wallet = new Wallet();
-        wallet.setId(walletId);
+        Wallet wallet = entityManager.getReference(
+                Wallet.class,
+                walletId
+        );
 
         //If the user sets an wallet that it's not theirs throw exception
         validateWalletAccess(walletId, userId);
@@ -451,6 +485,36 @@ public class BudgetService {
                                 "Budget not found"
                         )
                 );
+    }
+
+    /**
+     * Parse entity to response.
+     *
+     * @param budget the entity of the budget to parse
+     * @return the dto response
+     */
+    public BudgetResponse toResponse(final Budget budget) {
+        BudgetResponse response = new BudgetResponse();
+
+        response.setId(budget.getId());
+        response.setWalletId(budget.getWallet().getId());
+        response.setWalletName(budget.getWallet().getName());
+
+        if (budget.getCategory() != null) {
+                response.setCategoryId(budget.getCategory().getId());
+                response.setCategoryName(budget.getCategory().getName());
+        }
+
+        response.setScope(budget.getScope());
+        response.setPeriod(budget.getPeriod());
+        response.setBudgetLimit(budget.getAmount());
+        response.setThresholdWarning(budget.getThresholdWarning());
+        response.setThresholdCritical(budget.getThresholdCritical());
+        response.setStartDate(budget.getStartDate());
+        response.setStatus(budget.getLastAlertStatus());
+        response.setUpdatedAt(budget.getUpdatedAt());
+
+        return response;
     }
 
 }
