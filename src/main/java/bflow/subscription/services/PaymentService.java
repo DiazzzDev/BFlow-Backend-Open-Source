@@ -44,6 +44,9 @@ public class PaymentService {
     /** Client used to talk to the Wompi payment API. */
     private final WompiApiClient wompiApiClient;
 
+    /**
+     * Time zone used by Wompi for billing date calculations.
+     */
     private static final ZoneId WOMPI_ZONE = ZoneId.of("America/El_Salvador");
 
     /**

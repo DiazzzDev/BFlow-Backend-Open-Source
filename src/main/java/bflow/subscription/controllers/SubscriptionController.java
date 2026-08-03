@@ -38,6 +38,10 @@ public final class SubscriptionController {
     /** Service used to resolve the authenticated user identifier. */
     private final CurrentUserService currentUserService;
 
+    /**
+     * Service responsible for validating subscription plan limits
+     * and feature availability.
+     */
     private final PlanLimitService planLimitService;
 
     /**
@@ -62,14 +66,25 @@ public final class SubscriptionController {
         );
     }
 
+    /**
+     * Retrieves information about the current subscription for the
+     * authenticated user.
+     *
+     * @param authentication authenticated user context
+     * @param request the incoming HTTP request
+     * @return a standard API response with the current subscription details
+     */
     @GetMapping("/current")
     public ApiResponse<CurrentSubscriptionResponse> current(
             final Authentication authentication,
             final HttpServletRequest request
     ) {
         UUID userId = currentUserService.getCurrentUserId(authentication);
-        CurrentSubscriptionResponse result = planLimitService.getCurrentSubscriptionInfo(userId);
-        return ApiResponse.success("Suscripción actual", result, request.getRequestURI());
+        CurrentSubscriptionResponse result =
+                planLimitService.getCurrentSubscriptionInfo(userId);
+        return ApiResponse.success(
+                "Suscripción actual", result, request.getRequestURI()
+        );
     }
 
     /**

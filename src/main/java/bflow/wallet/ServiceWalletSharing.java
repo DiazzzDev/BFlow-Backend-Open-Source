@@ -29,15 +29,49 @@ import java.util.UUID;
 @Transactional
 public class ServiceWalletSharing {
 
+    /**
+     * Invitation expiration period.
+     */
     private static final Duration INVITATION_EXPIRATION = Duration.ofDays(7);
 
+    /**
+     * Repository for wallet members.
+     */
     private final RepositoryWalletUser repositoryWalletUser;
+
+    /**
+     * Repository for wallet invitations.
+     */
     private final RepositoryWalletInvitation repositoryWalletInvitation;
+
+    /**
+     * Repository for application users.
+     */
     private final RepositoryUser repositoryUser;
+
+    /**
+     * Service responsible for enforcing subscription plan limits.
+     */
     private final PlanLimitService planLimitService;
+
+    /**
+     * Service responsible for sending email notifications.
+     */
     private final EmailTemplateService emailTemplateService;
+
+    /**
+     * Service responsible for wallet operations.
+     */
     private final ServiceWallet serviceWallet;
 
+    /**
+     * Creates and sends a wallet invitation to the specified email address.
+     *
+     * @param walletId the wallet UUID
+     * @param inviterUserId the owner sending the invitation
+     * @param invitedEmail the email address of the invited user
+     * @return the created invitation
+     */
     public WalletInvitationResponse inviteMember(
         final UUID walletId,
         final UUID inviterUserId,
@@ -194,6 +228,13 @@ public class ServiceWalletSharing {
         );
     }
 
+    /**
+     * Accepts a pending wallet invitation.
+     *
+     * @param token the invitation token
+     * @param acceptingUserId the user accepting the invitation
+     * @return the updated wallet information
+     */
     public WalletResponse acceptInvitation(
             final String token,
             final UUID acceptingUserId
@@ -326,6 +367,12 @@ public class ServiceWalletSharing {
         }
     }
 
+    /**
+     * Rejects a pending wallet invitation.
+     *
+     * @param token the invitation token
+     * @param rejectingUserId the user rejecting the invitation
+     */
     public void rejectInvitation(
             final String token,
             final UUID rejectingUserId
@@ -350,6 +397,12 @@ public class ServiceWalletSharing {
         repositoryWalletInvitation.save(invitation);
     }
 
+    /**
+     * Cancels a pending wallet invitation.
+     *
+     * @param invitationId the invitation UUID
+     * @param ownerUserId the wallet owner's UUID
+     */
     public void cancelInvitation(
             final UUID invitationId,
             final UUID ownerUserId
@@ -377,6 +430,13 @@ public class ServiceWalletSharing {
         repositoryWalletInvitation.save(invitation);
     }
 
+    /**
+     * Removes a member from a shared wallet.
+     *
+     * @param walletId the wallet UUID
+     * @param ownerUserId the wallet owner's UUID
+     * @param memberUserId the member UUID to remove
+     */
     public void removeMember(
             final UUID walletId,
             final UUID ownerUserId,
@@ -399,6 +459,15 @@ public class ServiceWalletSharing {
         repositoryWalletUser.delete(member);
     }
 
+    /**
+     * Retrieves all pending wallet invitations for the specified user.
+     *
+     * Only invitations that have not expired are returned.
+     *
+     * @param userId the user identifier
+     * @return a list of pending wallet invitations
+     * @throws NotFoundException if the user does not exist
+     */
     public List<WalletInvitationResponse> getPendingInvitations(
             final UUID userId
     ) {

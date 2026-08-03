@@ -34,31 +34,41 @@ import java.util.UUID;
 @RequiredArgsConstructor
 @Transactional
 public class RecurringExecutionService {
+
     /**
      * Repository for recurring transaction persistence.
      */
     private final RepositoryRecurringTransaction repository;
+
     /**
      * Service for expense operations.
      */
     private final ServiceExpense serviceExpense;
+
     /**
      * Service for income operations.
      */
     private final ServiceIncome serviceIncome;
+
     /**
      * Service for user validation.
      */
     private final UserServiceImpl userService;
+
     /**
      * Repository for category persistence.
      */
     private final RepositoryCategory repositoryCategory;
+
     /**
      * Repository for wallet user associations.
      */
     private final RepositoryWalletUser repositoryWalletUser;
 
+    /**
+     * Service responsible for enforcing subscription plan
+     * limits and feature availability.
+     */
     private final PlanLimitService planLimitService;
 
     /**

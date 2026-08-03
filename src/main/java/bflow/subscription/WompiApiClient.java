@@ -34,6 +34,7 @@ public class WompiApiClient {
     /** Wompi application identifier. */
     private final String idAplicativo;
 
+    /** JSON mapper used to parse Wompi API responses. */
     private final ObjectMapper objectMapper;
 
     /** Cached access token. */
@@ -43,25 +44,29 @@ public class WompiApiClient {
     private volatile Instant tokenExpiry = Instant.EPOCH;
 
     /**
-     * Create the Wompi API client.
+     * Creates the Wompi API client.
      *
      * @param builder the REST client builder
-     * @param clientId the OAuth client identifier
-     * @param clientSecret the OAuth client secret
-     * @param idAplicativo the Wompi app identifier
+     * @param mapper the JSON object mapper
+     * @param oauthClientId the OAuth client identifier
+     * @param oauthClientSecret the OAuth client secret
+     * @param applicationId the Wompi application identifier
      */
     public WompiApiClient(
-            RestClient.Builder builder,
-            ObjectMapper objectMapper,
-            @Value("${wompi.client-id}") String clientId,
-            @Value("${wompi.client-secret}") String clientSecret,
-            @Value("${wompi.app-id}") String idAplicativo
+        final RestClient.Builder builder,
+        final ObjectMapper mapper,
+        @Value("${wompi.client-id}")
+        final String oauthClientId,
+        @Value("${wompi.client-secret}")
+        final String oauthClientSecret,
+        @Value("${wompi.app-id}")
+        final String applicationId
     ) {
         this.restClient = builder.baseUrl("https://api.wompi.sv").build();
-        this.objectMapper = objectMapper;
-        this.clientId = clientId;
-        this.clientSecret = clientSecret;
-        this.idAplicativo = idAplicativo;
+        this.objectMapper = mapper;
+        this.clientId = oauthClientId;
+        this.clientSecret = oauthClientSecret;
+        this.idAplicativo = applicationId;
     }
 
     /**
@@ -75,13 +80,13 @@ public class WompiApiClient {
         }
 
         var response = RestClient.create("https://id.wompi.sv")
-                .post()
-                .uri("/connect/token")
-                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                .body("grant_type=client_credentials&client_id=%s&client_secret=%s"
-                        .formatted(clientId, clientSecret))
-                .retrieve()
-                .body(TokenResponse.class);
+            .post()
+            .uri("/connect/token")
+            .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+            .body("grant_type=client_credentials&client_id=%s&client_secret=%s"
+                .formatted(clientId, clientSecret))
+            .retrieve()
+            .body(TokenResponse.class);
 
         cachedToken = response.accessToken();
         tokenExpiry = Instant.now().plusSeconds(
@@ -129,21 +134,38 @@ public class WompiApiClient {
         try {
             node = objectMapper.readTree(raw);
         } catch (Exception e) {
-            throw new IllegalStateException("Respuesta de Wompi no es JSON válido: " + raw, e);
+            throw new IllegalStateException(
+                "Respuesta de Wompi no es JSON válido: " + raw, e
+            );
         }
 
         String id = firstNonNullText(node, "id", "idEnlace");
-        String urlSuscribirse = firstNonNullText(node, "urlCortaSuscribirse", "urlEnlace", "urlLargaSuscribirse");
+        String urlSuscribirse = firstNonNullText(
+                node,
+                "urlCortaSuscribirse", "urlEnlace", "urlLargaSuscribirse"
+        );
 
         if (id == null || urlSuscribirse == null) {
             throw new IllegalStateException(
-                    "Respuesta de Wompi sin los campos esperados (id/url). JSON crudo: " + raw);
+                "Respuesta de Wompi sin los campos esperados "
+                + "(id/url). JSON crudo: " + raw
+            );
         }
 
         return new RecurringLinkResponse(id, urlSuscribirse);
     }
 
-    private String firstNonNullText(JsonNode node, String... candidateFields) {
+    /**
+     * Returns the first non-null text value from the provided JSON node.
+     *
+     * @param node source JSON node
+     * @param candidateFields candidate field names
+     * @return the first non-null text value, or {@code null} if none exists
+     */
+    private String firstNonNullText(
+        final JsonNode node,
+        final String... candidateFields
+    ) {
         for (String field : candidateFields) {
             JsonNode value = node.get(field);
             if (value != null && !value.isNull()) {
@@ -164,7 +186,7 @@ public class WompiApiClient {
             .uri("/EnlacePagoRecurrente/{id}/suscripciones", idEnlace)
             .header("Authorization", "Bearer " + getAccessToken())
             .retrieve()
-            .body(new ParameterizedTypeReference<List<SubscriberInfo>>() {});
+            .body(new ParameterizedTypeReference<List<SubscriberInfo>>() { });
     }
 
     /**
@@ -227,7 +249,9 @@ public class WompiApiClient {
             @JsonProperty("expires_in") int expiresIn
     ) { }
 
-    public record RecurringLinkResponse(String id, String urlCortaSuscribirse) { }
+    public record RecurringLinkResponse(
+        String id, String urlCortaSuscribirse
+    ) { }
 
     public record SubscriberInfo(
             String id,

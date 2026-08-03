@@ -5,7 +5,6 @@ import bflow.subscription.WompiApiClient;
 import bflow.subscription.dto.SubscriptionResponse;
 import bflow.subscription.entities.Plan;
 import bflow.subscription.entities.Subscription;
-import bflow.subscription.enums.BillingPeriod;
 import bflow.subscription.enums.SubscriptionStatus;
 import bflow.subscription.repository.RepositorySubscription;
 import jakarta.persistence.EntityNotFoundException;
@@ -16,7 +15,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.UUID;
 
@@ -130,42 +128,26 @@ public class SubscriptionService {
      * Create a free subscription for a newly registered user.
      *
      * @param user the user entity
-     * @return the created or existing free subscription
      */
     @Transactional
-    public Subscription createFreeSubscription(final User user) {
+    public void createFreeSubscription(final User user) {
 
-        if (repositorySubscription.existsByUserId(user.getId())) {
-            return repositorySubscription
-                    .findByUserId(user.getId())
-                    .orElseThrow();
-        }
+        repositorySubscription
+                .findByUserIdAndStatus(user.getId(), SubscriptionStatus.ACTIVE)
+                .filter(s -> s.getPlan().getCode().equals("FREE"))
+                .orElseGet(() -> {
+                    Plan freePlan = planService.getFreePlan();
 
-        Plan freePlan = planService.getFreePlan();
+                    Subscription subscription = new Subscription();
+                    subscription.setUser(user);
+                    subscription.setPlan(freePlan);
+                    subscription.setStatus(SubscriptionStatus.ACTIVE);
+                    subscription.setBillingAmount(freePlan.getPrice());
+                    subscription.setStartsAt(Instant.now());
+                    subscription.setAutoRenew(false);
 
-        Subscription subscription = new Subscription();
-
-        subscription.setUser(user);
-        subscription.setPlan(freePlan);
-        subscription.setStatus(SubscriptionStatus.ACTIVE);
-        subscription.setBillingAmount(freePlan.getPrice());
-
-        Instant now = Instant.now();
-        subscription.setStartsAt(now);
-
-        if (freePlan.getBillingPeriod() == BillingPeriod.YEARLY) {
-            Instant ends = now.plus(DAYS_PER_YEAR, ChronoUnit.DAYS);
-            subscription.setEndsAt(ends);
-            subscription.setNextBillingAt(ends);
-        } else {
-            Instant ends = now.plus(DAYS_PER_MONTH, ChronoUnit.DAYS);
-            subscription.setEndsAt(ends);
-            subscription.setNextBillingAt(ends);
-        }
-
-        subscription.setAutoRenew(false);
-
-        return repositorySubscription.save(subscription);
+                    return repositorySubscription.save(subscription);
+                });
     }
 }
 

@@ -169,6 +169,17 @@ public final class ControllerWallet {
         return response;
     }
 
+    /**
+     * Retrieves all members associated with the specified wallet.
+     *
+     * The authenticated user must have access to the wallet in order
+     * to retrieve its members.
+     *
+     * @param id the wallet UUID
+     * @param authentication the authenticated user context
+     * @param request the incoming HTTP request
+     * @return a standard API response containing the wallet members
+     */
     @GetMapping("/{id}/members")
     public ApiResponse<List<WalletMemberResponse>> getWalletMembers(
             @PathVariable final UUID id,

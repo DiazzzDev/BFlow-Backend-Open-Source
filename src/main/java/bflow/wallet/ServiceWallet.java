@@ -59,6 +59,9 @@ public class ServiceWallet {
     /** Repository for income persistence operations. */
     private final RepositoryIncome repositoryIncome;
 
+    /**
+     * Service responsible for enforcing subscription plan limits.
+     */
     private final PlanLimitService planLimitService;
 
     /**
@@ -168,10 +171,22 @@ public class ServiceWallet {
         return incomes.map(this::toIncomeResponse);
     }
 
+    /**
+     * Retrieves all members associated with the specified wallet.
+     *
+     * The authenticated user must already belong to the wallet in order
+     * to access the member list.
+     *
+     * @param walletId the wallet UUID
+     * @param currentUserId the authenticated user's UUID
+     * @return a list of wallet members
+     * @throws AccessDeniedException if the user does not belong to the wallet
+     */
     public List<WalletMemberResponse> getWalletMembers(
             final UUID walletId,
             final UUID currentUserId
     ) {
+        userService.validateUserActive(currentUserId);
 
         repositoryWalletUser
                 .findByWalletIdAndUserId(walletId, currentUserId)
@@ -204,7 +219,9 @@ public class ServiceWallet {
 
         planLimitService.assertCanCreate(
                 userId, FeatureCodes.WALLETS,
-                repositoryWalletUser.countByUserIdAndRole(userId, WalletRole.OWNER));
+                repositoryWalletUser.countByUserIdAndRole(
+                        userId, WalletRole.OWNER
+                ));
 
         // Retrieve authenticated user
         User user = repositoryUser.findById(userId)
@@ -300,6 +317,11 @@ public class ServiceWallet {
         dto.setBalance(wallet.getBalance());
         dto.setRole(walletUser.getRole());
         dto.setInitialValue(wallet.getInitialValue());
+        dto.setMemberCount(
+            Math.toIntExact(
+                repositoryWalletUser.countByWalletId(wallet.getId())
+            )
+        );
         dto.setCreatedAt(wallet.getCreatedAt());
         dto.setUpdatedAt(wallet.getUpdatedAt());
 

@@ -146,11 +146,16 @@ public class SubscriptionReconciliationService {
             return;
         }
 
+        if (subscription.getProviderSubscriberId() == null) {
+            subscription.setProviderSubscriberId(match.id());
+        }
+
         wompiWebhookService.activate(
                 subscription,
                 syntheticPaymentId,
                 match.monto()
         );
+
         log.warn(
                 "Subscription {} activada vía reconciliación "
                         + "(webhook perdido). idSuscriptor={}",

@@ -63,7 +63,14 @@ public interface RepositoryWalletInvitation
     );
 
     /**
-     * Checks whether an invitation already exists.
+     * Checks whether an invitation already exists for the specified wallet,
+     * email address, and invitation status.
+     *
+     * @param walletId the wallet UUID
+     * @param invitedEmail the invited user's email address
+     * @param status the invitation status
+     * @return {@code true} if a matching invitation exists;
+     * otherwise {@code false}
      */
     boolean existsByWalletIdAndInvitedEmailAndStatus(
             UUID walletId,

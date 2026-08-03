@@ -74,8 +74,14 @@ public class BudgetService {
      */
     private final BudgetOverlapValidationService overlapValidationService;
 
+    /**
+     * Service responsible for enforcing subscription plan limits.
+     */
     private final PlanLimitService planLimitService;
 
+    /**
+     * Entity manager used for persistence operations.
+     */
     private final EntityManager entityManager;
 
     /**
@@ -96,6 +102,12 @@ public class BudgetService {
         return calculationService.calculate(budget);
     }
 
+    /**
+     * Retrieves all budgets owned by the specified user.
+     *
+     * @param userId the user UUID
+     * @return a list of budgets ordered by the most recently updated
+     */
     @Transactional(readOnly = true)
     public List<BudgetResponse> getBudgets(final UUID userId) {
         return repositoryBudget.findAllByUserIdOrderByUpdatedAtDesc(userId)
@@ -126,7 +138,10 @@ public class BudgetService {
         validationService.validateStartDate(request.getStartDate());
 
         planLimitService.assertCanCreate(
-                userId, FeatureCodes.BUDGETS, repositoryBudget.countByUserId(userId));
+            userId,
+            FeatureCodes.BUDGETS,
+            repositoryBudget.countByUserId(userId)
+        );
 
         Budget budget = new Budget();
 
@@ -472,6 +487,12 @@ public class BudgetService {
                 );
     }
 
+    /**
+     * Parse entity to response.
+     *
+     * @param budget the entity of the budget to parse
+     * @return the dto response
+     */
     public BudgetResponse toResponse(final Budget budget) {
         BudgetResponse response = new BudgetResponse();
 

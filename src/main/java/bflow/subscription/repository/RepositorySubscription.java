@@ -139,5 +139,15 @@ public interface RepositorySubscription
             SubscriptionStatus status
     );
 
-    Optional<Subscription> findByUserIdAndStatus(UUID userId, SubscriptionStatus status);
+    /**
+     * Finds the current subscription for a user with the specified status.
+     *
+     * @param userId the user identifier
+     * @param status the subscription status
+     * @return the matching subscription, if one exists
+     */
+    Optional<Subscription> findByUserIdAndStatus(
+        UUID userId,
+        SubscriptionStatus status
+    );
 }

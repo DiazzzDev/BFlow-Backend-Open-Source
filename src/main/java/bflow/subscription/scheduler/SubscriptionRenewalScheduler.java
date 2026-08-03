@@ -1,5 +1,6 @@
 package bflow.subscription.scheduler;
 
+import bflow.common.aws.service.EmailTemplateService;
 import bflow.subscription.entities.Subscription;
 import bflow.subscription.enums.BillingPeriod;
 import bflow.subscription.enums.SubscriptionStatus;
@@ -33,8 +34,8 @@ public class SubscriptionRenewalScheduler {
     private final SubscriptionReconciliationService
             subscriptionReconciliationService;
 
-    // private final EmailService emailService;
-    // conecta tu servicio de correo real aquí
+    /** Service used to send renewal emails. */
+    private final EmailTemplateService emailTemplateService;
 
     /**
      * Flag overdue subscriptions when Wompi failed to confirm payment.
@@ -89,8 +90,7 @@ public class SubscriptionRenewalScheduler {
     public void sendRenewalReminders() {
         Instant now = Instant.now();
         Instant windowEnd = now.plus(
-                ANNUAL_REMINDER_WINDOW_DAYS,
-                ChronoUnit.DAYS
+                ANNUAL_REMINDER_WINDOW_DAYS, ChronoUnit.DAYS
         );
 
         List<Subscription> dueSoon = repositorySubscription
@@ -102,11 +102,13 @@ public class SubscriptionRenewalScheduler {
                 );
 
         for (Subscription subscription : dueSoon) {
-            log.info(
-                    "Recordatorio de renovación pendiente de enviar a {} "
-                            + "para plan {}",
+            emailTemplateService.sendRenewalReminderEmail(
                     subscription.getUser().getEmail(),
-                    subscription.getPlan().getName()
+                    subscription.getUser().getEmail(), //Temporal
+                    subscription.getPlan().getName(),
+                    subscription.getBillingAmount().toString(),
+                    subscription.getNextBillingAt().toString(),
+                    subscription.getCheckoutUrl()
             );
 
             subscription.setReminderSentAt(now);

@@ -39,6 +39,12 @@ public final class ControllerBudget {
     /** Service used to resolve the authenticated user. */
     private final CurrentUserService currentUserService;
 
+    /**
+     * Get all budgets for a specific user.
+     *
+     * @param authentication the authentication object
+     * @return response containing list of budgets
+     */
     @GetMapping
     public ApiResponse<List<BudgetResponse>> getBudgets(
             final Authentication authentication

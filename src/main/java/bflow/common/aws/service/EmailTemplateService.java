@@ -152,6 +152,18 @@ public final class EmailTemplateService {
         );
     }
 
+    /**
+     * Sends a wallet collaboration invitation email.
+     *
+     * The email contains the inviter's name, the wallet name,
+     * an invitation link, and the invitation expiration date.
+     *
+     * @param toEmail the recipient email address
+     * @param inviterName the name of the user sending the invitation
+     * @param walletName the name of the shared wallet
+     * @param token the invitation token used to build the invitation URL
+     * @param expiresAt the invitation expiration timestamp
+     */
     public void sendWalletInvitationEmail(
             final String toEmail,
             final String inviterName,
