@@ -1,7 +1,8 @@
-package bflow.wallet;
+package bflow.wallet.service;
 
 import bflow.common.exception.ResourceNotFoundException;
 import bflow.wallet.DTO.WalletPair;
+import bflow.wallet.repository.RepositoryWallet;
 import bflow.wallet.entities.Wallet;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;

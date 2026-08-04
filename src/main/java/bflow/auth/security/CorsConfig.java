@@ -25,7 +25,9 @@ public class CorsConfig {
 
         //Development
         configuration.addAllowedOrigin("http://localhost:5173");
+        configuration.addAllowedOrigin("http://localhost:5174");
         configuration.addAllowedOrigin("http://127.0.0.1:5173");
+        configuration.addAllowedOrigin("http://127.0.0.1:5174");
 
         //Production
         configuration.addAllowedOrigin("https://bflow-2why.onrender.com");

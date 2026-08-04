@@ -8,11 +8,12 @@ import bflow.tranfers.DTO.TransferenceRequest;
 import bflow.tranfers.DTO.TransferenceResponse;
 import bflow.tranfers.entities.Transfer;
 import bflow.tranfers.enums.TransferStatus;
-import bflow.wallet.RepositoryWallet;
-import bflow.wallet.RepositoryWalletUser;
-import bflow.wallet.ServiceWallet;
+import bflow.wallet.repository.RepositoryWallet;
 import bflow.wallet.entities.Wallet;
 import bflow.wallet.entities.WalletUser;
+import bflow.wallet.repository.RepositoryWalletUser;
+import bflow.wallet.service.ServiceWallet;
+
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;

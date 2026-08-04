@@ -1,10 +1,11 @@
-package bflow.wallet;
+package bflow.wallet.controllers;
 
 import bflow.auth.services.CurrentUserService;
 import bflow.common.response.ApiResponse;
 import bflow.wallet.DTO.WalletInvitationRequest;
 import bflow.wallet.DTO.WalletInvitationResponse;
 import bflow.wallet.DTO.WalletResponse;
+import bflow.wallet.service.ServiceWalletSharing;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

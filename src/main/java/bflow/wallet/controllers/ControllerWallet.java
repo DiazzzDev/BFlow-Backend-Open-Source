@@ -1,4 +1,4 @@
-package bflow.wallet;
+package bflow.wallet.controllers;
 
 import bflow.auth.services.CurrentUserService;
 import bflow.expenses.DTO.ExpenseResponse;
@@ -7,6 +7,7 @@ import bflow.wallet.DTO.UpdateWalletRequest;
 import bflow.wallet.DTO.WalletMemberResponse;
 import bflow.wallet.DTO.WalletRequest;
 import bflow.wallet.DTO.WalletResponse;
+import bflow.wallet.service.ServiceWallet;
 import bflow.common.response.ApiResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -15,13 +16,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PatchMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import java.net.URI;
 import java.util.List;
@@ -43,32 +38,31 @@ public final class ControllerWallet {
     private final CurrentUserService currentUserService;
 
     /**
-     * Retrieves all wallets for the authenticated user.
+     * Retrieves all wallets for the authenticated user, with optional
+     * case-insensitive filtering by name.
      * @param authentication the authenticated user's principal.
-     * @param pageable the pagination information.
+     * @param query optional search term to filter wallets by name.
+     * @param pageable the pagination and sorting information.
      * @param request the HTTP request for path information.
      * @return a ResponseEntity containing paginated wallet data.
      */
     @GetMapping
     public ApiResponse<Page<WalletResponse>> getUserWallets(
             final Authentication authentication,
+            @RequestParam(required = false) final String query,
             final Pageable pageable,
             final HttpServletRequest request
     ) {
         UUID userId = currentUserService.getCurrentUserId(authentication);
 
-        // Retrieve wallet with access validation
         Page<WalletResponse> wallets = serviceWallet
-                .getUserWallets(userId, pageable);
+                .getUserWallets(userId, query, pageable);
 
-        // Return success response
-        ApiResponse<Page<WalletResponse>> response = ApiResponse.success(
+        return ApiResponse.success(
                 "Wallets retrieved successfully",
                 wallets,
                 request.getRequestURI()
         );
-
-        return response;
     }
 
     /**

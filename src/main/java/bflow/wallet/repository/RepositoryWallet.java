@@ -1,4 +1,4 @@
-package bflow.wallet;
+package bflow.wallet.repository;
 
 import bflow.wallet.entities.Wallet;
 import jakarta.persistence.LockModeType;

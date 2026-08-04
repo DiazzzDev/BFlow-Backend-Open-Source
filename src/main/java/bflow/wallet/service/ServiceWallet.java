@@ -1,4 +1,4 @@
-package bflow.wallet;
+package bflow.wallet.service;
 
 import bflow.auth.services.UserServiceImpl;
 import bflow.expenses.DTO.ExpenseResponse;
@@ -20,17 +20,21 @@ import bflow.wallet.enums.Currency;
 import bflow.wallet.enums.WalletRole;
 import bflow.auth.repository.RepositoryUser;
 import bflow.auth.entities.User;
+import bflow.wallet.repository.RepositoryWallet;
+import bflow.wallet.repository.RepositoryWalletUser;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import lombok.AllArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.List;
 import java.util.UUID;
+import bflow.wallet.repository.spec.WalletSpecs;
+import org.springframework.data.jpa.domain.Specification;
 
 /**
  * Service class for managing wallet business logic and transactions.
@@ -38,7 +42,7 @@ import java.util.UUID;
  */
 @Service
 @Transactional
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class ServiceWallet {
 
     /** The repository for wallet database operations. */
@@ -65,20 +69,25 @@ public class ServiceWallet {
     private final PlanLimitService planLimitService;
 
     /**
-     * Retrieves all wallets for a user with pagination.
-     * @param userId the user ID.
-     * @param pageable the pagination information.
+     * Retrieves wallets for the authenticated user, with optional
+     * case-insensitive filtering by wallet name.
+     * @param userId the authenticated user's ID.
+     * @param query optional search term (name filter); null/blank = no filter.
+     * @param pageable pagination and sort configuration.
      * @return a page of wallet responses.
      */
     public Page<WalletResponse> getUserWallets(
             final UUID userId,
+            final String query,
             final Pageable pageable
     ) {
-        //Check if user has an active account
         userService.validateUserActive(userId);
 
-        Page<WalletUser> page = repositoryWalletUser
-                .findByUserId(userId, pageable);
+        Specification<WalletUser> spec = Specification
+                .where(WalletSpecs.byUser(userId))
+                .and(WalletSpecs.nameContains(query));
+
+        Page<WalletUser> page = repositoryWalletUser.findAll(spec, pageable);
         return page.map(this::convertToDTO);
     }
 

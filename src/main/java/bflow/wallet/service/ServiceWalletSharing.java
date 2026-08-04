@@ -1,4 +1,4 @@
-package bflow.wallet;
+package bflow.wallet.service;
 
 import bflow.auth.entities.User;
 import bflow.auth.repository.RepositoryUser;
@@ -14,6 +14,8 @@ import bflow.wallet.entities.WalletInvitation;
 import bflow.wallet.entities.WalletUser;
 import bflow.wallet.enums.WalletInvitationStatus;
 import bflow.wallet.enums.WalletRole;
+import bflow.wallet.repository.RepositoryWalletInvitation;
+import bflow.wallet.repository.RepositoryWalletUser;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
