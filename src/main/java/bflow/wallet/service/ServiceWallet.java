@@ -1,4 +1,4 @@
-package bflow.wallet;
+package bflow.wallet.service;
 
 import bflow.auth.services.UserServiceImpl;
 import bflow.expenses.DTO.ExpenseResponse;
@@ -8,7 +8,14 @@ import bflow.income.DTO.IncomeResponse;
 import bflow.income.RepositoryIncome;
 import bflow.income.entity.Income;
 import bflow.common.financial.TransactionMapper;
+import bflow.recurring.RepositoryRecurringTransaction;
+import bflow.subscription.FeatureCodes;
+import bflow.subscription.services.PlanLimitService;
+import bflow.tranfers.RepositoryTransfers;
 import bflow.wallet.DTO.UpdateWalletRequest;
+import bflow.wallet.DTO.UpcomingTransactionResponse;
+import bflow.wallet.DTO.WalletInfoResponse;
+import bflow.wallet.DTO.WalletMemberResponse;
 import bflow.wallet.DTO.WalletRequest;
 import bflow.wallet.DTO.WalletResponse;
 import bflow.wallet.entities.Wallet;
@@ -17,16 +24,27 @@ import bflow.wallet.enums.Currency;
 import bflow.wallet.enums.WalletRole;
 import bflow.auth.repository.RepositoryUser;
 import bflow.auth.entities.User;
+import bflow.wallet.enums.WalletScope;
+import bflow.wallet.repository.RepositoryWallet;
+import bflow.wallet.repository.RepositoryWalletUser;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import lombok.AllArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.Instant;
+import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
+import java.util.stream.Stream;
+
+import bflow.wallet.repository.spec.WalletSpecs;
+import org.springframework.data.jpa.domain.Specification;
 
 /**
  * Service class for managing wallet business logic and transactions.
@@ -34,7 +52,7 @@ import java.util.UUID;
  */
 @Service
 @Transactional
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class ServiceWallet {
 
     /** The repository for wallet database operations. */
@@ -55,22 +73,124 @@ public class ServiceWallet {
     /** Repository for income persistence operations. */
     private final RepositoryIncome repositoryIncome;
 
+    /** Repository for transfer persistence operations. */
+    private final RepositoryTransfers repositoryTransfers;
+
     /**
-     * Retrieves all wallets for a user with pagination.
-     * @param userId the user ID.
-     * @param pageable the pagination information.
-     * @return a page of wallet responses.
+     * Repository for recurring transaction persistence operations.
+     */
+    private final RepositoryRecurringTransaction
+            repositoryRecurringTransaction;
+
+    /**
+     * Service responsible for enforcing subscription plan limits.
+     */
+    private final PlanLimitService planLimitService;
+
+    /**
+     * Maximum number of upcoming recurring transactions to include.
+     */
+    private static final int UPCOMING_LIMIT = 3;
+
+    /**
+     * Busca wallets del usuario autenticado con filtros opcionales por
+     * nombre y rol (OWNER = mis wallets, MEMBER = compartidas conmigo).
+     * @param userId el usuario autenticado.
+     * @param query término de búsqueda por nombre (opcional).
+     * @param role filtro de rol; null trae ambas (mías + compartidas).
+     * @param scope optional wallet scope filter.
+     * @param pageable paginación y sort.
+     * @return página de wallets filtradas.
      */
     public Page<WalletResponse> getUserWallets(
             final UUID userId,
+            final String query,
+            final WalletRole role,
+            final WalletScope scope,
             final Pageable pageable
     ) {
-        //Check if user has an active account
         userService.validateUserActive(userId);
 
-        Page<WalletUser> page = repositoryWalletUser
-                .findByUserId(userId, pageable);
+        Specification<WalletUser> spec = Specification
+                .where(WalletSpecs.byUser(userId))
+                .and(WalletSpecs.nameContains(query))
+                .and(WalletSpecs.byRole(role))
+                .and(WalletSpecs.byScope(scope));
+
+        Page<WalletUser> page = repositoryWalletUser.findAll(spec, pageable);
         return page.map(this::convertToDTO);
+    }
+
+    /**
+     * Builds the wallet "Information" panel: last activity, highest expense,
+     * transaction count, initial value, and the top 3 upcoming recurring items.
+     * @param walletId the wallet identifier.
+     * @param userId the authenticated user's ID.
+     * @return the wallet info response.
+     * @throws AccessDeniedException if the user does not have access.
+     */
+    public WalletInfoResponse getWalletInfo(
+            final UUID walletId,
+            final UUID userId
+    ) {
+        userService.validateUserActive(userId);
+
+        WalletUser walletUser = repositoryWalletUser
+                .findByWalletIdAndUserId(walletId, userId)
+                .orElseThrow(() -> new AccessDeniedException(
+                        "User does not have access to this wallet"
+                ));
+
+        Wallet wallet = walletUser.getWallet();
+
+        // Last activity: most recent createdAt across the 3 transaction types
+        Instant lastExpense = repositoryExpense.findMaxCreatedAtByWalletId(
+                walletId
+        );
+
+        Instant lastIncome = repositoryIncome.findMaxCreatedAtByWalletId(
+                walletId
+        );
+
+        Instant lastTransfer = repositoryTransfers.findMaxCreatedAtByWallet(
+                walletId
+        );
+
+        Instant lastActivity = Stream.of(lastExpense, lastIncome, lastTransfer)
+                .filter(Objects::nonNull)
+                .max(Instant::compareTo)
+                .orElse(null);
+
+        // Highest single expense by amount
+        String highestExpense = repositoryExpense
+                .findTopByWalletIdOrderByAmountDesc(walletId)
+                .map(Expense::getTitle)
+                .orElse(null);
+
+        // Total transaction count (incomes + expenses + transfers)
+        long transactions = repositoryExpense.countByWalletId(walletId)
+                + repositoryIncome.countByWalletId(walletId)
+                + repositoryTransfers.countByWallet(walletId);
+
+        // Top 3 upcoming active recurring transactions
+        List<UpcomingTransactionResponse> upcoming =
+        repositoryRecurringTransaction
+                .findByWalletIdAndActiveTrueOrderByNextExecutionDateAsc(
+                        walletId, PageRequest.of(0, UPCOMING_LIMIT)
+                )
+                .stream()
+                .map(rt -> new UpcomingTransactionResponse(
+                        rt.getTitle(), rt.getNextExecutionDate()
+                ))
+                .toList();
+
+        return new WalletInfoResponse(
+                lastActivity,
+                highestExpense,
+                transactions,
+                wallet.getInitialValue(),
+                upcoming
+        );
     }
 
     /**
@@ -163,6 +283,37 @@ public class ServiceWallet {
     }
 
     /**
+     * Retrieves all members associated with the specified wallet.
+     *
+     * The authenticated user must already belong to the wallet in order
+     * to access the member list.
+     *
+     * @param walletId the wallet UUID
+     * @param currentUserId the authenticated user's UUID
+     * @return a list of wallet members
+     * @throws AccessDeniedException if the user does not belong to the wallet
+     */
+    public List<WalletMemberResponse> getWalletMembers(
+            final UUID walletId,
+            final UUID currentUserId
+    ) {
+        userService.validateUserActive(currentUserId);
+
+        repositoryWalletUser
+                .findByWalletIdAndUserId(walletId, currentUserId)
+                .orElseThrow(() ->
+                        new AccessDeniedException(
+                                "You don't have access to this wallet."
+                        ));
+
+        return repositoryWalletUser
+                .findByWalletId(walletId)
+                .stream()
+                .map(this::toMemberResponse)
+                .toList();
+    }
+
+    /**
      * Creates a new wallet for an authenticated user.
      * Sets the authenticated user as OWNER through WalletUser.
      * @param request the wallet creation request.
@@ -176,6 +327,12 @@ public class ServiceWallet {
     ) {
         //Check if user has an active account
         userService.validateUserActive(userId);
+
+        planLimitService.assertCanCreate(
+                userId, FeatureCodes.WALLETS,
+                repositoryWalletUser.countByUserIdAndRole(
+                        userId, WalletRole.OWNER
+                ));
 
         // Retrieve authenticated user
         User user = repositoryUser.findById(userId)
@@ -259,7 +416,7 @@ public class ServiceWallet {
      * @param walletUser the wallet-user relationship.
      * @return the wallet response DTO.
      */
-    private WalletResponse convertToDTO(final WalletUser walletUser) {
+    public WalletResponse convertToDTO(final WalletUser walletUser) {
 
         Wallet wallet = walletUser.getWallet();
 
@@ -271,6 +428,11 @@ public class ServiceWallet {
         dto.setBalance(wallet.getBalance());
         dto.setRole(walletUser.getRole());
         dto.setInitialValue(wallet.getInitialValue());
+        dto.setMemberCount(
+            Math.toIntExact(
+                repositoryWalletUser.countByWalletId(wallet.getId())
+            )
+        );
         dto.setCreatedAt(wallet.getCreatedAt());
         dto.setUpdatedAt(wallet.getUpdatedAt());
 
@@ -466,4 +628,15 @@ public class ServiceWallet {
         return dto;
     }
 
+    private WalletMemberResponse toMemberResponse(
+            final WalletUser walletUser
+    ) {
+
+        return new WalletMemberResponse(
+                walletUser.getUser().getId(),
+                walletUser.getUser().getEmail(),
+                walletUser.getRole(),
+                walletUser.getCreatedAt()
+        );
+    }
 }

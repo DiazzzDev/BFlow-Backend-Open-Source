@@ -1,11 +1,16 @@
-package bflow.wallet;
+package bflow.wallet.controllers;
 
 import bflow.auth.services.CurrentUserService;
 import bflow.expenses.DTO.ExpenseResponse;
 import bflow.income.DTO.IncomeResponse;
 import bflow.wallet.DTO.UpdateWalletRequest;
+import bflow.wallet.DTO.WalletInfoResponse;
+import bflow.wallet.DTO.WalletMemberResponse;
 import bflow.wallet.DTO.WalletRequest;
 import bflow.wallet.DTO.WalletResponse;
+import bflow.wallet.enums.WalletRole;
+import bflow.wallet.enums.WalletScope;
+import bflow.wallet.service.ServiceWallet;
 import bflow.common.response.ApiResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -20,9 +25,11 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import java.net.URI;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -41,32 +48,60 @@ public final class ControllerWallet {
     private final CurrentUserService currentUserService;
 
     /**
-     * Retrieves all wallets for the authenticated user.
-     * @param authentication the authenticated user's principal.
-     * @param pageable the pagination information.
-     * @param request the HTTP request for path information.
-     * @return a ResponseEntity containing paginated wallet data.
+     * Retrieves the wallets accessible to the authenticated user.
+     *
+     * @param authentication authenticated user.
+     * @param query optional search text.
+     * @param role optional wallet role filter.
+     * @param scope optional wallet scope filter.
+     * @param pageable pagination information.
+     * @param request current HTTP request.
+     * @return paginated wallet list.
      */
     @GetMapping
     public ApiResponse<Page<WalletResponse>> getUserWallets(
             final Authentication authentication,
+            @RequestParam(required = false) final String query,
+            @RequestParam(required = false) final WalletRole role,
+            @RequestParam(required = false) final WalletScope scope,
             final Pageable pageable,
             final HttpServletRequest request
     ) {
         UUID userId = currentUserService.getCurrentUserId(authentication);
 
-        // Retrieve wallet with access validation
         Page<WalletResponse> wallets = serviceWallet
-                .getUserWallets(userId, pageable);
+                .getUserWallets(userId, query, role, scope, pageable);
 
-        // Return success response
-        ApiResponse<Page<WalletResponse>> response = ApiResponse.success(
+        return ApiResponse.success(
                 "Wallets retrieved successfully",
                 wallets,
                 request.getRequestURI()
         );
+    }
 
-        return response;
+    /**
+     * Retrieves the wallet "Information" panel: last activity, highest expense,
+     * transaction count, initial value, and upcoming recurring transactions.
+     * @param id the wallet UUID.
+     * @param authentication the authenticated user's principal.
+     * @param request the HTTP request for path information.
+     * @return a standard API response containing the wallet info.
+     */
+    @GetMapping("/{id}/info")
+    public ApiResponse<WalletInfoResponse> getWalletInfo(
+            @PathVariable final UUID id,
+            final Authentication authentication,
+            final HttpServletRequest request
+    ) {
+        UUID userId = currentUserService.getCurrentUserId(authentication);
+
+        WalletInfoResponse info = serviceWallet.getWalletInfo(id, userId);
+
+        return ApiResponse.success(
+                "Wallet info retrieved successfully",
+                info,
+                request.getRequestURI()
+        );
     }
 
     /**
@@ -165,6 +200,39 @@ public final class ControllerWallet {
         );
 
         return response;
+    }
+
+    /**
+     * Retrieves all members associated with the specified wallet.
+     *
+     * The authenticated user must have access to the wallet in order
+     * to retrieve its members.
+     *
+     * @param id the wallet UUID
+     * @param authentication the authenticated user context
+     * @param request the incoming HTTP request
+     * @return a standard API response containing the wallet members
+     */
+    @GetMapping("/{id}/members")
+    public ApiResponse<List<WalletMemberResponse>> getWalletMembers(
+            @PathVariable final UUID id,
+            final Authentication authentication,
+            final HttpServletRequest request
+    ) {
+
+        UUID userId = currentUserService.getCurrentUserId(authentication);
+
+        List<WalletMemberResponse> members =
+                serviceWallet.getWalletMembers(
+                        id,
+                        userId
+                );
+
+        return ApiResponse.success(
+                "Wallet members retrieved successfully.",
+                members,
+                request.getRequestURI()
+        );
     }
 
     /**

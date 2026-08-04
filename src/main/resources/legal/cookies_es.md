@@ -1,6 +1,6 @@
 # POLÍTICA DE COOKIES
 
-**Última actualización** 16 de abril de 2026
+**Última actualización** 3 de agosto de 2026
 
 ## Descripción general
 
@@ -18,30 +18,18 @@ Las cookies son pequeños archivos de datos almacenados en su dispositivo cuando
 
 ## ¿Qué cookies utiliza BFlow?
 
-BFlow utiliza **solo cookies estrictamente necesarias (esenciales)** para autenticación y fines de seguridad:
+BFlow utiliza cookies estrictamente necesarias administradas como parte del servicio de autenticación de Amazon Cognito. Estas cookies permiten iniciar sesión, mantener la sesión autenticada, renovar la autenticación cuando corresponde y proteger el proceso de autenticación.
 
-### Cookies de autenticación esencial
+En la configuración actual de BFlow, el servicio de autenticación utiliza tokens con la siguiente vigencia aproximada:
 
-Utilizamos dos tipos de cookies seguras:
+Token de acceso: hasta 60 minutos.
+Token de actualización: hasta 14 días.
 
-1. **Cookie de token de acceso**
-   - **Propósito:** Autentica su identidad y mantiene su sesión activa
-   - **Duración:** De corta duración (expira después de un período breve de inactividad)
-   - **Comportamiento:** Se borra automáticamente cuando cierra sesión
+Las cookies utilizadas por Amazon Cognito para administrar la sesión pueden tener una duración distinta dependiendo del funcionamiento interno del servicio.
 
-2. **Cookie de token de actualización**
-   - **Propósito:** Actualiza de forma segura su autenticación sin requerir que vuelva a iniciar sesión
-   - **Duración:** De duración más larga para permitir continuidad conveniente de la sesión
-   - **Comportamiento:** Se borra automáticamente cuando cierra sesión
+Las cookies de autenticación son establecidas por el servicio Amazon Cognito como parte de la infraestructura de autenticación utilizada por BFlow. Estas cookies se utilizan exclusivamente para fines de autenticación y seguridad, y no para publicidad, análisis de comportamiento o seguimiento entre sitios web.
 
-### Características de seguridad de nuestras cookies
-
-Todas nuestras cookies se configuran con las mejores prácticas de seguridad:
-
-- **HTTP-only:** Las cookies no pueden ser accedidas por JavaScript, protegiéndolas de ciertos tipos de ataques
-- **Bandera Secure:** Las cookies se transmiten solo sobre conexiones HTTPS encriptadas
-- **Tokens firmados:** Todos los tokens de autenticación utilizan firma criptográfica RS256 para evitar manipulación
-- **Solo de primera parte:** Las cookies se establecen y controlan únicamente por BFlow
+Debido a que BFlow utiliza Amazon Cognito como proveedor de autenticación, los nombres técnicos, cantidad, atributos o tiempos de vida de las cookies utilizadas por dicho servicio pueden cambiar como resultado de actualizaciones realizadas por Amazon Web Services (AWS), sin que ello implique un cambio en la finalidad de las cookies ni el uso de cookies con fines publicitarios, analíticos o de seguimiento.
 
 ---
 
@@ -52,8 +40,11 @@ Para garantizar su privacidad y transparencia, aclaramos explícitamente lo que 
 - **Sin cookies de análisis** – No utilizamos Google Analytics, Mixpanel u servicios similares
 - **Sin cookies de publicidad** – No lo rastreamos con fines publicitarios
 - **Sin seguimiento de comportamiento** – No creamos perfiles de su comportamiento o uso
-- **Sin cookies de terceros** – No permitimos que servicios de terceros establezcan cookies en su dispositivo
-- **Sin seguimiento entre sitios** – No rastreamos su actividad en otros sitios web
+- No utilizamos cookies para rastrear su actividad con fines publicitarios, elaboración de perfiles o análisis de comportamiento entre sitios web.
+
+Amazon Cognito forma parte de Amazon Web Services (AWS) y actúa como proveedor de autenticación de BFlow. Como consecuencia, determinadas cookies esenciales son procesadas dentro de la infraestructura operada por AWS exclusivamente para prestar el servicio de autenticación y mantener la seguridad de las sesiones.
+
+Debido a que el servicio de autenticación es proporcionado por Amazon Cognito (AWS), BFlow no controla la implementación interna de las cookies técnicas utilizadas por dicho servicio. Cualquier modificación realizada por Amazon Web Services respecto de dichas cookies será aplicable automáticamente al proceso de autenticación utilizado por la Aplicación.
 
 ---
 
@@ -61,7 +52,7 @@ Para garantizar su privacidad y transparencia, aclaramos explícitamente lo que 
 
 Las cookies esenciales son necesarias para que la Aplicación funcione de forma segura. A diferencia de las cookies no esenciales (que no utilizamos), no puede desactivar selectivamente las cookies de autenticación esencial mientras mantiene acceso a su cuenta.
 
-Si elige bloquear o eliminar estas cookies de la configuración de su navegador, no podrá iniciar sesión ni mantener una sesión autenticada. Sin embargo, si desactiva las cookies y las borra, podemos crear nuevas cuando inicie sesión nuevamente—la elección está completamente en su control.
+Si elige bloquear o eliminar estas cookies de la configuración de su navegador, no podrá iniciar sesión ni mantener una sesión autenticada. Sin embargo, si desactiva las cookies y las borra, nuevas cookies esenciales podrán ser establecidas automáticamente por el servicio de autenticación cuando vuelva a iniciar sesión.
 
 **Nota:** No tenemos un centro de preferencias de cookies porque solo utilizamos cookies esenciales y no utilizamos cookies de análisis, publicidad o seguimiento que requieran consentimiento del usuario para desactivar.
 
@@ -82,7 +73,7 @@ La mayoría de navegadores web le permiten controlar cómo se almacenan las cook
 
 ## Privacidad y protección de datos
 
-Nuestro uso mínimo de cookies se alinea con las mejores prácticas de privacidad y regulaciones internacionales de protección de datos, incluyendo estándares del GDPR y la Directiva ePrivacy. Para información completa sobre cómo manejamos sus datos, consulte nuestra [Política de Privacidad](https://bflow-studio.com/privacy).
+Nuestro uso limitado de cookies procura seguir buenas prácticas internacionales en materia de privacidad y seguridad de la información. Para obtener información completa sobre el tratamiento de datos personales, consulte nuestra [Política de Privacidad](https://bflow-studio.com/privacy).
 
 ---
 
@@ -94,7 +85,7 @@ Podemos actualizar esta Política de Cookies de vez en cuando para reflejar camb
 
 ## Contáctenos
 
-Si tiene preguntas sobre nuestro uso de cookies, autenticación o prácticas de privacidad, contáctenos:
+Si considera que alguna cookie está siendo utilizada de manera distinta a la descrita en esta política, puede comunicarse con nosotros mediante:
 
 **BFlow Studio**  
 support@bflow-studio.com  

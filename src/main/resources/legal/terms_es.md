@@ -1,12 +1,12 @@
-# TÉRMINOS Y CONDICIONES
+# TÉRMINOS Y CONDICIONES DE USO BFLOW STUDIO
 
-**Última actualización: 2 de junio de 2026**
+**Última actualización: 3 de agosto de 2026**
 
 ---
 
 ## ACUERDO A NUESTROS TÉRMINOS LEGALES
 
-Somos **BFlow Studio**, haciendo negocios como **BFlow** ("nosotros," "nos," "nuestro").
+Estos Servicios son operados por Edwin Díaz, quien utiliza el nombre comercial 'BFlow Studio' ('BFlow', 'nosotros', 'nuestro').
 
 Operamos el sitio web [https://bflow-studio.com](https://bflow-studio.com) (el "Sitio"), así como cualquier otro producto o servicio relacionado que se refiera o enlace a estos términos legales (los "Términos Legales") (colectivamente, los "Servicios").
 
@@ -20,34 +20,34 @@ Puedes contactarnos por correo electrónico a **[support@bflow-studio.com](mailt
 
 ## TABLA DE CONTENIDOS
 
-1. [NUESTROS SERVICIOS](#1-nuestros-servicios)
-2. [DERECHOS DE PROPIEDAD INTELECTUAL](#2-derechos-de-propiedad-intelectual)
-3. [REPRESENTACIONES DEL USUARIO](#3-representaciones-del-usuario)
-4. [REGISTRO DE USUARIO](#4-registro-de-usuario)
-5. [COMPRAS Y PAGOS](#5-compras-y-pagos)
-6. [SUSCRIPCIONES Y FACTURACIÓN](#6-suscripciones-y-facturación)
-7. [ACTIVIDADES PROHIBIDAS](#7-actividades-prohibidas)
-8. [IA Y PROCESAMIENTO AUTOMATIZADO DE DATOS](#8-ia-y-procesamiento-automatizado-de-datos)
-9. [CONTRIBUCIONES GENERADAS POR EL USUARIO](#9-contribuciones-generadas-por-el-usuario)
-10. [PROPIEDAD INTELECTUAL EN TUS DATOS](#10-propiedad-intelectual-en-tus-datos)
-11. [REDES SOCIALES](#11-redes-sociales)
-12. [CONTENIDO Y SITIOS WEB DE TERCEROS](#12-contenido-y-sitios-web-de-terceros)
-13. [GESTIÓN DE SERVICIOS](#13-gestión-de-servicios)
-14. [ROLES DE DATOS Y POLÍTICA DE PRIVACIDAD](#14-roles-de-datos-y-política-de-privacidad)
-15. [INFRACCIONES DE DERECHOS DE AUTOR](#15-infracciones-de-derechos-de-autor)
-16. [VIGENCIA Y TERMINACIÓN](#16-vigencia-y-terminación)
-17. [MODIFICACIONES E INTERRUPCIONES](#17-modificaciones-e-interrupciones)
-18. [LEY APLICABLE](#18-ley-aplicable)
-19. [RESOLUCIÓN DE DISPUTAS](#19-resolución-de-disputas)
-20. [CORRECCIONES](#20-correcciones)
-21. [RENUNCIA DE GARANTÍAS](#21-renuncia-de-garantías)
-22. [LIMITACIÓN DE RESPONSABILIDAD](#22-limitación-de-responsabilidad)
-23. [PROTECCIÓN DE DATOS Y TRANSFERENCIAS INTERNACIONALES](#23-protección-de-datos-y-transferencias-internacionales)
-24. [INDEMNIZACIÓN](#24-indemnización)
-25. [DATOS DEL USUARIO](#25-datos-del-usuario)
-26. [COMUNICACIONES ELECTRÓNICAS, TRANSACCIONES Y FIRMAS](#26-comunicaciones-electrónicas-transacciones-y-firmas)
-27. [DISPOSICIONES GENERALES](#27-disposiciones-generales)
-28. [CONTACTO](#28-contacto)
+1. NUESTROS SERVICIOS
+2. DERECHOS DE PROPIEDAD INTELECTUAL
+3. REPRESENTACIONES DEL USUARIO
+4. REGISTRO DE USUARIO
+5. COMPRAS Y PAGOS
+6. SUSCRIPCIONES Y FACTURACIÓN
+7. ACTIVIDADES PROHIBIDAS
+8. IA Y PROCESAMIENTO AUTOMATIZADO DE DATOS
+9. CONTRIBUCIONES GENERADAS POR EL USUARIO
+10. PROPIEDAD INTELECTUAL EN TUS DATOS
+11. REDES SOCIALES
+12. CONTENIDO Y SITIOS WEB DE TERCEROS
+13. GESTIÓN DE SERVICIOS
+14. ROLES DE DATOS Y POLÍTICA DE PRIVACIDAD
+15. INFRACCIONES DE DERECHOS DE AUTOR
+16. VIGENCIA Y TERMINACIÓN
+17. MODIFICACIONES E INTERRUPCIONES
+18. LEY APLICABLE
+19. RESOLUCIÓN DE DISPUTAS
+20. CORRECCIONES
+21. RENUNCIA DE GARANTÍAS
+22. LIMITACIÓN DE RESPONSABILIDAD
+23. PROTECCIÓN DE DATOS Y TRANSFERENCIAS INTERNACIONALES
+24. INDEMNIZACIÓN
+25. DATOS DEL USUARIO
+26. COMUNICACIONES ELECTRÓNICAS, TRANSACCIONES Y FIRMAS
+27. DISPOSICIONES GENERALES
+28. CONTACTO
 
 ---
 
@@ -114,15 +114,43 @@ Podrías ser requerido registrarte para usar los Servicios. Aceptas mantener tu 
 
 Aceptamos las siguientes formas de pago:
 
-- Wompi
+- Wompi El Salvador (ACCELERA S.A. de C.V.)
 - Mastercard
 - Visa
+
+BFlow utiliza Wompi El Salvador (ACCELERA S.A. de C.V.) como proveedor externo de procesamiento de pagos para las suscripciones. BFlow no procesa, almacena ni tiene acceso a la información de tarjetas de crédito o débito. Todas las transacciones son procesadas exclusivamente por Wompi El Salvador conforme a sus propios términos y condiciones.
+
+La suscripción inicia únicamente cuando BFlow recibe la confirmación oficial del pago mediante el webhook enviado por Wompi.
+
+Si el pago fue realizado pero la confirmación no ha sido recibida, el estado permanecerá como pendiente hasta recibir la confirmación correspondiente.
 
 Aceptas proporcionar información de compra y cuenta actual, completa y precisa para todas las compras realizadas a través de los Servicios. Además, aceptas actualizar prontamente información de cuenta y pago, incluyendo dirección de correo, método de pago y fecha de vencimiento de tarjeta para que podamos completar tus transacciones. Se agregará impuesto según lo requerido. Podemos cambiar precios en cualquier momento. Todos los pagos serán en dólares estadounidenses.
 
 Aceptas pagar todos los cargos a los precios vigentes más gastos de envío aplicables, y nos autorizas a cargar tu método de pago elegido. Nos reservamos el derecho de corregir errores de precios incluso si ya hemos recibido pago.
 
 Nos reservamos el derecho de rechazar cualquier orden. Podemos limitar o cancelar cantidades por persona, hogar u orden. Nos reservamos el derecho de limitar órdenes que parezcan colocadas por distribuidores.
+
+Todos los pagos de suscripciones son procesados exclusivamente por Wompi El Salvador (ACCELERA S.A. de C.V.). También conocido como "Wompi SV", servicio operado por ACCELERA S.A. de C.V.
+
+BFlow Studio no almacena, procesa ni tiene acceso a la información completa de tarjetas de crédito o débito del usuario. La captura, autorización, procesamiento, custodia y liquidación de los pagos son responsabilidad exclusiva de Wompi SV y de las entidades financieras participantes.
+
+El uso de Wompi SV también está sujeto a los términos y condiciones publicados por dicho proveedor.
+
+El acceso al Plan Pro se habilita únicamente cuando BFlow recibe la confirmación oficial del pago mediante los webhooks enviados por Wompi El Salvador.
+
+Si después de un tiempo razonable el pago continúa en estado pendiente, el usuario deberá contactar al soporte de BFlow proporcionando el identificador de la transacción para iniciar una verificación con Wompi.
+
+Si una transacción permanece en estado pendiente debido a que no fue posible confirmar el pago mediante los servicios de Wompi El Salvador, el usuario deberá comunicarse con el soporte de Wompi para verificar el estado de la transacción.
+
+Si el usuario realiza accidentalmente más de un pago, deberá contactar al soporte oficial de Wompi El Salvador para iniciar el proceso correspondiente.
+
+Las investigaciones relacionadas con fraude, contracargos, desconocimiento de compras y disputas son gestionadas por Wompi El Salvador y las entidades participantes del sistema de pagos.
+
+BFlow no interviene en la autorización de pagos, autenticación del tarjetahabiente, validación antifraude, contracargos ni investigaciones relacionadas con transacciones financieras. Dichos procesos corresponden exclusivamente a Wompi y a las entidades financieras participantes.
+
+BFlow podrá establecer límites técnicos razonables para garantizar el correcto funcionamiento del servicio.
+
+El propietario de una wallet compartida es responsable de administrar los permisos otorgados a los participantes invitados.
 
 [Volver a tabla de contenidos](#tabla-de-contenidos)
 
@@ -134,15 +162,37 @@ Nos reservamos el derecho de rechazar cualquier orden. Podemos limitar o cancela
 
 BFlow ofrece planes de suscripción mensual o anual. Precios actuales y detalles de planes están disponibles en nuestro sitio web. Todos los precios están en dólares estadounidenses.
 
+La suscripción Premium se activará únicamente después de que BFlow reciba la confirmación exitosa del pago mediante los mecanismos de notificación proporcionados por Wompi SV.
+
+Si por razones técnicas BFlow no recibe la confirmación del pago enviada por Wompi SV, la suscripción permanecerá en estado pendiente hasta que la situación sea verificada.
+
+En estos casos el usuario deberá comunicarse con soporte para realizar la validación correspondiente.
+
 ### Facturación y Renovación Automática
 
 Tu suscripción se renovará automáticamente al final de cada período de facturación (mensual o anual, según tu selección) a menos que canceles. Tu método de pago será cargado automáticamente en la fecha de renovación. Recibirás recordatorios de renovación por correo al menos 7 días antes.
 
 Al suscribirse, autorizas que carguemos tu método de pago de forma recurrente.
 
-### Política de Reembolso de 14 Días (Solo Primera Compra)
+Cada renovación está condicionada a que Wompi SV confirme exitosamente el cobro.
 
-**Para tu primera compra únicamente**, tienes derecho a solicitar reembolso completo dentro de 14 días si no estás satisfecho. Este es tu período de "reflexión". Reembolsos para renovaciones posteriores no aplican a menos que lo requiera la ley.
+### Política de Reembolso
+
+Durante la primera compra de una suscripción podrás solicitar un reembolso dentro de los catorce (14) días calendario siguientes al pago.
+
+Las solicitudes serán evaluadas por BFlow y, cuando procedan, el proceso de reversión será gestionado a través de Wompi SV, proveedor que procesa el pago.
+
+Los tiempos de acreditación dependerán exclusivamente de Wompi SV, del banco emisor de la tarjeta y de las franquicias correspondientes.
+
+BFlow no controla los tiempos de procesamiento del reembolso ni puede garantizar una fecha específica de devolución de fondos.
+
+Si un usuario realiza accidentalmente pagos duplicados por la misma suscripción, deberá contactar inmediatamente al soporte de BFlow.
+
+Una vez verificada la duplicidad, BFlow iniciará la gestión correspondiente ante Wompi SV cuando aplique.
+
+La aprobación y ejecución del reembolso dependerán exclusivamente del procedimiento establecido por Wompi SV y las entidades participantes del sistema de pagos.
+
+Las solicitudes de devolución serán evaluadas conforme a la legislación salvadoreña aplicable y, cuando correspondan a pagos procesados mediante Wompi, deberán tramitarse conforme a los procedimientos establecidos por Wompi y la entidad adquirente.
 
 Para solicitar reembolso, contacta [support@bflow-studio.com](mailto:support@bflow-studio.com) con tus detalles de cuenta y razón.
 
@@ -220,7 +270,7 @@ Usamos datos de transacciones agregados y anonimizados para mejorar nuestros mod
 
 ### Transparencia y Acceso a Código
 
-BFlow valora la transparencia. Nuestro código backend es de código abierto en GitHub: [https://github.com/DiazzzDev/BFlow-Backend-Open-Source](https://github.com/DiazzzDev/BFlow-Backend-Open-Source). Puedes revisar cómo se procesan, almacenan y usan tus datos.
+BFlow valora la transparencia. Nuestro código backend es de código abierto en GitHub: [https://github.com/DiazzzDev/BFlow-Financial-Engine](https://github.com/DiazzzDev/BFlow-Financial-Engine). Puedes revisar cómo se procesan, almacenan y usan tus datos.
 
 [Volver a tabla de contenidos](#tabla-de-contenidos)
 
@@ -343,7 +393,7 @@ Al terminar: (a) tu licencia termina; (b) retienes propiedad de datos; (c) puede
 
 Nos reservamos derecho de cambiar los Servicios sin aviso. No somos responsables por modificaciones, cambios de precio, suspensiones o discontinuancia.
 
-BFlow no puede garantizar disponibilidad 24/7. Podemos experimentar downtime. Asumes riesgo de inaccesibilidad. No tenemos obligación de mantener o proporcionar actualizaciones.
+BFlow no puede garantizar disponibilidad 24/7. Podemos experimentar downtime. Asumes riesgo de inaccesibilidad. No tenemos obligación de mantener o proporcionar actualizaciones. Y podrá realizar mantenimientos programados o de emergencia.
 
 [Volver a tabla de contenidos](#tabla-de-contenidos)
 
@@ -401,6 +451,14 @@ BFlow no garantiza operación ininterrumpida, sin errores o segura.
 
 **Variaciones Jurisdiccionales:** Algunas jurisdicciones prohíben renuncias de garantía. Donde aplicable, estos Términos operan al máximo permitido.
 
+BFlow no garantiza que el uso de la plataforma permita mejorar la situación financiera del usuario, incrementar sus ahorros o evitar pérdidas económicas.
+
+BFlow no será responsable por incumplimientos ocasionados por eventos fuera de su control razonable, incluyendo desastres naturales, fallos de proveedores cloud, interrupciones de Internet, ataques cibernéticos, conflictos laborales, decisiones gubernamentales o cualquier otro evento constitutivo de fuerza mayor.
+
+Aunque BFlow implementa mecanismos razonables de protección de la información, el usuario reconoce que ningún sistema es completamente infalible, por lo que deberá conservar respaldos propios de la información que considere crítica.
+
+Algunas funcionalidades podrán identificarse como beta, experimental o en pruebas, pudiendo modificarse o eliminarse sin previo aviso.
+
 [Volver a tabla de contenidos](#tabla-de-contenidos)
 
 ---
@@ -429,7 +487,7 @@ Estas limitaciones NO aplican a:
 - Brechas de datos por negligencia grave o inconducta intencional
 - Reclamaciones que no pueden ser limitadas por ley
 
-Responsabilidad de brechas de datos nunca es limitada.
+Las limitaciones anteriores no aplicarán únicamente cuando la legislación salvadoreña prohíba expresamente dicha limitación de responsabilidad o cuando exista dolo o culpa grave atribuible a BFlow.
 
 ### Variaciones Jurisdiccionales
 
@@ -510,11 +568,9 @@ San Salvador, El Salvador
 Correo electrónico: [support@bflow-studio.com](mailto:support@bflow-studio.com)  
 Consultas Legales: [legal@bflow-studio.com](mailto:legal@bflow-studio.com)
 
-Nuestro backend de código abierto está disponible en [https://github.com/DiazzzDev/BFlow-Backend-Open-Source](https://github.com/DiazzzDev/BFlow-Backend-Open-Source) para transparencia y auditorías de código.
+Nuestro backend de código abierto está disponible en [https://github.com/DiazzzDev/BFlow-Financial-Engine](https://github.com/DiazzzDev/BFlow-Financial-Engine) para transparencia y auditorías de código.
 
 ---
-
-**Última actualización: 11 de abril de 2026**
 
 Estos Términos y Condiciones son efectivos inmediatamente al aceptarlos. Nos reservamos derecho de modificar estos Términos en cualquier momento con 14 días de aviso vía correo electrónico.
 

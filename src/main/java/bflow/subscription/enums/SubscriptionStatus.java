@@ -1,6 +1,8 @@
 package bflow.subscription.enums;
 
 public enum SubscriptionStatus {
+    /** Subscription is waiting for confirmation. */
+    PENDING_ACTIVATION,
 
     /** Subscription is currently active. */
     ACTIVE,
@@ -14,3 +16,4 @@ public enum SubscriptionStatus {
     /** Subscription payment is past due. */
     PAST_DUE
 }
+

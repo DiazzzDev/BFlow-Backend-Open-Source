@@ -1,0 +1,93 @@
+package bflow.common.financial;
+
+import bflow.auth.services.CurrentUserService;
+import bflow.common.response.ApiResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.util.UUID;
+
+/**
+ * REST controller that exposes transaction history endpoints.
+ */
+@RestController
+@RequiredArgsConstructor
+public class ControllerTransactionHistory {
+
+    /**
+     * Service responsible for retrieving transaction history.
+     */
+    private final ServiceTransactionHistory serviceTransactionHistory;
+
+    /**
+     * Service that resolves the authenticated user.
+     */
+    private final CurrentUserService currentUserService;
+
+    /**
+     * Retrieves the unified transaction history for the authenticated user.
+     *
+     * @param authentication current authenticated user.
+     * @param query optional search term used to filter transactions.
+     * @param type optional transaction type filter.
+     * @param pageable pagination information.
+     * @param request current HTTP request.
+     * @return paginated transaction history.
+     */
+    @GetMapping("/api/v1/transactions")
+    public ApiResponse<Page<TransactionResponse>> getGlobalHistory(
+            final Authentication authentication,
+            @RequestParam(required = false) final String query,
+            @RequestParam(required = false) final TransactionType type,
+            final Pageable pageable,
+            final HttpServletRequest request
+    ) {
+        UUID userId = currentUserService.getCurrentUserId(authentication);
+        Page<TransactionResponse> history = serviceTransactionHistory
+                .getGlobalHistory(userId, query, type, pageable);
+
+        return ApiResponse.success(
+                "Transaction history retrieved successfully",
+                history,
+                request.getRequestURI()
+        );
+    }
+
+    /**
+     * Retrieves the transaction history for a specific wallet.
+     *
+     * @param walletId wallet identifier.
+     * @param authentication current authenticated user.
+     * @param query optional search term used to filter transactions.
+     * @param type optional transaction type filter.
+     * @param pageable pagination information.
+     * @param request current HTTP request.
+     * @return paginated wallet transaction history.
+     */
+    @GetMapping("/api/v1/wallets/{walletId}/transactions")
+    public ApiResponse<Page<TransactionResponse>> getWalletHistory(
+            @PathVariable final UUID walletId,
+            final Authentication authentication,
+            @RequestParam(required = false) final String query,
+            @RequestParam(required = false) final TransactionType type,
+            final Pageable pageable,
+            final HttpServletRequest request
+    ) {
+        UUID userId = currentUserService.getCurrentUserId(authentication);
+        Page<TransactionResponse> history = serviceTransactionHistory
+                .getWalletHistory(walletId, userId, query, type, pageable);
+
+        return ApiResponse.success(
+                "Wallet transaction history retrieved successfully",
+                history,
+                request.getRequestURI()
+        );
+    }
+}

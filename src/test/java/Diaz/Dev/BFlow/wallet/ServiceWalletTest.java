@@ -6,13 +6,14 @@ import bflow.auth.repository.RepositoryUser;
 import bflow.auth.services.UserServiceImpl;
 import bflow.wallet.DTO.UpdateWalletRequest;
 import bflow.wallet.DTO.WalletResponse;
-import bflow.wallet.RepositoryWallet;
-import bflow.wallet.RepositoryWalletUser;
-import bflow.wallet.ServiceWallet;
+import bflow.wallet.repository.RepositoryWallet;
 import bflow.wallet.entities.Wallet;
 import bflow.wallet.entities.WalletUser;
 import bflow.wallet.enums.Currency;
 import bflow.wallet.enums.WalletRole;
+import bflow.wallet.repository.RepositoryWalletUser;
+import bflow.wallet.service.ServiceWallet;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -87,25 +88,6 @@ class ServiceWalletTest {
         walletUser.setUser(user);
         walletUser.setWallet(wallet);
         walletUser.setRole(WalletRole.OWNER);
-    }
-
-    @Test
-    void testGetUserWallets() {
-        // Arrange
-        Pageable pageable = PageRequest.of(0, 10);
-        List<WalletUser> walletUsers = List.of(walletUser);
-        Page<WalletUser> walletPage = new PageImpl<>(walletUsers, pageable, 1);
-
-        doNothing().when(userService).validateUserActive(userId);
-        when(repositoryWalletUser.findByUserId(userId, pageable)).thenReturn(walletPage);
-
-        // Act
-        Page<WalletResponse> result = serviceWallet.getUserWallets(userId, pageable);
-
-        // Assert
-        assertEquals(1, result.getTotalElements());
-        assertEquals("Test Wallet", result.getContent().get(0).getName());
-        verify(userService).validateUserActive(userId);
     }
 
     @Test

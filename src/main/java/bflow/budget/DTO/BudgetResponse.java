@@ -1,5 +1,6 @@
 package bflow.budget.DTO;
 
+import bflow.budget.enums.BudgetScope;
 import bflow.budget.enums.BudgetStatus;
 import bflow.budget.enums.PeriodType;
 import lombok.Getter;
@@ -16,55 +17,89 @@ import java.util.UUID;
 @Getter
 @Setter
 public class BudgetResponse {
+
     /**
      * The budget ID.
      */
     private UUID id;
+
     /**
-     * The wallet ID.
+     * Wallet ID.
      */
     private UUID walletId;
+
     /**
-     * The budget period type.
+     * Wallet name.
+     */
+    private String walletName;
+
+    /**
+     * Category ID (only when scope = CATEGORY).
+     */
+    private UUID categoryId;
+
+    /**
+     * Category name (only when scope = CATEGORY).
+     */
+    private String categoryName;
+
+    /**
+     * Budget scope.
+     */
+    private BudgetScope scope;
+
+    /**
+     * Budget period type.
      */
     private PeriodType period;
+
     /**
-     * The budget start date.
+     * Budget start date.
      */
     private LocalDate startDate;
 
     /**
-     * The budget limit amount.
+     * Budget limit amount.
      */
     private BigDecimal budgetLimit;
+
     /**
-     * The amount spent.
+     * Amount spent.
      */
     private BigDecimal spent;
+
     /**
-     * The remaining budget amount.
+     * Remaining amount.
      */
     private BigDecimal remaining;
+
     /**
-     * The percentage used.
+     * Percentage used.
      */
     private Integer percentage;
 
     /**
-     * The budget status.
+     * Budget status.
      */
     private BudgetStatus status;
+
     /**
-     * The warning threshold.
+     * Warning threshold.
      */
     private Integer thresholdWarning;
+
     /**
-     * The critical threshold.
+     * Critical threshold.
      */
     private Integer thresholdCritical;
 
     /**
-     * The creation timestamp.
+     * Creation timestamp.
      */
     private Instant createdAt;
+
+    /**
+     * Last updated timestamp.
+     */
+    private Instant updatedAt;
 }

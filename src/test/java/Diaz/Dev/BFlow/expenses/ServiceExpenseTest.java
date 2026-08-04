@@ -15,13 +15,14 @@ import bflow.expenses.DTO.ExpenseResponse;
 import bflow.expenses.RepositoryExpense;
 import bflow.expenses.entity.Expense;
 import bflow.expenses.services.ServiceExpense;
-import bflow.wallet.RepositoryWallet;
-import bflow.wallet.RepositoryWalletUser;
-import bflow.wallet.ServiceWallet;
+import bflow.wallet.repository.RepositoryWallet;
 import bflow.wallet.entities.Wallet;
 import bflow.wallet.entities.WalletUser;
 import bflow.wallet.enums.Currency;
 import bflow.wallet.enums.WalletRole;
+import bflow.wallet.repository.RepositoryWalletUser;
+import bflow.wallet.service.ServiceWallet;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
