@@ -122,4 +122,24 @@ public interface RepositoryBudget extends JpaRepository<Budget, UUID>,
             PeriodType period,
             UUID id
     );
+<<<<<<< HEAD
 }
+=======
+
+    /**
+     * Counts all budgets for a specific user.
+     *
+     * @param userId the user ID
+     * @return list of budgets
+     */
+    long countByUserId(UUID userId);
+
+    /**
+     * Find all budgets for a specific user.
+     *
+     * @param userId the user ID
+     * @return list of budgets
+     */
+    List<Budget> findAllByUserIdOrderByUpdatedAtDesc(UUID userId);
+}
+>>>>>>> origin/develop

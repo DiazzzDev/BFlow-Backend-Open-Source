@@ -36,62 +36,45 @@ public class Plan {
     @GeneratedValue
     private UUID id;
 
-    /** Unique code for the subscription plan. */
+    /** Unique code that identifies the plan. */
     @Column(nullable = false, unique = true, length = PLAN_CODE_LENGTH)
     private String code;
 
-    /** Display name for the plan. */
+    /** Display name of the plan. */
     @Column(nullable = false, length = PLAN_NAME_LENGTH)
     private String name;
 
-    /** Price of the plan. */
+    /** Price charged for the plan. */
     @Column(nullable = false, precision = MONEY_PRECISION, scale = 2)
     private BigDecimal price;
 
-    /** Billing frequency for the plan. */
+    /** Billing cadence applied to the plan. */
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private BillingPeriod billingPeriod;
 
-    /** Maximum number of wallets allowed for this plan. */
-    @Column(nullable = false)
-    private Integer maxWallets;
-
-    /** Maximum number of budgets allowed for this plan. */
-    @Column(nullable = false)
-    private Integer maxBudgets;
-
-    /** Maximum number of recurring transactions allowed. */
-    @Column(nullable = false)
-    private Integer maxRecurringTransactions;
-
-    /** Maximum number of shared wallets permitted. */
-    private Integer maxSharedWallets;
-
-    /** Maximum wallet members allowed. */
-    private Integer maxWalletMembers;
-
-    /** Whether dashboard customization is enabled. */
-    @Column(nullable = false)
-    private boolean dashboardCustomization;
-
-    /** Whether shared wallet creation is enabled. */
-    @Column(nullable = false)
-    private boolean canCreateSharedWallets;
-
-    /** Whether export functionality is enabled. */
-    @Column(nullable = false)
-    private boolean exportEnabled;
-
-    /** Indicates if the plan is active. */
+    /** Whether the plan is currently active for purchase. */
     @Column(nullable = false)
     private boolean active = true;
 
-    /** Timestamp when the plan was created. */
+    /** Provider identifier for recurring payment links. */
+    @Column
+    private String providerLinkId;
+
+    /** Checkout URL returned by the payment provider. */
+    @Column
+    private String checkoutUrl;
+
+    /** Billing day selected for monthly subscriptions. */
+    @Column
+    private Integer billingDay;
+
+    /** Timestamp when the plan record was created. */
     @CreationTimestamp
     private Instant createdAt;
 
-    /** Timestamp when the plan was last updated. */
+    /** Timestamp when the plan record was last updated. */
     @UpdateTimestamp
     private Instant updatedAt;
 }
+

@@ -1,10 +1,10 @@
 # POLÍTICA DE PRIVACIDAD
 
-**Última actualización: 11 de abril de 2026**
+**Última actualización: 3 de agosto de 2026**
 
 **Operador:** BFlow Studio, proveedor de servicios de software independiente con sede en El Salvador, propiedad y operado por Edwin Adrián Díaz Henríquez.
 
-**Descripción del Servicio:** BFlow es una aplicación web de gestión de finanzas personales que ayuda a los usuarios a registrar, organizar y analizar ingresos, gastos y actividad financiera en múltiples fuentes de pago, sin conexión directa a bancos. La plataforma está diseñada únicamente para seguimiento financiero personal y no proporciona asesoría financiera, de inversión, fiscal o legal.
+**Descripción del Servicio:** BFlow es una aplicación web de gestión de finanzas personales que ayuda a los usuarios a registrar, organizar y analizar ingresos, gastos y actividad financiera en múltiples billeteras, cuentas o registros financieros personales. Sin conexión directa a bancos. La plataforma está diseñada únicamente para seguimiento financiero personal y no proporciona asesoría financiera, de inversión, fiscal o legal.
 
 Esta Política de Privacidad describe cómo y por qué recopilamos, almacenamos, usamos y compartimos tu información personal cuando:
 
@@ -167,7 +167,7 @@ Podemos compartir o transferir tu información en conexión con fusiones, ventas
 
 ## 4. ¿USAMOS COOKIES Y OTRAS TECNOLOGÍAS DE SEGUIMIENTO?
 
-**Resumen:** Usamos cookies y tecnologías de seguimiento para recopilar y almacenar información.
+**Resumen:** Usamos cookies y tecnologías de seguimiento para mantener sesión en la plataforma.
 
 Usamos cookies y tecnologías de seguimiento similares (web beacons, píxeles) cuando interactúas con nuestros Servicios. Estas tecnologías nos ayudan a:
 - Mantener la seguridad de tu cuenta y prevenir acceso no autorizado
@@ -175,7 +175,7 @@ Usamos cookies y tecnologías de seguimiento similares (web beacons, píxeles) c
 - Guardar tus preferencias y mantener sesiones de login
 - Ayudar con funciones básicas (selección de idioma, preferencias de tema)
 
-**Importante:** No usamos cookies para publicidad, seguimiento de comportamiento entre sitios o marketing. **BFlow no muestra anuncios y no hacemos seguimiento para marketing dirigido.** Solo usamos análisis de Cloudflare para entender cómo funciona la plataforma y cómo los usuarios interactúan con características, anonimizados y agregados únicamente.
+**Importante:** No usamos cookies para publicidad, seguimiento de comportamiento entre sitios o marketing. **BFlow no muestra anuncios y no hacemos seguimiento para marketing dirigido.** Solo usamos análisis de Cloudflare para entender cómo funciona la plataforma y cómo los usuarios interactúan con características y agregados únicamente.
 
 Información específica sobre cómo usamos estas tecnologías y cómo rechazar cookies está en nuestra Política de Cookies: [https://bflow-studio.com/cookies](https://bflow-studio.com/cookies).
 
@@ -188,6 +188,8 @@ Información específica sobre cómo usamos estas tecnologías y cómo rechazar 
 **Resumen:** Si eliges registrarte con una cuenta de Google, podemos acceder a cierta información de tu perfil.
 
 Ofrecemos la capacidad de registrarte e iniciar sesión usando tu cuenta Google. Si eliges este método, recibiremos cierta información de perfil desde Google, incluyendo nombre, correo y foto de perfil. Solicitamos solo la información mínima necesaria para crear y gestionar tu cuenta.
+
+Amazon Cognito actúa como proveedor de autenticación y administra el proceso de inicio de sesión y determinadas credenciales de autenticación.
 
 Usamos información de Google solo para los fines descritos en esta Política: creación de cuenta, autenticación y comunicación. No controlamos y no somos responsables por otros usos de tu información personal por Google. Recomendamos revisar la Política de Privacidad de Google: [https://policies.google.com/privacy](https://policies.google.com/privacy).
 
@@ -206,7 +208,6 @@ Solo retenemos tu información personal mientras sea necesario para los propósi
 - **Datos financieros y transacciones:** Durante la vida de la cuenta; usuarios pueden solicitar eliminación en cualquier momento
 - **Logs de servidor e IP:** Retenidos 90 días para análisis de seguridad; logs más antiguos eliminados
 - **Copias de respaldo:** Según nuestro cronograma de respaldo; mismo cronograma de eliminación cuando datos primarios se eliminan
-- **Registros de investigación de fraude:** Duración de investigación más 1 año para prevención
 
 [Volver a tabla de contenidos](#tabla-de-contenidos)
 
@@ -252,6 +253,8 @@ Si deseas revisar, cambiar o terminar tu cuenta:
 
 Al solicitar terminar tu cuenta, desactivaremos o eliminaremos tu información de nuestras bases de datos activas. Sin embargo, podemos retener información para prevenir fraude, resolver problemas, investigaciones, aplicar nuestros Términos o cumplir legalmente.
 
+La eliminación de la cuenta implica la eliminación o anonimización de los datos personales, salvo aquellos cuya conservación sea necesaria por obligaciones legales, prevención de fraude, resolución de disputas o protección de derechos de BFlow.
+
 ### Cookies y Tecnologías Similares
 
 La mayoría de navegadores aceptan cookies por defecto. Si prefieres, puedes configurar tu navegador para eliminar o rechazar cookies. Si haces esto, podría afectar ciertas características de nuestros Servicios. Para más información, consulta nuestra Política de Cookies: [https://bflow-studio.com/cookies](https://bflow-studio.com/cookies).
@@ -266,23 +269,9 @@ Si tienes preguntas sobre tus derechos de privacidad, puedes contactarnos en [pr
 
 La mayoría de navegadores web, algunos sistemas operativos móviles y aplicaciones móviles incluyen una característica Do-Not-Track ("DNT") que puede activarse para señalar tu preferencia de no ser monitoreado. Actualmente no respondemos a señales DNT ni mecanismos que comuniquen automáticamente tu elección de no ser rastreado. Si en el futuro debe adoptarse un estándar que debamos seguir, lo informaremos en una versión revisada de esta Política.
 
-### Cumplimiento GDPR y Transferencias Internacionales
+### Transferencias Internacionales de Datos
 
-**Alcance:** Los Servicios no están específicamente dirigidos a usuarios de la Zona Económica Europea (EEA). Sin embargo, si estás en la EEA y eliges usar BFlow, GDPR aplica a nuestro procesamiento de tu información personal.
-
-**Transferencias de Datos y Salvaguardas Legales:** Cuando usas BFlow, tu información personal podría transferirse a El Salvador, Estados Unidos u otras jurisdicciones. Protegemos transferencias internacionales mediante:
-- **Acuerdos de Procesamiento de Datos (DPA)** que incorporan Cláusulas Contractuales Estándar (SCCs) aprobadas por la Comisión Europea
-- **Instrucciones documentadas a procesadores** con todos los proveedores terceros (AWS, Cloudflare, Wompi, Vercel) que los vinculan a cumplimiento GDPR
-- **Medidas de seguridad reforzadas** incluyendo encriptación en tránsito y en reposo, controles de acceso, auditorías de seguridad regulares
-
-**Tus Derechos GDPR (si estás en EEA):**
-- Acceder a tu información personal (Art. 15)
-- Corregir datos imprecisos (Art. 16)
-- Solicitar eliminación / "derecho al olvido" (Art. 17)
-- Restringir procesamiento (Art. 18)
-- Portabilidad (Art. 20)
-- Objetar procesamiento (Art. 21)
-- Presentar queja ante tu autoridad de protección de datos local
+Para prestar el servicio, BFlow puede utilizar proveedores tecnológicos ubicados en distintas jurisdicciones. Cuando corresponda, dichos proveedores tratarán información personal conforme a sus propias condiciones contractuales y medidas de seguridad. BFlow procurará seleccionar proveedores reconocidos que implementen estándares razonables de protección de la información.
 
 Para ejercer estos derechos, contacta [privacy@bflow-studio.com](mailto:privacy@bflow-studio.com) o visita [https://bflow-studio.com/contact](https://bflow-studio.com/contact).
 
@@ -337,17 +326,13 @@ Esta Política de Privacidad y nuestro procesamiento de tu información personal
 
 Esta elección de ley aplica independientemente de tu ubicación física, **excepto donde leyes de protección del consumidor o de protección de datos en tu jurisdicción ofrezcan mayor protección, en cuyo caso esas leyes prevalecen.**
 
-### Cumplimiento Multi-Jurisdiccional
+### Cumplimiento Internacional
 
-**Para Usuarios de la Zona Económica Europea (EEA):** Si estás en la EEA, GDPR aplica al procesamiento de tu información personal por BFlow. Tus derechos GDPR (Art. 15-20) son además de y separados de cualquier protección de ley de El Salvador. Tienes derecho a presentar una queja ante tu autoridad local de protección de datos si crees que tus derechos han sido violados.
+BFlow presta sus servicios desde la República de El Salvador. No obstante, debido a la naturaleza de Internet, la plataforma puede ser utilizada por personas ubicadas en otras jurisdicciones.
 
-**Para Brasil:** Cumplimos con la Lei Geral de Proteção de Dados (LGPD), la ley de protección de datos de Brasil, particularmente respecto a datos financieros sensibles y tus derechos a acceso, corrección, eliminación y portabilidad.
+Cuando la legislación aplicable otorgue derechos adicionales a los usuarios en materia de protección de datos personales, BFlow procurará atender las solicitudes relacionadas con dichos derechos en la medida exigida por la normativa aplicable al tratamiento realizado.
 
-**Para Colombia:** Cumplimos con la Ley de Habeas Data y regulaciones de protección de datos colombianas, particularmente respecto a derechos y restricciones de procesamiento de datos personales.
-
-**Para México:** Cumplimos con leyes de protección de datos aplicables incluyendo la Ley Federal de Protección de Datos Personales en Posesión de los Particulares y leyes equivalentes a nivel estatal.
-
-**Para Otras Jurisdicciones:** Cumplimos con leyes de protección de datos y privacidad aplicables en cualquier jurisdicción donde nuestros usuarios estén o donde podamos estar sujetos a jurisdicción. Si ley local ofrece mayor protección que la ley de El Salvador, aplica la mayor protección.
+Cuando sea necesario para la prestación del servicio, los datos personales podrán ser tratados o almacenados por proveedores tecnológicos ubicados en otros países. BFlow procurará seleccionar proveedores que implementen medidas razonables de seguridad y protección de datos acordes con la naturaleza del servicio.
 
 ### Resolución de Disputas
 
@@ -369,7 +354,6 @@ Para preguntas o dudas sobre esta Política de Privacidad, contacta a:
 
 ---
 
-**Última actualización:** 11 de abril de 2026  
 **Idioma:** Este documento fue originalmente redactado en español. Esta es la versión principal para usuarios de habla hispana. Una versión en inglés está disponible para referencia.
 
 **Nota sobre Versiones Idiomáticas:** Si existe conflicto entre esta versión en español y cualquier traducción o versión en otro idioma, esta versión en español prevalece para usuarios en España, América Latina y otras jurisdicciones hispanohablantes.

@@ -1,19 +1,28 @@
 package bflow.common.exception;
 
 import bflow.common.response.ApiResponse;
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.IncorrectResultSizeDataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.servlet.NoHandlerFoundException;
 import org.apache.catalina.connector.ClientAbortException;
 import org.springframework.web.context.request.async.AsyncRequestNotUsableException;
+
+import java.util.UUID;
 import java.util.stream.Collectors;
+import org.springframework.http.converter.HttpMessageNotReadableException;
+
+import tools.jackson.databind.exc.InvalidFormatException;
 
 /**
  * Global controller advice to handle application-wide exceptions.
@@ -360,5 +369,161 @@ public final class GlobalExceptionHandler {
         }
 
         return false;
+    }
+
+    /**
+     * Handles JPA entity not found exceptions.
+     *
+     * @param ex the exception
+     * @param request the current HTTP request
+     * @return a response with NOT_FOUND status
+     */
+    @ExceptionHandler(EntityNotFoundException.class)
+    public ResponseEntity<ApiResponse<Void>> handleEntityNotFound(
+        final EntityNotFoundException ex,
+        final HttpServletRequest request
+    ) {
+    return ResponseEntity
+        .status(HttpStatus.NOT_FOUND)
+        .body(ApiResponse.error(
+            ex.getMessage(),
+            request.getRequestURI()
+        ));
+    }
+
+    /**
+     * Handles errors communicating with external services.
+     *
+     * @param ex the exception
+     * @param request the current HTTP request
+     * @return a response with BAD_GATEWAY status
+     */
+    @ExceptionHandler(RestClientException.class)
+    public ResponseEntity<ApiResponse<Void>> handleRestClientException(
+        final RestClientException ex,
+        final HttpServletRequest request
+    ) {
+        log.error("Error comunicándose con Wompi", ex);
+        return ResponseEntity
+            .status(HttpStatus.BAD_GATEWAY)
+            .body(ApiResponse.error(
+                "No fue posible comunicarse con el proveedor de pagos.",
+                request.getRequestURI()
+        ));
+    }
+
+    /**
+     * Handles malformed or unreadable HTTP request bodies.
+     *
+     * @param request the current HTTP request
+     * @param ex the exception
+     * @return an error response with BAD_REQUEST status
+     */
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ApiResponse<Void> handleHttpMessageNotReadable(
+            final HttpServletRequest request,
+            final HttpMessageNotReadableException ex
+    ) {
+
+        String message = "El cuerpo de la solicitud es inválido.";
+
+        Throwable cause = ex.getMostSpecificCause();
+
+        if (cause instanceof InvalidFormatException invalidFormat) {
+
+            String field = invalidFormat.getPath()
+                    .stream()
+                    .findFirst()
+                    .map(ref -> ref.getPropertyName())
+                    .orElse("desconocido");
+
+            if (invalidFormat.getTargetType() == UUID.class) {
+                message = "El campo '%s' debe ser un UUID válido."
+                        .formatted(field);
+            } else {
+                message = "El campo '%s' tiene un formato inválido."
+                        .formatted(field);
+            }
+        }
+
+        return ApiResponse.error(
+                message,
+                request.getRequestURI()
+        );
+    }
+
+    /**
+     * Handles subscription plan limit violations.
+     *
+     * @param ex the exception
+     * @param request the current HTTP request
+     * @return a response with PAYMENT_REQUIRED status
+     */
+    @ExceptionHandler(PlanLimitExceededException.class)
+    public ResponseEntity<ApiResponse<Void>> handlePlanLimitExceeded(
+            final PlanLimitExceededException ex,
+            final HttpServletRequest request
+    ) {
+        return ResponseEntity
+                .status(HttpStatus.PAYMENT_REQUIRED)
+                .body(ApiResponse.error(
+                        ex.getMessage(), request.getRequestURI()
+                ));
+    }
+
+    /**
+     * Handles database inconsistency errors caused by unexpected query results.
+     *
+     * @param ex the exception
+     * @param request the current HTTP request
+     * @return a response with CONFLICT status
+     */
+    @ExceptionHandler(IncorrectResultSizeDataAccessException.class)
+    public ResponseEntity<ApiResponse<Void>> handleIncorrectResultSize(
+            final IncorrectResultSizeDataAccessException ex,
+            final HttpServletRequest request
+    ) {
+
+        log.error(
+                "Database inconsistency at {}",
+                request.getRequestURI(),
+                ex
+        );
+
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(ApiResponse.error(
+                        "A data consistency problem was detected.",
+                        request.getRequestURI()
+                ));
+    }
+
+    /**
+     * Handles business conflict exceptions.
+     *
+     * @param ex the exception.
+     * @param request the current request.
+     * @return error response with CONFLICT status.
+     */
+    @ExceptionHandler(ConflictException.class)
+    public ResponseEntity<ApiResponse<Void>> handleConflict(
+        final ConflictException ex,
+        final HttpServletRequest request
+    ) {
+
+        log.warn(
+                "BUSINESS CONFLICT at {} {} - {}",
+                request.getMethod(),
+                request.getRequestURI(),
+                ex.getMessage()
+        );
+
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(ApiResponse.error(
+                        ex.getMessage(),
+                        request.getRequestURI()
+                ));
     }
 }

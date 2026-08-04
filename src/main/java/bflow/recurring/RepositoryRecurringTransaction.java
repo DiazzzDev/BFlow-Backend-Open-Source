@@ -37,4 +37,13 @@ public interface RepositoryRecurringTransaction
      * @return list of recurring transactions
      */
     List<RecurringTransaction> findByUserId(UUID userId);
+
+    /**
+     * Counts the number of active recurring transactions
+     * owned by the specified user.
+     *
+     * @param userId the user identifier
+     * @return the number of active recurring transactions
+     */
+    long countByUserIdAndActiveTrue(UUID userId);
 }

@@ -48,6 +48,7 @@ public final class ControllerBudget {
     private final CurrentUserService currentUserService;
 
     /**
+<<<<<<< HEAD
      * Searches budgets owned by the authenticated user.
      * Query parameters include name, walletId, period, scope, startDateFrom,
      * startDateTo, page, size and sort. For example:
@@ -81,6 +82,27 @@ public final class ControllerBudget {
                 "Budgets retrieved successfully",
                 budgets,
                 request.getRequestURI()));
+=======
+     * Get all budgets for a specific user.
+     *
+     * @param authentication the authentication object
+     * @return response containing list of budgets
+     */
+    @GetMapping
+    public ApiResponse<List<BudgetResponse>> getBudgets(
+            final Authentication authentication
+    ) {
+        UUID userId = currentUserService.getCurrentUserId(authentication);
+
+        List<BudgetResponse> budgets =
+                budgetService.getBudgets(userId);
+
+        return ApiResponse.success(
+                "Budgets retrieved successfully",
+                budgets,
+                "/api/v1/budgets"
+        );
+>>>>>>> origin/develop
     }
 
     /**
