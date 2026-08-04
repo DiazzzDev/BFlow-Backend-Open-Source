@@ -5,6 +5,7 @@ import bflow.wallet.enums.WalletRole;
 import org.springframework.data.domain.Page;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 import org.springframework.data.domain.Pageable;
 
@@ -124,4 +125,7 @@ public interface RepositoryWalletUser extends JpaRepository<WalletUser, UUID>,
      * @return a list of wallet members
      */
     List<WalletUser> findByWalletId(UUID walletId);
+
+    @Query("SELECT wu.wallet.id FROM WalletUser wu WHERE wu.user.id = :userId")
+    List<UUID> findWalletIdsByUserId(UUID userId);
 }
