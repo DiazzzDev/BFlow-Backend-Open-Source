@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
+import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -47,4 +48,33 @@ public interface RepositoryTransfers extends JpaRepository<Transfer, UUID> {
             UUID walletId,
             Pageable pageable
     );
+
+    /**
+     * Counts the total number of transfers where the wallet is either the
+     * source or destination.
+     *
+     * @param walletId wallet identifier.
+     * @return total transfer count.
+     */
+    @Query("""
+    SELECT COUNT(t) FROM Transfer t
+    WHERE t.fromWallet.id = :walletId
+       OR t.toWallet.id = :walletId
+""")
+    long countByWallet(UUID walletId);
+
+    /**
+     * Retrieves the latest transfer creation timestamp where the wallet is
+     * either the source or destination.
+     *
+     * @param walletId wallet identifier.
+     * @return most recent creation timestamp, or {@code null} if no transfers
+     *         exist.
+     */
+    @Query("""
+    SELECT MAX(t.createdAt) FROM Transfer t
+    WHERE t.fromWallet.id = :walletId
+       OR t.toWallet.id = :walletId
+""")
+    Instant findMaxCreatedAtByWallet(UUID walletId);
 }

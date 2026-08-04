@@ -3,20 +3,30 @@ package bflow.common.exception;
 import bflow.common.response.ApiResponse;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.IncorrectResultSizeDataAccessException;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.validation.BindException;
+import org.springframework.web.HttpMediaTypeNotAcceptableException;
+import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingRequestHeaderException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.client.RestClientException;
+import org.springframework.web.method.annotation.HandlerMethodValidationException;
 import org.springframework.web.servlet.NoHandlerFoundException;
 import org.apache.catalina.connector.ClientAbortException;
 import org.springframework.web.context.request.async.AsyncRequestNotUsableException;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -523,6 +533,260 @@ public final class GlobalExceptionHandler {
                 .status(HttpStatus.CONFLICT)
                 .body(ApiResponse.error(
                         ex.getMessage(),
+                        request.getRequestURI()
+                ));
+    }
+
+    /**
+     * Handles invalid request parameter values.
+     *
+     * @param ex the exception
+     * @param request the current HTTP request
+     * @return a response with BAD_REQUEST status
+     */
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ApiResponse<Void>> handleMethodArgumentTypeMismatch(
+        final MethodArgumentTypeMismatchException ex,
+        final HttpServletRequest request
+    ) {
+
+        String message = "Invalid value for parameter '%s'."
+            .formatted(ex.getName());
+
+        if (ex.getRequiredType() != null
+            && ex.getRequiredType().isEnum()) {
+
+            Object[] values = ex.getRequiredType().getEnumConstants();
+
+            String allowedValues = java.util.Arrays.stream(values)
+                .map(Object::toString)
+                .collect(java.util.stream.Collectors.joining(", "));
+
+            message = "Invalid value '%s' for "
+            + "parameter '%s'. Allowed values: %s."
+                .formatted(
+                        ex.getValue(),
+                        ex.getName(),
+                        allowedValues
+                );
+        }
+
+        return ResponseEntity
+            .status(HttpStatus.BAD_REQUEST)
+            .body(ApiResponse.error(
+                    message,
+                    request.getRequestURI()
+            ));
+    }
+
+    /**
+     * Handles missing required request parameters.
+     *
+     * @param ex the exception
+     * @param request the current HTTP request
+     * @return a response with BAD_REQUEST status
+     */
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    public ResponseEntity<ApiResponse<Void>> handleMissingRequestParameter(
+            final MissingServletRequestParameterException ex,
+            final HttpServletRequest request
+    ) {
+
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(ApiResponse.error(
+                        "Missing required parameter '%s'."
+                                .formatted(ex.getParameterName()),
+                        request.getRequestURI()
+                ));
+    }
+
+    /**
+     * Handles missing required request headers.
+     *
+     * @param ex the exception
+     * @param request the current HTTP request
+     * @return a response with BAD_REQUEST status
+     */
+    @ExceptionHandler(MissingRequestHeaderException.class)
+    public ResponseEntity<ApiResponse<Void>> handleMissingRequestHeader(
+            final MissingRequestHeaderException ex,
+            final HttpServletRequest request
+    ) {
+
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(ApiResponse.error(
+                        "Missing required header '%s'."
+                                .formatted(ex.getHeaderName()),
+                        request.getRequestURI()
+                ));
+    }
+
+    /**
+     * Handles method parameter validation failures.
+     *
+     * @param ex the exception
+     * @param request the current HTTP request
+     * @return a response with BAD_REQUEST status
+     */
+    @ExceptionHandler(HandlerMethodValidationException.class)
+    public ResponseEntity<ApiResponse<Void>> handleHandlerMethodValidation(
+            final HandlerMethodValidationException ex,
+            final HttpServletRequest request
+    ) {
+
+        String message = ex.getAllErrors()
+                .stream()
+                .map(error -> error.getDefaultMessage())
+                .filter(java.util.Objects::nonNull)
+                .collect(Collectors.joining(", "));
+
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(ApiResponse.error(
+                        message.isBlank()
+                                ? "Request validation failed."
+                                : message,
+                        request.getRequestURI()
+                ));
+    }
+
+    /**
+     * Handles constraint validation failures.
+     *
+     * @param ex the exception
+     * @param request the current HTTP request
+     * @return a response with BAD_REQUEST status
+     */
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<ApiResponse<Void>> handleConstraintViolation(
+            final ConstraintViolationException ex,
+            final HttpServletRequest request
+    ) {
+
+        String message = ex.getConstraintViolations()
+                .stream()
+                .map(violation -> violation.getMessage())
+                .collect(Collectors.joining(", "));
+
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(ApiResponse.error(
+                        message,
+                        request.getRequestURI()
+                ));
+    }
+
+    /**
+     * Handles unsupported media types.
+     *
+     * @param request the current HTTP request
+     * @return a response with UNSUPPORTED_MEDIA_TYPE status
+     */
+    @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
+    public ResponseEntity<ApiResponse<Void>> handleUnsupportedMediaType(
+            final HttpServletRequest request
+    ) {
+
+        return ResponseEntity
+                .status(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
+                .body(ApiResponse.error(
+                        "Unsupported media type.",
+                        request.getRequestURI()
+                ));
+    }
+
+    /**
+     * Handles unacceptable response media types.
+     *
+     * @param request the current HTTP request
+     * @return a response with NOT_ACCEPTABLE status
+     */
+    @ExceptionHandler(HttpMediaTypeNotAcceptableException.class)
+    public ResponseEntity<ApiResponse<Void>> handleNotAcceptable(
+            final HttpServletRequest request
+    ) {
+
+        return ResponseEntity
+                .status(HttpStatus.NOT_ACCEPTABLE)
+                .body(ApiResponse.error(
+                        "Requested media type is not supported.",
+                        request.getRequestURI()
+                ));
+    }
+
+    /**
+     * Handles database integrity constraint violations.
+     *
+     * @param ex the exception
+     * @param request the current HTTP request
+     * @return a response with CONFLICT status
+     */
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ApiResponse<Void>> handleDataIntegrityViolation(
+            final DataIntegrityViolationException ex,
+            final HttpServletRequest request
+    ) {
+
+        log.warn(
+                "DATABASE CONFLICT at {} {}",
+                request.getMethod(),
+                request.getRequestURI()
+        );
+
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(ApiResponse.error(
+                        "The operation violates a database constraint.",
+                        request.getRequestURI()
+                ));
+    }
+
+    /**
+     * Handles optimistic locking failures.
+     *
+     * @param ex the exception
+     * @param request the current HTTP request
+     * @return a response with CONFLICT status
+     */
+    @ExceptionHandler(OptimisticLockingFailureException.class)
+    public ResponseEntity<ApiResponse<Void>> handleOptimisticLockingFailure(
+            final OptimisticLockingFailureException ex,
+            final HttpServletRequest request
+    ) {
+
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(ApiResponse.error(
+                        "The resource was modified by another request.",
+                        request.getRequestURI()
+                ));
+    }
+
+    /**
+     * Handles binding errors.
+     *
+     * @param ex the exception
+     * @param request the current HTTP request
+     * @return a response with BAD_REQUEST status
+     */
+    @ExceptionHandler(BindException.class)
+    public ResponseEntity<ApiResponse<Void>> handleBindException(
+            final BindException ex,
+            final HttpServletRequest request
+    ) {
+
+        String errorMsg = ex.getBindingResult()
+                .getFieldErrors()
+                .stream()
+                .map(err -> err.getField() + ": " + err.getDefaultMessage())
+                .collect(Collectors.joining(", "));
+
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(ApiResponse.error(
+                        errorMsg,
                         request.getRequestURI()
                 ));
     }

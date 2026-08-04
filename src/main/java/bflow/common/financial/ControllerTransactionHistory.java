@@ -14,14 +14,33 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.UUID;
 
+/**
+ * REST controller that exposes transaction history endpoints.
+ */
 @RestController
 @RequiredArgsConstructor
 public class ControllerTransactionHistory {
 
+    /**
+     * Service responsible for retrieving transaction history.
+     */
     private final ServiceTransactionHistory serviceTransactionHistory;
+
+    /**
+     * Service that resolves the authenticated user.
+     */
     private final CurrentUserService currentUserService;
 
-    /** Global unified transaction history for the authenticated user. */
+    /**
+     * Retrieves the unified transaction history for the authenticated user.
+     *
+     * @param authentication current authenticated user.
+     * @param query optional search term used to filter transactions.
+     * @param type optional transaction type filter.
+     * @param pageable pagination information.
+     * @param request current HTTP request.
+     * @return paginated transaction history.
+     */
     @GetMapping("/api/v1/transactions")
     public ApiResponse<Page<TransactionResponse>> getGlobalHistory(
             final Authentication authentication,
@@ -41,6 +60,17 @@ public class ControllerTransactionHistory {
         );
     }
 
+    /**
+     * Retrieves the transaction history for a specific wallet.
+     *
+     * @param walletId wallet identifier.
+     * @param authentication current authenticated user.
+     * @param query optional search term used to filter transactions.
+     * @param type optional transaction type filter.
+     * @param pageable pagination information.
+     * @param request current HTTP request.
+     * @return paginated wallet transaction history.
+     */
     @GetMapping("/api/v1/wallets/{walletId}/transactions")
     public ApiResponse<Page<TransactionResponse>> getWalletHistory(
             @PathVariable final UUID walletId,

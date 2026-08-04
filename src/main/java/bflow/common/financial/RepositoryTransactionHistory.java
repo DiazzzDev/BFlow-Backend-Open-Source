@@ -31,21 +31,44 @@ import java.util.UUID;
 @Repository
 public class RepositoryTransactionHistory {
 
-    /** Columns the client is allowed to sort by (prevents SQL injection via ORDER BY). */
+    /**
+     * Columns the client is allowed to sort by
+     * (prevents SQL injection via ORDER BY).
+     */
     private static final Map<String, String> SORTABLE_COLUMNS = Map.of(
             "date", "txn_date",
             "amount", "amount"
     );
 
+    /**
+     * Default column used for sorting.
+     */
     private static final String DEFAULT_SORT_COLUMN = "txn_date";
+
+    /**
+     * Default sort direction.
+     */
     private static final String DEFAULT_SORT_DIRECTION = "DESC";
 
+    /**
+     * JDBC template used to execute native SQL queries.
+     */
     private final NamedParameterJdbcTemplate jdbc;
 
-    public RepositoryTransactionHistory(final NamedParameterJdbcTemplate jdbc) {
-        this.jdbc = jdbc;
+    /**
+     * Creates a new transaction history repository.
+     *
+     * @param jdbcTemplate JDBC template used to execute native queries.
+     */
+    public RepositoryTransactionHistory(
+            final NamedParameterJdbcTemplate jdbcTemplate
+    ) {
+        this.jdbc = jdbcTemplate;
     }
 
+    /**
+     * SQL branch for expense transactions.
+     */
     private static final String EXPENSE_BRANCH = """
         SELECT
             e.id::text AS id, 'EXPENSE' AS type, e.title AS title,
@@ -67,6 +90,9 @@ public class RepositoryTransactionHistory {
                OR UPPER(e.description) LIKE :queryPattern)
         """;
 
+    /**
+     * SQL branch for income transactions.
+     */
     private static final String INCOME_BRANCH = """
     SELECT
         i.id::text AS id,
@@ -96,6 +122,9 @@ public class RepositoryTransactionHistory {
            OR UPPER(i.description) LIKE :queryPattern)
     """;
 
+    /**
+     * SQL branch for transfer transactions.
+     */
     private static final String TRANSFER_BRANCH = """
     SELECT
         t.id::text AS id,
@@ -128,6 +157,9 @@ public class RepositoryTransactionHistory {
       AND (:hasQuery = false OR UPPER(t.description) LIKE :queryPattern)
     """;
 
+    /**
+     * Maps each transaction type to its SQL branch.
+     */
     private static final Map<TransactionType, String> BRANCHES_BY_TYPE =
             new EnumMap<>(TransactionType.class);
 
@@ -141,8 +173,10 @@ public class RepositoryTransactionHistory {
      * Executes the unified, paginated transaction history.
      *
      * @param walletIds the set of wallet IDs the user is authorized to see.
-     * @param criteria dynamic filters (search text, type, primary wallet for sign).
-     * @param pageable pagination + sort (only "date"/"amount" honored; defaults to date desc).
+     * @param criteria dynamic filters
+     * (search text, type, primary wallet for sign).
+     * @param pageable pagination + sort
+     * (only "date"/"amount" honored; defaults to date desc).
      * @return a page of unified transaction entries.
      */
     public Page<TransactionResponse> search(
@@ -163,7 +197,9 @@ public class RepositoryTransactionHistory {
                 EXPENSE_BRANCH, INCOME_BRANCH, TRANSFER_BRANCH
         );
 
-        boolean hasQuery = criteria.query() != null && !criteria.query().isBlank();
+        boolean hasQuery = criteria.query() != null
+            && !criteria.query().isBlank();
+
         String queryPattern = hasQuery
                 ? "%" + criteria.query().trim().toUpperCase() + "%"
                 : null;
@@ -181,7 +217,8 @@ public class RepositoryTransactionHistory {
         params.addValue("limit", pageable.getPageSize());
         params.addValue("offset", pageable.getOffset());
 
-        List<TransactionResponse> content = jdbc.query(dataSql, params, (rs, rowNum) -> {
+        List<TransactionResponse> content =
+        jdbc.query(dataSql, params, (rs, rowNum) -> {
             TransactionResponse dto = new TransactionResponse();
             dto.setId(rs.getString("id"));
             dto.setType(TransactionType.valueOf(rs.getString("type")));
@@ -192,8 +229,14 @@ public class RepositoryTransactionHistory {
             dto.setDate(ts != null ? ts.toInstant() : null);
             dto.setWalletId(rs.getString("wallet_id"));
             dto.setWalletName(rs.getString("wallet_name"));
-            dto.setCounterpartWalletId(rs.getString("counterpart_wallet_id"));
-            dto.setCounterpartWalletName(rs.getString("counterpart_wallet_name"));
+            dto.setCounterpartWalletId(
+                rs.getString("counterpart_wallet_id")
+            );
+
+            dto.setCounterpartWalletName(
+                rs.getString("counterpart_wallet_name")
+            );
+
             dto.setCategoryId(rs.getString("category_id"));
             dto.setCategoryName(rs.getString("category_name"));
             dto.setCategoryIcon(rs.getString("category_icon"));
@@ -205,17 +248,22 @@ public class RepositoryTransactionHistory {
             return dto;
         });
 
-        String countSql = "SELECT COUNT(*) FROM (" + unifiedSelect + ") unified";
+        String countSql =
+        "SELECT COUNT(*) FROM (" + unifiedSelect + ") unified";
         Long total = jdbc.queryForObject(countSql, params, Long.class);
 
         return new PageImpl<>(content, pageable, total != null ? total : 0L);
     }
 
     /**
-     * Resolves a safe ORDER BY clause from the request's Sort, restricted
-     * to a whitelist of sortable columns. Falls back to txn_date DESC.
-     * Only the first Sort.Order is honored (single-column sort is enough
-     * for this use case and keeps the LIMIT/OFFSET pagination stable).
+     * Resolves a safe ORDER BY clause from the requested sort.
+     *
+     * Only whitelisted columns are allowed to prevent SQL injection.
+     * If no valid sort is provided, the default ordering is
+     * {@code txn_date DESC}.
+     *
+     * @param sort requested sort definition.
+     * @return SQL ORDER BY clause.
      */
     private String resolveOrderBy(final Sort sort) {
         if (sort == null || sort.isUnsorted()) {

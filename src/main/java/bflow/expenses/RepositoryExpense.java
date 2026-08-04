@@ -8,7 +8,9 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
+import java.util.Optional;
 import java.util.UUID;
 
 @Repository
@@ -61,4 +63,32 @@ public interface RepositoryExpense extends JpaRepository<Expense, UUID> {
             LocalDate start,
             LocalDate end
     );
+
+    /**
+     * Retrieves the expense with the highest amount for a wallet.
+     *
+     * @param walletId wallet identifier.
+     * @return the highest expense, if one exists.
+     */
+    Optional<Expense> findTopByWalletIdOrderByAmountDesc(UUID walletId);
+
+    /**
+     * Counts the total number of expenses for a wallet.
+     *
+     * @param walletId wallet identifier.
+     * @return total expense count.
+     */
+    long countByWalletId(UUID walletId);
+
+    /**
+     * Retrieves the latest expense creation timestamp for a wallet.
+     *
+     * @param walletId wallet identifier.
+     * @return most recent creation timestamp, or {@code null} if no expenses
+     *         exist.
+     */
+    @Query(
+        "SELECT MAX(e.createdAt) FROM Expense e WHERE e.wallet.id = :walletId"
+    )
+    Instant findMaxCreatedAtByWalletId(UUID walletId);
 }

@@ -126,6 +126,14 @@ public interface RepositoryWalletUser extends JpaRepository<WalletUser, UUID>,
      */
     List<WalletUser> findByWalletId(UUID walletId);
 
-    @Query("SELECT wu.wallet.id FROM WalletUser wu WHERE wu.user.id = :userId")
+    /**
+     * Retrieves the identifiers of all wallets associated with a user.
+     *
+     * @param userId the user UUID.
+     * @return a list containing the wallet identifiers.
+     */
+    @Query(
+        "SELECT wu.wallet.id FROM WalletUser wu WHERE wu.user.id = :userId"
+    )
     List<UUID> findWalletIdsByUserId(UUID userId);
 }

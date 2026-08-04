@@ -15,19 +15,42 @@ import java.util.UUID;
 @AllArgsConstructor
 public class ServiceTransactionHistory {
 
+    /**
+     * Repository used to retrieve unified transaction history.
+     */
     private final RepositoryTransactionHistory repositoryTransactionHistory;
+
+    /**
+     * Repository used to retrieve wallet memberships.
+     */
     private final RepositoryWalletUser repositoryWalletUser;
+
+    /**
+     * Service used to validate user status.
+     */
     private final UserServiceImpl userService;
 
     /**
-     * Unified transaction history across every wallet the user belongs to.
+     * Retrieves the unified transaction history across every wallet the user
+     * belongs to.
+     *
+     * @param userId authenticated user identifier.
+     * @param query optional search text.
+     * @param type optional transaction type filter.
+     * @param pageable pagination information.
+     * @return paginated transaction history.
      */
     public Page<TransactionResponse> getGlobalHistory(
-            final UUID userId, final String query,
-            final TransactionType type, final Pageable pageable
+        final UUID userId,
+        final String query,
+        final TransactionType type,
+        final Pageable pageable
     ) {
         userService.validateUserActive(userId);
-        List<UUID> walletIds = repositoryWalletUser.findWalletIdsByUserId(userId);
+
+        List<UUID> walletIds = repositoryWalletUser.findWalletIdsByUserId(
+                userId
+        );
 
         return repositoryTransactionHistory.search(
                 walletIds,
@@ -37,12 +60,22 @@ public class ServiceTransactionHistory {
     }
 
     /**
-     * Unified transaction history scoped to a single wallet.
+     * Retrieves the transaction history for a specific wallet.
+     *
+     * @param walletId wallet identifier.
+     * @param userId authenticated user identifier.
+     * @param query optional search text.
+     * @param type optional transaction type filter.
+     * @param pageable pagination information.
+     * @return paginated wallet transaction history.
      * @throws AccessDeniedException if the user has no access to the wallet.
      */
     public Page<TransactionResponse> getWalletHistory(
-            final UUID walletId, final UUID userId, final String query,
-            final TransactionType type, final Pageable pageable
+        final UUID walletId,
+        final UUID userId,
+        final String query,
+        final TransactionType type,
+        final Pageable pageable
     ) {
         userService.validateUserActive(userId);
 

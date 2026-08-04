@@ -8,6 +8,7 @@ import org.springframework.stereotype.Repository;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
+import org.springframework.data.domain.Pageable;
 
 /**
  * Repository interface for RecurringTransaction entities.
@@ -46,4 +47,17 @@ public interface RepositoryRecurringTransaction
      * @return the number of active recurring transactions
      */
     long countByUserIdAndActiveTrue(UUID userId);
+
+    /**
+     * Top N active recurring transactions for a wallet, nearest due date first.
+     * Use Pageable.ofSize(3) to get the top 3.
+     *
+     * @param walletId the wallet identifier
+     * @param pageable pagination (typically PageRequest.of(0, 3))
+     * @return the list of upcoming recurring transactions
+     */
+    List<RecurringTransaction>
+    findByWalletIdAndActiveTrueOrderByNextExecutionDateAsc(
+            UUID walletId, Pageable pageable
+    );
 }
