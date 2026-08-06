@@ -2,7 +2,13 @@ package bflow.budget.services;
 
 import bflow.auth.entities.User;
 import bflow.auth.services.UserServiceImpl;
-import bflow.budget.DTO.*;
+import bflow.budget.DTO.BudgetDetailResponse;
+import bflow.budget.DTO.BudgetPatchRequest;
+import bflow.budget.DTO.BudgetRequest;
+import bflow.budget.DTO.BudgetResponse;
+import bflow.budget.DTO.BudgetSummaryResponse;
+import bflow.budget.DTO.RecentActivityItem;
+import bflow.budget.DTO.SpendingTrendPoint;
 import bflow.budget.RepositoryBudget;
 import bflow.budget.entity.Budget;
 import bflow.budget.enums.BudgetScope;
@@ -570,7 +576,9 @@ public class BudgetService {
     /**
      * Builds the cumulative spending trend for the current budget period.
      *
+     * @param expenses expenses included in the current budget period
      * @param start the period start date
+     * @param rangeEnd the end of the period to include in the trend
      * @return list of trend points
      */
     private List<SpendingTrendPoint> buildSpendingTrend(
@@ -620,7 +628,9 @@ public class BudgetService {
             final LocalDate start,
             final LocalDate rangeEnd
     ) {
-        return findRecentExpenses(budget, start, rangeEnd, RECENT_ACTIVITY_LIMIT)
+        return findRecentExpenses(
+                budget, start, rangeEnd, RECENT_ACTIVITY_LIMIT
+        )
                 .stream()
                 .map(e -> new RecentActivityItem(
                         e.getId(),
@@ -690,13 +700,13 @@ public class BudgetService {
 
         if (scopedToCategory) {
             return repositoryExpense
-                    .findByWalletIdAndCategoryIdAndDateBetweenOrderByDateDescCreatedAtDesc(
-                            budget.getWallet().getId(),
-                            budget.getCategory().getId(),
-                            start,
-                            end,
-                            pageable
-                    );
+        .findByWalletIdAndCategoryIdAndDateBetweenOrderByDateDescCreatedAtDesc(
+                budget.getWallet().getId(),
+                budget.getCategory().getId(),
+                start,
+                end,
+                pageable
+        );
         }
 
         return repositoryExpense

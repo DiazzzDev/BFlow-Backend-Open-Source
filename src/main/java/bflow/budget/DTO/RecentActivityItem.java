@@ -13,8 +13,16 @@ import java.util.UUID;
 @Getter
 @AllArgsConstructor
 public class RecentActivityItem {
+
+    /** Transaction identifier. */
     private UUID id;
+
+    /** Transaction description. */
     private String description;
+
+    /** Date when the transaction occurred. */
     private LocalDate date;
+
+    /** Transaction amount. */
     private BigDecimal amount;
 }
