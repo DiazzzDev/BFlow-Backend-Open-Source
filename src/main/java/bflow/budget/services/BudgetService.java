@@ -7,6 +7,12 @@ import bflow.budget.DTO.BudgetPatchRequest;
 import bflow.budget.DTO.BudgetRequest;
 import bflow.budget.DTO.BudgetResponse;
 import bflow.budget.DTO.BudgetSummaryResponse;
+
+import bflow.budget.DTO.BudgetSearchRequest;
+import bflow.budget.specification.BudgetSpecification;
+import org.springframework.data.domain.Page;
+import org.springframework.data.jpa.domain.Specification;
+
 import bflow.budget.DTO.RecentActivityItem;
 import bflow.budget.DTO.SpendingTrendPoint;
 import bflow.budget.RepositoryBudget;
@@ -128,17 +134,41 @@ public class BudgetService {
     }
 
     /**
-     * Retrieves all budgets owned by the specified user.
+     * Retrieves budgets owned by the authenticated user, applying
+     * optional dynamic filters (name, wallet, category, scope, period,
+     * status) built via Spring Data Specifications, with pagination
+     * and sorting support.
      *
-     * @param userId the user UUID
-     * @return a list of budgets ordered by the most recently updated
+     * <p>Name matching is case-insensitive and normalizes leading/
+     * trailing whitespace before comparison, so filters like
+     * {@code "Food"}, {@code "food"}, or {@code "  FOOD  "} are
+     * treated identically.
+     *
+     * <p>Ownership restriction is always applied as part of the
+     * specification, so results can never include budgets that do
+     * not belong to the authenticated user.
+     *
+     * @param userId the authenticated user's ID
+     * @param filter the search criteria (all fields optional)
+     * @param pageable pagination and sorting information
+     * @return a page of matching budget responses
      */
     @Transactional(readOnly = true)
-    public List<BudgetResponse> getBudgets(final UUID userId) {
-        return repositoryBudget.findAllByUserIdOrderByUpdatedAtDesc(userId)
-                .stream()
-                .map(this::toResponse)
-                .toList();
+    public Page<BudgetResponse> getBudgets(
+            final UUID userId,
+            final BudgetSearchRequest filter,
+            final Pageable pageable
+    ) {
+
+        userService.validateUserActive(userId);
+
+        Specification<Budget> specification =
+                BudgetSpecification.build(filter, userId);
+
+        Page<Budget> budgets =
+                repositoryBudget.findAll(specification, pageable);
+
+        return budgets.map(this::toResponse);
     }
 
     /**

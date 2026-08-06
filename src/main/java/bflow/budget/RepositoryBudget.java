@@ -4,6 +4,7 @@ import bflow.budget.entity.Budget;
 import bflow.budget.enums.BudgetScope;
 import bflow.budget.enums.PeriodType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -14,7 +15,8 @@ import java.util.UUID;
  * Repository interface for Budget entities.
  */
 @Repository
-public interface RepositoryBudget extends JpaRepository<Budget, UUID> {
+public interface RepositoryBudget extends JpaRepository<Budget, UUID>,
+        JpaSpecificationExecutor<Budget> {
     /**
      * Find all budgets for a specific wallet.
      *
