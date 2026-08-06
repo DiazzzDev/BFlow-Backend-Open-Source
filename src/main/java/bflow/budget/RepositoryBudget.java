@@ -15,7 +15,8 @@ import java.util.UUID;
  * Repository interface for Budget entities.
  */
 @Repository
-public interface RepositoryBudget extends JpaRepository<Budget, UUID>, JpaSpecificationExecutor<Budget> {
+public interface RepositoryBudget extends JpaRepository<Budget, UUID>,
+        JpaSpecificationExecutor<Budget> {
     /**
      * Find all budgets for a specific wallet.
      *

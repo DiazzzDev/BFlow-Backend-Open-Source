@@ -189,7 +189,8 @@ public final class BudgetSpecification {
         specifications.add(hasPeriod(filter.getPeriod()));
         specifications.add(hasStatus(filter.getStatus()));
 
-        Specification<Budget> combined = Specification.where((Specification<Budget>) null);
+        Specification<Budget> combined = Specification.where(
+            (Specification<Budget>) null);
 
         for (Specification<Budget> spec : specifications) {
             if (spec != null) {
