@@ -179,20 +179,17 @@ public final class BudgetSpecification {
             final UUID userId
     ) {
 
-        List<Specification<Budget>> specifications = new ArrayList<>();
+        Specification<Budget> combined = belongsToUser(userId);
 
-        specifications.add(belongsToUser(userId));
-        specifications.add(nameContains(filter.getName()));
-        specifications.add(hasWallet(filter.getWalletId()));
-        specifications.add(hasCategory(filter.getCategoryId()));
-        specifications.add(hasScope(filter.getScope()));
-        specifications.add(hasPeriod(filter.getPeriod()));
-        specifications.add(hasStatus(filter.getStatus()));
+        List<Specification<Budget>> optionalSpecs = new ArrayList<>();
+        optionalSpecs.add(nameContains(filter.getQuery()));
+        optionalSpecs.add(hasWallet(filter.getWalletId()));
+        optionalSpecs.add(hasCategory(filter.getCategoryId()));
+        optionalSpecs.add(hasScope(filter.getScope()));
+        optionalSpecs.add(hasPeriod(filter.getPeriod()));
+        optionalSpecs.add(hasStatus(filter.getStatus()));
 
-        Specification<Budget> combined = Specification.where(
-            (Specification<Budget>) null);
-
-        for (Specification<Budget> spec : specifications) {
+        for (Specification<Budget> spec : optionalSpecs) {
             if (spec != null) {
                 combined = combined.and(spec);
             }

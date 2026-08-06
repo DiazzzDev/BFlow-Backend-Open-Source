@@ -21,7 +21,7 @@ public class BudgetSearchRequest {
      * Case-insensitive partial match applied against the associated
      * wallet's name and the associated category's name.
      */
-    private String name;
+    private String query;
 
     /**
      * Restricts results to a specific wallet.
