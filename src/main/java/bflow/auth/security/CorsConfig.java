@@ -38,13 +38,18 @@ public class CorsConfig {
         ));
 
         configuration.setAllowedHeaders(List.of(
-                "Content-Type", "Accept", "Authorization", "X-CSRF-TOKEN"
+                "Content-Type",
+                "Accept",
+                "Authorization",
+                "X-CSRF-TOKEN",
+                "Idempotency-Key"
         ));
 
         configuration.addExposedHeader("Set-Cookie");
 
         UrlBasedCorsConfigurationSource source =
                 new UrlBasedCorsConfigurationSource();
+
         source.registerCorsConfiguration("/**", configuration);
         return source;
     }

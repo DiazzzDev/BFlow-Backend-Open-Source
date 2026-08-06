@@ -2,6 +2,7 @@ package bflow.budget.services;
 
 import bflow.auth.entities.User;
 import bflow.auth.services.UserServiceImpl;
+import bflow.budget.DTO.BudgetDetailResponse;
 import bflow.budget.DTO.BudgetPatchRequest;
 import bflow.budget.DTO.BudgetRequest;
 import bflow.budget.DTO.BudgetResponse;
@@ -10,9 +11,10 @@ import bflow.budget.DTO.BudgetSummaryResponse;
 import bflow.budget.DTO.BudgetSearchRequest;
 import bflow.budget.specification.BudgetSpecification;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 
+import bflow.budget.DTO.RecentActivityItem;
+import bflow.budget.DTO.SpendingTrendPoint;
 import bflow.budget.RepositoryBudget;
 import bflow.budget.entity.Budget;
 import bflow.budget.enums.BudgetScope;
@@ -27,30 +29,46 @@ import bflow.subscription.services.PlanLimitService;
 import bflow.wallet.entities.Wallet;
 import bflow.wallet.repository.RepositoryWalletUser;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import jakarta.persistence.EntityManager;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.UUID;
+import bflow.expenses.RepositoryExpense;
+import bflow.expenses.entity.Expense;
+import org.springframework.data.domain.PageRequest;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
 @RequiredArgsConstructor
 public class BudgetService {
+
+    /** Number of recent activity items to return. */
+    private static final int RECENT_ACTIVITY_LIMIT = 5;
+
     /**
      * Repository for budget operations.
      */
     private final RepositoryBudget repositoryBudget;
+
     /**
      * Service for budget calculations.
      */
     private final BudgetCalculationService calculationService;
+
     /**
      * Service for budget alerts.
      */
     private final BudgetAlertService alertService;
+
     /**
      * Repository for wallet user operations.
      */
@@ -85,6 +103,12 @@ public class BudgetService {
      * Service responsible for enforcing subscription plan limits.
      */
     private final PlanLimitService planLimitService;
+
+    /**
+     * Repository for expense operations, used to build budget spending
+     * trend and recent activity data.
+     */
+    private final RepositoryExpense repositoryExpense;
 
     /**
      * Entity manager used for persistence operations.
@@ -489,6 +513,239 @@ public class BudgetService {
         Budget budget = getOwnedBudget(budgetId, userId);
 
         repositoryBudget.delete(budget);
+    }
+
+    /**
+     * Get the full detail view (overview, trend, recent activity) for a
+     * single budget, used by the budget dashboard UI.
+     *
+     * @param budgetId the budget ID
+     * @param userId the user ID
+     * @return the aggregated budget detail response
+     */
+    public BudgetDetailResponse getBudgetDetail(
+            final UUID budgetId,
+            final UUID userId
+    ) {
+        userService.validateUserActive(userId);
+
+        Budget budget = getOwnedBudget(budgetId, userId);
+        BudgetResponse base = calculationService.calculate(budget);
+
+        LocalDate today = LocalDate.now();
+        LocalDate start = budget.getStartDate();
+        LocalDate end = lifecycleService.calculateEndDate(budget);
+
+        // Bound the "active window" so future-dated budgets don't blow up
+        // the day count, and so we never look past the period's end date.
+        LocalDate rangeEnd = today.isBefore(start) ? start
+                : (today.isAfter(end) ? end : today);
+
+        int daysLeft = (int) Math.max(0, ChronoUnit.DAYS.between(today, end));
+        int daysElapsed = (int) (ChronoUnit.DAYS.between(start, rangeEnd) + 1);
+
+        List<Expense> periodExpenses =
+                findExpensesInRange(budget, start, rangeEnd);
+
+        BudgetDetailResponse detail = new BudgetDetailResponse();
+        detail.setId(budget.getId());
+        detail.setWalletId(budget.getWallet().getId());
+        detail.setWalletName(budget.getWallet().getName());
+        detail.setCurrency(budget.getWallet().getCurrency());
+
+        if (budget.getCategory() != null) {
+            detail.setCategoryId(budget.getCategory().getId());
+            detail.setCategoryName(budget.getCategory().getName());
+        }
+
+        detail.setScope(budget.getScope());
+        detail.setPeriod(budget.getPeriod());
+        detail.setStatus(base.getStatus());
+
+        detail.setStartDate(start);
+        detail.setEndDate(end);
+        detail.setDaysLeft(daysLeft);
+        detail.setDaysElapsed(daysElapsed);
+
+        detail.setBudgetLimit(base.getBudgetLimit());
+        detail.setSpent(base.getSpent());
+        detail.setRemaining(base.getBudgetLimit().subtract(base.getSpent()));
+        detail.setPercentage(base.getPercentage());
+
+        detail.setThresholdWarning(budget.getThresholdWarning());
+        detail.setThresholdCritical(budget.getThresholdCritical());
+
+        detail.setTransactionCount(periodExpenses.size());
+
+        BigDecimal avgDaily = daysElapsed > 0
+                ? base.getSpent().divide(
+                BigDecimal.valueOf(daysElapsed),
+                2,
+                java.math.RoundingMode.HALF_UP
+        )
+                : null;
+        detail.setAverageDailySpend(avgDaily);
+
+        if (avgDaily != null) {
+            long totalPeriodDays = ChronoUnit.DAYS.between(start, end) + 1;
+            detail.setProjectedTotal(
+                    avgDaily.multiply(BigDecimal.valueOf(totalPeriodDays))
+            );
+        }
+
+        detail.setSpendingTrend(
+                buildSpendingTrend(periodExpenses, start, rangeEnd)
+        );
+        detail.setRecentActivity(
+                buildRecentActivity(budget, start, rangeEnd)
+        );
+
+        return detail;
+    }
+
+    /**
+     * Builds the cumulative spending trend for the current budget period.
+     *
+     * @param expenses expenses included in the current budget period
+     * @param start the period start date
+     * @param rangeEnd the end of the period to include in the trend
+     * @return list of trend points
+     */
+    private List<SpendingTrendPoint> buildSpendingTrend(
+            final List<Expense> expenses,
+            final LocalDate start,
+            final LocalDate rangeEnd
+    ) {
+        Map<LocalDate, BigDecimal> dailyTotals = expenses.stream()
+                .collect(Collectors.groupingBy(
+                        Expense::getDate,
+                        LinkedHashMap::new,
+                        Collectors.reducing(
+                                BigDecimal.ZERO,
+                                Expense::getAmount,
+                                BigDecimal::add
+                        )
+                ));
+
+        long totalDays = ChronoUnit.DAYS.between(start, rangeEnd) + 1;
+
+        List<SpendingTrendPoint> trend = new ArrayList<>();
+        BigDecimal cumulative = BigDecimal.ZERO;
+
+        for (int i = 0; i < totalDays; i++) {
+            LocalDate date = start.plusDays(i);
+            cumulative = cumulative.add(
+                    dailyTotals.getOrDefault(date, BigDecimal.ZERO)
+            );
+            trend.add(new SpendingTrendPoint(i + 1, date, cumulative));
+        }
+
+        return trend;
+    }
+
+    /**
+     * Builds the recent activity list (last N transactions within the
+     * budget's current period) for the budget.
+     *
+     * @param budget the budget
+     * @param start the period start date
+     * @param rangeEnd the end of the range to search (today, capped to
+     *         the period start for future-dated budgets)
+     * @return list of recent activity items
+     */
+    private List<RecentActivityItem> buildRecentActivity(
+            final Budget budget,
+            final LocalDate start,
+            final LocalDate rangeEnd
+    ) {
+        return findRecentExpenses(
+                budget, start, rangeEnd, RECENT_ACTIVITY_LIMIT
+        )
+                .stream()
+                .map(e -> new RecentActivityItem(
+                        e.getId(),
+                        e.getTitle(),
+                        e.getDate(),
+                        e.getAmount()
+                ))
+                .toList();
+    }
+
+    /**
+     * Finds all expenses for a budget's wallet (and category, if scoped)
+     * within a date range, ordered chronologically.
+     *
+     * @param budget the budget
+     * @param start range start (inclusive)
+     * @param end range end (inclusive)
+     * @return matching expenses
+     */
+    private List<Expense> findExpensesInRange(
+            final Budget budget,
+            final LocalDate start,
+            final LocalDate end
+    ) {
+        boolean scopedToCategory =
+                budget.getScope() == BudgetScope.CATEGORY
+                        && budget.getCategory() != null;
+
+        if (scopedToCategory) {
+            return repositoryExpense
+                    .findByWalletIdAndCategoryIdAndDateBetweenOrderByDateAsc(
+                            budget.getWallet().getId(),
+                            budget.getCategory().getId(),
+                            start,
+                            end
+                    );
+        }
+
+        return repositoryExpense.findByWalletIdAndDateBetweenOrderByDateAsc(
+                budget.getWallet().getId(),
+                start,
+                end
+        );
+    }
+
+    /**
+     * Finds the most recent expenses for a budget's wallet (and category,
+     * if scoped) within the given date range.
+     *
+     * @param budget the budget
+     * @param start range start (inclusive)
+     * @param end range end (inclusive)
+     * @param limit max number of results
+     * @return matching expenses ordered by date descending
+     */
+    private List<Expense> findRecentExpenses(
+            final Budget budget,
+            final LocalDate start,
+            final LocalDate end,
+            final int limit
+    ) {
+        boolean scopedToCategory =
+                budget.getScope() == BudgetScope.CATEGORY
+                        && budget.getCategory() != null;
+
+        Pageable pageable = PageRequest.of(0, limit);
+
+        if (scopedToCategory) {
+            return repositoryExpense
+        .findByWalletIdAndCategoryIdAndDateBetweenOrderByDateDescCreatedAtDesc(
+                budget.getWallet().getId(),
+                budget.getCategory().getId(),
+                start,
+                end,
+                pageable
+        );
+        }
+
+        return repositoryExpense
+                .findByWalletIdAndDateBetweenOrderByDateDescCreatedAtDesc(
+                        budget.getWallet().getId(),
+                        start,
+                        end,
+                        pageable
+                );
     }
 
     private void validateWalletAccess(

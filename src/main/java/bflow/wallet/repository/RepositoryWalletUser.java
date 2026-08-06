@@ -2,12 +2,10 @@ package bflow.wallet.repository;
 
 import bflow.wallet.entities.WalletUser;
 import bflow.wallet.enums.WalletRole;
-import org.springframework.data.domain.Page;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
-import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 import java.util.Optional;
@@ -23,14 +21,6 @@ public interface RepositoryWalletUser extends JpaRepository<WalletUser, UUID>,
      * @return optional wallet-user relationship.
      */
     Optional<WalletUser> findByWalletIdAndUserId(UUID walletId, UUID userId);
-
-    /**
-     * Finds wallet-user relationships by user ID with pagination.
-     * @param userId the user UUID.
-     * @param pageable the pagination information.
-     * @return a page of wallet-user relationships.
-     */
-    Page<WalletUser> findByUserId(UUID userId, Pageable pageable);
 
     /**
      * Find the first wallet-user relationship for a user with a specific role.
@@ -93,29 +83,6 @@ public interface RepositoryWalletUser extends JpaRepository<WalletUser, UUID>,
     boolean existsByWalletIdAndUserEmail(
             UUID walletId,
             String email
-    );
-
-    /**
-     * Finds a wallet membership by wallet ID and user email.
-     *
-     * @param walletId the wallet UUID
-     * @param email the user's email address
-     * @return an optional containing the wallet membership if found
-     */
-    Optional<WalletUser> findByWalletIdAndUserEmail(
-            UUID walletId,
-            String email
-    );
-
-    /**
-     * Deletes the relationship between a wallet and a user.
-     *
-     * @param walletId the wallet UUID
-     * @param userId the user UUID
-     */
-    void deleteByWalletIdAndUserId(
-            UUID walletId,
-            UUID userId
     );
 
     /**
