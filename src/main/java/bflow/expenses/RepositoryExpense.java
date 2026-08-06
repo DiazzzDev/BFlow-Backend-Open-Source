@@ -6,7 +6,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
-
+import java.util.List;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -91,4 +91,100 @@ public interface RepositoryExpense extends JpaRepository<Expense, UUID> {
         "SELECT MAX(e.createdAt) FROM Expense e WHERE e.wallet.id = :walletId"
     )
     Instant findMaxCreatedAtByWalletId(UUID walletId);
+
+    /**
+     * Finds expenses for a wallet within a date range, ordered chronologically.
+     *
+     * @param walletId the wallet ID
+     * @param start range start (inclusive)
+     * @param end range end (inclusive)
+     * @return matching expenses ordered by date ascending
+     */
+    List<Expense> findByWalletIdAndDateBetweenOrderByDateAsc(
+            UUID walletId,
+            LocalDate start,
+            LocalDate end
+    );
+
+    /**
+     * Finds expenses for a wallet and category within a date range,
+     * ordered chronologically.
+     *
+     * @param walletId the wallet ID
+     * @param categoryId the category ID
+     * @param start range start (inclusive)
+     * @param end range end (inclusive)
+     * @return matching expenses ordered by date ascending
+     */
+    List<Expense> findByWalletIdAndCategoryIdAndDateBetweenOrderByDateAsc(
+            UUID walletId,
+            UUID categoryId,
+            LocalDate start,
+            LocalDate end
+    );
+
+    /**
+     * Finds the most recent expenses for a wallet.
+     *
+     * @param walletId the wallet ID
+     * @param pageable pagination configuration (use to limit results)
+     * @return matching expenses ordered by date descending
+     */
+    List<Expense> findByWalletIdOrderByDateDescCreatedAtDesc(
+            UUID walletId,
+            Pageable pageable
+    );
+
+    /**
+     * Finds the most recent expenses for a wallet and category.
+     *
+     * @param walletId the wallet ID
+     * @param categoryId the category ID
+     * @param pageable pagination configuration (use to limit results)
+     * @return matching expenses ordered by date descending
+     */
+    List<Expense> findByWalletIdAndCategoryIdOrderByDateDescCreatedAtDesc(
+            UUID walletId,
+            UUID categoryId,
+            Pageable pageable
+    );
+
+    /**
+     * Finds expenses for a wallet within a date range, ordered by most
+     * recent first — used for "recent activity" bounded to a period.
+     *
+     * @param walletId the wallet ID
+     * @param start range start (inclusive)
+     * @param end range end (inclusive)
+     * @param pageable pagination configuration (use to limit results)
+     * @return matching expenses ordered by date descending
+     */
+    List<Expense>
+    findByWalletIdAndDateBetweenOrderByDateDescCreatedAtDesc(
+            UUID walletId,
+            LocalDate start,
+            LocalDate end,
+            Pageable pageable
+    );
+
+    /**
+     * Finds expenses for a wallet and category within a date range,
+     * ordered by most recent first — used for "recent activity" bounded
+     * to a period.
+     *
+     * @param walletId the wallet ID
+     * @param categoryId the category ID
+     * @param start range start (inclusive)
+     * @param end range end (inclusive)
+     * @param pageable pagination configuration (use to limit results)
+     * @return matching expenses ordered by date descending
+     */
+    List<Expense>
+    findByWalletIdAndCategoryIdAndDateBetweenOrderByDateDescCreatedAtDesc(
+            UUID walletId,
+            UUID categoryId,
+            LocalDate start,
+            LocalDate end,
+            Pageable pageable
+    );
 }

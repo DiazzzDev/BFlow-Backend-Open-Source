@@ -25,14 +25,6 @@ public interface RepositoryWalletUser extends JpaRepository<WalletUser, UUID>,
     Optional<WalletUser> findByWalletIdAndUserId(UUID walletId, UUID userId);
 
     /**
-     * Finds wallet-user relationships by user ID with pagination.
-     * @param userId the user UUID.
-     * @param pageable the pagination information.
-     * @return a page of wallet-user relationships.
-     */
-    Page<WalletUser> findByUserId(UUID userId, Pageable pageable);
-
-    /**
      * Find the first wallet-user relationship for a user with a specific role.
      *
      * @param userId the user UUID
@@ -93,29 +85,6 @@ public interface RepositoryWalletUser extends JpaRepository<WalletUser, UUID>,
     boolean existsByWalletIdAndUserEmail(
             UUID walletId,
             String email
-    );
-
-    /**
-     * Finds a wallet membership by wallet ID and user email.
-     *
-     * @param walletId the wallet UUID
-     * @param email the user's email address
-     * @return an optional containing the wallet membership if found
-     */
-    Optional<WalletUser> findByWalletIdAndUserEmail(
-            UUID walletId,
-            String email
-    );
-
-    /**
-     * Deletes the relationship between a wallet and a user.
-     *
-     * @param walletId the wallet UUID
-     * @param userId the user UUID
-     */
-    void deleteByWalletIdAndUserId(
-            UUID walletId,
-            UUID userId
     );
 
     /**

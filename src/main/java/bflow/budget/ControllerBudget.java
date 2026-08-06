@@ -1,10 +1,7 @@
 package bflow.budget;
 
 import bflow.auth.services.CurrentUserService;
-import bflow.budget.DTO.BudgetPatchRequest;
-import bflow.budget.DTO.BudgetRequest;
-import bflow.budget.DTO.BudgetResponse;
-import bflow.budget.DTO.BudgetSummaryResponse;
+import bflow.budget.DTO.*;
 import bflow.budget.services.BudgetService;
 import bflow.common.response.ApiResponse;
 import jakarta.validation.Valid;
@@ -58,6 +55,32 @@ public final class ControllerBudget {
                 "Budgets retrieved successfully",
                 budgets,
                 "/api/v1/budgets"
+        );
+    }
+
+    /**
+     * Get the full detail view (overview, trend, recent activity) for a
+     * specific budget, used by the budget dashboard UI.
+     *
+     * @param id the budget ID
+     * @param authentication the authentication object
+     * @return response containing the budget detail
+     */
+    @GetMapping("/{id}/detail")
+    public ApiResponse<BudgetDetailResponse> getBudgetDetail(
+            @PathVariable final UUID id,
+            final Authentication authentication
+    ) {
+
+        UUID userId = currentUserService.getCurrentUserId(authentication);
+
+        BudgetDetailResponse response =
+                budgetService.getBudgetDetail(id, userId);
+
+        return ApiResponse.success(
+                "Budget detail retrieved successfully",
+                response,
+                "/api/v1/budgets/" + id + "/detail"
         );
     }
 
