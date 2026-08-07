@@ -117,8 +117,10 @@ public class ServiceExpense {
         serviceWallet.subtractBalance(wallet, expense.getAmount());
 
         Expense savedExpense = repositoryExpense.saveAndFlush(expense);
-        serviceBudget.evaluateBudgetsForWallet(
-                savedExpense.getWallet().getId()
+
+        serviceBudget.evaluateBudgetsForExpenseEvent(
+                savedExpense.getWallet().getId(),
+                savedExpense.getCategory().getId()
         );
 
         return mapToResponse(savedExpense);
@@ -204,9 +206,16 @@ public class ServiceExpense {
 
         repositoryExpense.save(expense);
 
-        serviceBudget.evaluateBudgetsForWallet(newWallet.getId());
+        UUID oldCategoryId = expense.getCategory() != null
+                ? expense.getCategory().getId() : null;
+
+        serviceBudget.evaluateBudgetsForExpenseEvent(
+                newWallet.getId(), category.getId()
+        );
         if (!oldWalletId.equals(newWalletId)) {
-            serviceBudget.evaluateBudgetsForWallet(oldWallet.getId());
+            serviceBudget.evaluateBudgetsForExpenseEvent(
+                    oldWallet.getId(), oldCategoryId
+            );
         }
 
         return mapToResponse(expense);
@@ -245,8 +254,13 @@ public class ServiceExpense {
                 ));
 
         serviceWallet.addBalance(wallet, expense.getAmount());
+
         repositoryExpense.delete(expense);
-        serviceBudget.evaluateBudgetsForWallet(wallet.getId());
+
+        serviceBudget.evaluateBudgetsForExpenseEvent(
+                wallet.getId(),
+                expense.getCategory() != null ? expense.getCategory().getId() : null
+        );
     }
 
     /**

@@ -1,9 +1,10 @@
-package bflow.budget;
+package bflow.budget.repository;
 
 import bflow.budget.entity.Budget;
 import bflow.budget.enums.BudgetScope;
 import bflow.budget.enums.PeriodType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -14,7 +15,8 @@ import java.util.UUID;
  * Repository interface for Budget entities.
  */
 @Repository
-public interface RepositoryBudget extends JpaRepository<Budget, UUID> {
+public interface RepositoryBudget extends JpaRepository<Budget, UUID>,
+        JpaSpecificationExecutor<Budget> {
     /**
      * Find all budgets for a specific wallet.
      *
@@ -110,11 +112,16 @@ public interface RepositoryBudget extends JpaRepository<Budget, UUID> {
      */
     long countByUserId(UUID userId);
 
-    /**
-     * Find all budgets for a specific user.
-     *
-     * @param userId the user ID
-     * @return list of budgets
-     */
-    List<Budget> findAllByUserIdOrderByUpdatedAtDesc(UUID userId);
+    boolean existsByUserIdAndScopeAndCategoryIdAndPeriod(
+            UUID userId, BudgetScope scope, UUID categoryId, PeriodType period
+    );
+
+    boolean existsByUserIdAndScopeAndCategoryIdAndPeriodAndIdNot(
+            UUID userId, BudgetScope scope, UUID categoryId,
+            PeriodType period, UUID id
+    );
+
+    List<Budget> findByUserIdAndScopeAndCategoryId(
+            UUID userId, BudgetScope scope, UUID categoryId
+    );
 }

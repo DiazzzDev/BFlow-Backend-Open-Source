@@ -7,13 +7,20 @@ import bflow.budget.DTO.BudgetPatchRequest;
 import bflow.budget.DTO.BudgetRequest;
 import bflow.budget.DTO.BudgetResponse;
 import bflow.budget.DTO.BudgetSummaryResponse;
+
+import bflow.budget.DTO.BudgetSearchRequest;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.jpa.domain.Specification;
+
 import bflow.budget.DTO.RecentActivityItem;
 import bflow.budget.DTO.SpendingTrendPoint;
-import bflow.budget.RepositoryBudget;
 import bflow.budget.entity.Budget;
 import bflow.budget.enums.BudgetScope;
 import bflow.budget.enums.BudgetStatus;
 import bflow.budget.enums.PeriodType;
+import bflow.budget.repository.RepositoryBudget;
+import bflow.budget.repository.spec.BudgetSpecification;
 import bflow.category.entity.Category;
 import bflow.common.exception.BudgetNotFoundException;
 import bflow.common.exception.WalletAccessDeniedException;
@@ -128,17 +135,41 @@ public class BudgetService {
     }
 
     /**
-     * Retrieves all budgets owned by the specified user.
+     * Retrieves budgets owned by the authenticated user, applying
+     * optional dynamic filters (name, wallet, category, scope, period,
+     * status) built via Spring Data Specifications, with pagination
+     * and sorting support.
      *
-     * @param userId the user UUID
-     * @return a list of budgets ordered by the most recently updated
+     * <p>Name matching is case-insensitive and normalizes leading/
+     * trailing whitespace before comparison, so filters like
+     * {@code "Food"}, {@code "food"}, or {@code "  FOOD  "} are
+     * treated identically.
+     *
+     * <p>Ownership restriction is always applied as part of the
+     * specification, so results can never include budgets that do
+     * not belong to the authenticated user.
+     *
+     * @param userId the authenticated user's ID
+     * @param filter the search criteria (all fields optional)
+     * @param pageable pagination and sorting information
+     * @return a page of matching budget responses
      */
     @Transactional(readOnly = true)
-    public List<BudgetResponse> getBudgets(final UUID userId) {
-        return repositoryBudget.findAllByUserIdOrderByUpdatedAtDesc(userId)
-                .stream()
-                .map(this::toResponse)
-                .toList();
+    public Page<BudgetResponse> getBudgets(
+            final UUID userId,
+            final BudgetSearchRequest filter,
+            final Pageable pageable
+    ) {
+
+        userService.validateUserActive(userId);
+
+        Specification<Budget> specification =
+                BudgetSpecification.build(filter, userId);
+
+        Page<Budget> budgets =
+                repositoryBudget.findAll(specification, pageable);
+
+        return budgets.map(this::toResponse);
     }
 
     /**
@@ -154,50 +185,38 @@ public class BudgetService {
             final UUID userId,
             final UUID walletId
     ) {
-
-        //Check if user has an active account
         userService.validateUserActive(userId);
 
-        //Check the start date for the budget before handle a query
         validationService.validateAmount(request.getAmount());
         validationService.validateStartDate(request.getStartDate());
-
-        planLimitService.assertCanCreate(
-            userId,
-            FeatureCodes.BUDGETS,
-            repositoryBudget.countByUserId(userId)
-        );
-
-        Budget budget = new Budget();
-
-        budget.setPeriod(request.getPeriod());
-        budget.setAmount(request.getAmount());
-        budget.setThresholdWarning(request.getThresholdWarning());
-        budget.setThresholdCritical(request.getThresholdCritical());
-        budget.setStartDate(request.getStartDate());
-
-        Wallet wallet = entityManager.getReference(
-                Wallet.class,
-                walletId
-        );
-
-        //If the user sets an wallet that it's not theirs throw exception
-        validateWalletAccess(walletId, userId);
-
         validationService.validateBudgetConstraints(
                 request.getScope(),
+                request.getWalletId(),
                 request.getCategoryId(),
                 request.getThresholdWarning(),
                 request.getThresholdCritical()
         );
 
-        overlapValidationService.validateCreateOverlap(
-                request,
-                userId
+        planLimitService.assertCanCreate(
+                userId, FeatureCodes.BUDGETS, repositoryBudget.countByUserId(userId)
         );
 
-        budget.setWallet(wallet);
+        Budget budget = new Budget();
+        budget.setPeriod(request.getPeriod());
+        budget.setAmount(request.getAmount());
+        budget.setThresholdWarning(request.getThresholdWarning());
+        budget.setThresholdCritical(request.getThresholdCritical());
+        budget.setStartDate(request.getStartDate());
         budget.setScope(request.getScope());
+
+        if (request.getScope() != BudgetScope.CATEGORY_GLOBAL) {
+            validateWalletAccess(request.getWalletId(), userId);
+            budget.setWallet(
+                    entityManager.getReference(Wallet.class, request.getWalletId())
+            );
+        }
+
+        overlapValidationService.validateCreateOverlap(request, userId);
 
         if (request.getCategoryId() != null) {
             Category category = new Category();
@@ -234,61 +253,6 @@ public class BudgetService {
         return budgets.stream()
                 .map(calculationService::calculate)
                 .toList();
-    }
-
-    /**
-     * Evaluate all budgets for a wallet.
-     *
-     * @param walletId the wallet ID
-     */
-    public void evaluateBudgetsForWallet(final UUID walletId) {
-
-        List<Budget> budgets = repositoryBudget.findByWalletId(walletId);
-
-        LocalDate today = LocalDate.now();
-
-        for (Budget budget : budgets) {
-            LocalDate start = budget.getStartDate();
-            LocalDate end = lifecycleService.calculateEndDate(budget);
-
-            boolean periodEnded = today.isAfter(end);
-
-            if (periodEnded) {
-                BudgetResponse endResponse =
-                        calculationService.calculate(budget);
-
-                if (endResponse.getStatus() != BudgetStatus.EXCEEDED) {
-                    notificationService.sendBudgetSuccess(
-                            budget.getUser().getId(),
-                            endResponse
-                    );
-                }
-
-                lifecycleService.resetBudgetPeriod(budget);
-                repositoryBudget.save(budget);
-
-                continue;
-            }
-
-            boolean isActive =
-                    (today.isEqual(start) || today.isAfter(start))
-                            && today.isBefore(end);
-
-            if (!isActive) {
-                continue;
-            }
-
-            BudgetResponse response =
-                    calculationService.calculate(budget);
-
-            alertService.evaluate(
-                    response,
-                    budget.getUser().getId(),
-                    budget
-            );
-
-            repositoryBudget.save(budget);
-        }
     }
 
     /**
@@ -369,7 +333,6 @@ public class BudgetService {
             final UUID userId,
             final BudgetPatchRequest request
     ) {
-
         userService.validateUserActive(userId);
 
         if (request.getStartDate() != null) {
@@ -403,12 +366,27 @@ public class BudgetService {
                         ? request.getCategoryId()
                         : currentCategoryId;
 
+        UUID currentWalletId =
+                budget.getWallet() != null
+                        ? budget.getWallet().getId()
+                        : null;
+
+        UUID finalWalletId =
+                request.getWalletId() != null
+                        ? request.getWalletId()
+                        : currentWalletId;
+
         if (finalScope == BudgetScope.WALLET) {
             finalCategoryId = null;
         }
 
+        if (finalScope == BudgetScope.CATEGORY_GLOBAL) {
+            finalWalletId = null;
+        }
+
         validationService.validateBudgetConstraints(
                 finalScope,
+                finalWalletId,
                 finalCategoryId,
                 finalWarning,
                 finalCritical
@@ -422,6 +400,7 @@ public class BudgetService {
         overlapValidationService.validatePatchOverlap(
                 budget,
                 finalScope,
+                finalWalletId,
                 finalCategoryId,
                 finalPeriod,
                 userId
@@ -432,7 +411,8 @@ public class BudgetService {
                         || request.getPeriod() != null
                         || request.getStartDate() != null
                         || request.getScope() != null
-                        || request.getCategoryId() != null;
+                        || request.getCategoryId() != null
+                        || request.getWalletId() != null;
 
         if (request.getAmount() != null) {
             validationService.validateAmount(request.getAmount());
@@ -449,6 +429,18 @@ public class BudgetService {
         budget.setThresholdCritical(finalCritical);
 
         budget.setScope(finalScope);
+
+        if (finalWalletId != null) {
+            boolean walletChanged = !finalWalletId.equals(currentWalletId);
+            if (walletChanged) {
+                validateWalletAccess(finalWalletId, userId);
+            }
+            budget.setWallet(
+                    entityManager.getReference(Wallet.class, finalWalletId)
+            );
+        } else {
+            budget.setWallet(null);
+        }
 
         if (finalCategoryId != null) {
             Category category = new Category();
@@ -519,9 +511,12 @@ public class BudgetService {
 
         BudgetDetailResponse detail = new BudgetDetailResponse();
         detail.setId(budget.getId());
-        detail.setWalletId(budget.getWallet().getId());
-        detail.setWalletName(budget.getWallet().getName());
-        detail.setCurrency(budget.getWallet().getCurrency());
+
+        if (budget.getWallet() != null) {
+            detail.setWalletId(budget.getWallet().getId());
+            detail.setWalletName(budget.getWallet().getName());
+            detail.setCurrency(budget.getWallet().getCurrency());
+        }
 
         if (budget.getCategory() != null) {
             detail.setCategoryId(budget.getCategory().getId());
@@ -655,8 +650,19 @@ public class BudgetService {
             final LocalDate start,
             final LocalDate end
     ) {
+        if (budget.getScope() == BudgetScope.CATEGORY_GLOBAL) {
+            List<UUID> walletIds =
+                    repositoryWalletUser.findWalletIdsByUserId(
+                            budget.getUser().getId()
+                    );
+            return repositoryExpense
+                    .findByWalletIdInAndCategoryIdAndDateBetweenOrderByDateAsc(
+                            walletIds, budget.getCategory().getId(), start, end
+                    );
+        }
+
         boolean scopedToCategory =
-                budget.getScope() == BudgetScope.CATEGORY
+                budget.getScope() == BudgetScope.WALLET_CATEGORY
                         && budget.getCategory() != null;
 
         if (scopedToCategory) {
@@ -692,21 +698,36 @@ public class BudgetService {
             final LocalDate end,
             final int limit
     ) {
-        boolean scopedToCategory =
-                budget.getScope() == BudgetScope.CATEGORY
-                        && budget.getCategory() != null;
-
         Pageable pageable = PageRequest.of(0, limit);
+
+        if (budget.getScope() == BudgetScope.CATEGORY_GLOBAL) {
+            List<UUID> walletIds =
+                    repositoryWalletUser.findWalletIdsByUserId(
+                            budget.getUser().getId()
+                    );
+            return repositoryExpense
+                .findByWalletIdInAndCategoryIdAndDateBetweenOrderByDateDescCreatedAtDesc(
+                    walletIds,
+                    budget.getCategory().getId(),
+                    start,
+                    end,
+                    pageable
+                );
+        }
+
+        boolean scopedToCategory =
+                budget.getScope() == BudgetScope.WALLET_CATEGORY
+                        && budget.getCategory() != null;
 
         if (scopedToCategory) {
             return repositoryExpense
-        .findByWalletIdAndCategoryIdAndDateBetweenOrderByDateDescCreatedAtDesc(
-                budget.getWallet().getId(),
-                budget.getCategory().getId(),
-                start,
-                end,
-                pageable
-        );
+                    .findByWalletIdAndCategoryIdAndDateBetweenOrderByDateDescCreatedAtDesc(
+                            budget.getWallet().getId(),
+                            budget.getCategory().getId(),
+                            start,
+                            end,
+                            pageable
+                    );
         }
 
         return repositoryExpense
@@ -755,8 +776,11 @@ public class BudgetService {
         BudgetResponse response = new BudgetResponse();
 
         response.setId(budget.getId());
-        response.setWalletId(budget.getWallet().getId());
-        response.setWalletName(budget.getWallet().getName());
+
+        if (budget.getWallet() != null) {
+                response.setWalletId(budget.getWallet().getId());
+                response.setWalletName(budget.getWallet().getName());
+        }
 
         if (budget.getCategory() != null) {
                 response.setCategoryId(budget.getCategory().getId());
@@ -775,4 +799,96 @@ public class BudgetService {
         return response;
     }
 
+    /**
+     * Evaluates every budget affected by an expense event: budgets scoped
+     * to the wallet directly, plus CATEGORY_GLOBAL budgets belonging to
+     * any user who participates in that wallet, for the given category.
+     *
+     * @param walletId the wallet where the expense occurred
+     * @param categoryId the category of the expense, or {@code null} if
+     *         the expense has no category (only WALLET-scoped budgets
+     *         will be affected in that case)
+     */
+    public void evaluateBudgetsForExpenseEvent(
+            final UUID walletId,
+            final UUID categoryId
+    ) {
+        evaluateBudgetsForWallet(walletId);
+
+        if (categoryId == null) {
+            return;
+        }
+
+        List<UUID> memberIds = repositoryWalletUser.findByWalletId(walletId)
+                .stream()
+                .map(wu -> wu.getUser().getId())
+                .distinct()
+                .toList();
+
+        for (UUID memberId : memberIds) {
+            List<Budget> globalBudgets = repositoryBudget
+                    .findByUserIdAndScopeAndCategoryId(
+                            memberId, BudgetScope.CATEGORY_GLOBAL, categoryId
+                    );
+
+            for (Budget budget : globalBudgets) {
+                evaluateOne(budget);
+            }
+        }
+    }
+
+    /**
+     * Evaluates a single budget: checks whether its period ended (and
+     * resets it), or whether it's active and needs an alert.
+     *
+     * @param budget the budget to evaluate
+     */
+    private void evaluateOne(final Budget budget) {
+        LocalDate today = LocalDate.now();
+        LocalDate start = budget.getStartDate();
+        LocalDate end = lifecycleService.calculateEndDate(budget);
+
+        boolean periodEnded = today.isAfter(end);
+
+        if (periodEnded) {
+            BudgetResponse endResponse = calculationService.calculate(budget);
+
+            if (endResponse.getStatus() != BudgetStatus.EXCEEDED) {
+                notificationService.sendBudgetSuccess(
+                        budget.getUser().getId(), endResponse
+                );
+            }
+
+            lifecycleService.resetBudgetPeriod(budget);
+            repositoryBudget.save(budget);
+            return;
+        }
+
+        boolean isActive =
+                (today.isEqual(start) || today.isAfter(start))
+                        && today.isBefore(end);
+
+        if (!isActive) {
+            return;
+        }
+
+        BudgetResponse response = calculationService.calculate(budget);
+
+        alertService.evaluate(response, budget.getUser().getId(), budget);
+
+        repositoryBudget.save(budget);
+    }
+
+    /**
+     * Evaluate all wallet-scoped and wallet-category budgets for a wallet.
+     *
+     * @param walletId the wallet ID
+     */
+    public void evaluateBudgetsForWallet(final UUID walletId) {
+        List<Budget> budgets = repositoryBudget.findByWalletId(walletId);
+
+        for (Budget budget : budgets) {
+            evaluateOne(budget);
+        }
+    }
 }

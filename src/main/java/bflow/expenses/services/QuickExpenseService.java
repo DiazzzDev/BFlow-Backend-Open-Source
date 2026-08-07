@@ -102,7 +102,10 @@ public class QuickExpenseService {
 
         Expense saved = repositoryExpense.save(expense);
 
-        budgetService.evaluateBudgetsForWallet(wallet.getId());
+        budgetService.evaluateBudgetsForExpenseEvent(
+                wallet.getId(),
+                category != null ? category.getId() : null
+        );
 
         return toResponse(saved);
     }

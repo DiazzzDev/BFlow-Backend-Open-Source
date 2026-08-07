@@ -38,9 +38,9 @@ public class BudgetRequest {
     private static final int CRITICAL_THRESHOLD_DEFAULT = 90;
 
     /**
-     * The wallet ID for the budget.
+     * The wallet ID for the budget. Required for WALLET and
+     * WALLET_CATEGORY scopes; must be omitted for CATEGORY_GLOBAL.
      */
-    @NotNull
     private UUID walletId;
 
     /**
@@ -84,5 +84,6 @@ public class BudgetRequest {
     /**
      * The budget scope (WALLET or CATEGORY).
      */
+    @NotNull
     private BudgetScope scope;
 }

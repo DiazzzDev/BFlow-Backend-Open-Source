@@ -5,12 +5,15 @@ import bflow.budget.entity.Budget;
 import bflow.budget.enums.BudgetScope;
 import bflow.budget.enums.BudgetStatus;
 import bflow.expenses.RepositoryExpense;
+import bflow.wallet.repository.RepositoryWalletUser;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.util.List;
+import java.util.UUID;
 
 /**
  * Service for budget calculations.
@@ -34,6 +37,8 @@ public final class BudgetCalculationService {
      */
     private final BudgetLifecycleService lifecycleService;
 
+    private final RepositoryWalletUser repositoryWalletUser;
+
     /**
      * Calculate budget response from a budget entity.
      *
@@ -45,26 +50,7 @@ public final class BudgetCalculationService {
         LocalDate start = budget.getStartDate();
         LocalDate end = lifecycleService.calculateEndDate(budget);
 
-        BigDecimal spent;
-
-        if (budget.getScope() == BudgetScope.WALLET) {
-            spent = repositoryExpense.sumExpensesByWalletAndDateRange(
-                    budget.getWallet().getId(),
-                    start,
-                    end
-            );
-        } else {
-            spent = repositoryExpense.sumByCategoryAndDateRange(
-                    budget.getCategory() != null
-                            ? budget.getCategory().getId() : null,
-                    start,
-                    end
-            );
-        }
-
-        if (spent == null) {
-            spent = BigDecimal.ZERO;
-        }
+        BigDecimal spent = calculateSpent(budget, start, end);
 
         BigDecimal amount = budget.getAmount();
 
@@ -95,7 +81,12 @@ public final class BudgetCalculationService {
 
         BudgetResponse response = new BudgetResponse();
         response.setId(budget.getId());
-        response.setWalletId(budget.getWallet().getId());
+
+        if (budget.getWallet() != null) {
+            response.setWalletId(budget.getWallet().getId());
+        }
+
+        response.setScope(budget.getScope());
         response.setPeriod(budget.getPeriod());
         response.setStartDate(budget.getStartDate());
 
@@ -119,5 +110,71 @@ public final class BudgetCalculationService {
         response.setCreatedAt(budget.getCreatedAt());
 
         return response;
+    }
+
+    /**
+     * Resolves the amount spent for a budget's current period, scoped
+     * correctly to its wallet (and category, when applicable).
+     *
+     * @param budget the budget entity
+     * @param start the period start date
+     * @param end the period end date
+     * @return the total spent amount, never {@code null}
+     */
+    private BigDecimal calculateSpent(
+            final Budget budget,
+            final LocalDate start,
+            final LocalDate end
+    ) {
+        BudgetScope scope = budget.getScope();
+
+        if (scope == null) {
+            throw new IllegalStateException(
+                    "Budget " + budget.getId() + " has no scope defined"
+            );
+        }
+
+        BigDecimal spent = switch (scope) {
+            case WALLET -> repositoryExpense.sumExpensesByWalletAndDateRange(
+                    budget.getWallet().getId(), start, end
+            );
+            case WALLET_CATEGORY -> {
+                requireCategory(budget);
+                yield repositoryExpense.sumByWalletAndCategoryAndDateRange(
+                        budget.getWallet().getId(),
+                        budget.getCategory().getId(),
+                        start,
+                        end
+                );
+            }
+            case CATEGORY_GLOBAL -> {
+                requireCategory(budget);
+                List<UUID> walletIds = repositoryWalletUser
+                        .findWalletIdsByUserId(budget.getUser().getId());
+
+                if (walletIds.isEmpty()) {
+                    yield BigDecimal.ZERO;
+                }
+
+                yield repositoryExpense.sumByWalletsAndCategoryAndDateRange(
+                        walletIds,
+                        budget.getCategory().getId(),
+                        start,
+                        end
+                );
+            }
+        };
+
+        return spent != null ? spent : BigDecimal.ZERO;
+    }
+
+    private void requireCategory(final Budget budget) {
+        if (budget.getCategory() == null) {
+            throw new IllegalStateException(
+                    "Budget " + budget.getId()
+                            + " has scope " + budget.getScope()
+                            + " but no category set"
+            );
+        }
     }
 }

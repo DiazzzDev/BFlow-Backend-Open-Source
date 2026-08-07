@@ -46,9 +46,10 @@ public class Budget {
 
     /**
      * The associated wallet.
+     * Null when scope is CATEGORY_GLOBAL.
      */
     @ManyToOne
-    @JoinColumn(name = "wallet_id", nullable = false)
+    @JoinColumn(name = "wallet_id")
     private Wallet wallet;
 
     /**
