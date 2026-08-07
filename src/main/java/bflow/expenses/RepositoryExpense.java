@@ -53,12 +53,34 @@ public interface RepositoryExpense extends JpaRepository<Expense, UUID> {
      * @return the sum of expenses
      */
     @Query("""
-        SELECT COALESCE(SUM(e.amount), 0)
-        FROM Expense e
-        WHERE e.category.id = :categoryId
-        AND e.date BETWEEN :start AND :end
-    """)
-    BigDecimal sumByCategoryAndDateRange(
+    SELECT COALESCE(SUM(e.amount), 0)
+    FROM Expense e
+    WHERE e.wallet.id = :walletId
+    AND e.category.id = :categoryId
+    AND e.date BETWEEN :start AND :end
+""")
+    BigDecimal sumByWalletAndCategoryAndDateRange(
+            UUID walletId, UUID categoryId, LocalDate start, LocalDate end);
+
+    /**
+     * Sum expenses for a category across a set of wallets within a date
+     * range — used for CATEGORY_GLOBAL budgets.
+     *
+     * @param walletIds the wallet IDs the user participates in
+     * @param categoryId the category ID
+     * @param start the start date
+     * @param end the end date
+     * @return the sum of expenses
+     */
+    @Query("""
+    SELECT COALESCE(SUM(e.amount), 0)
+    FROM Expense e
+    WHERE e.wallet.id IN :walletIds
+    AND e.category.id = :categoryId
+    AND e.date BETWEEN :start AND :end
+""")
+    BigDecimal sumByWalletsAndCategoryAndDateRange(
+            List<UUID> walletIds,
             UUID categoryId,
             LocalDate start,
             LocalDate end
@@ -124,32 +146,6 @@ public interface RepositoryExpense extends JpaRepository<Expense, UUID> {
     );
 
     /**
-     * Finds the most recent expenses for a wallet.
-     *
-     * @param walletId the wallet ID
-     * @param pageable pagination configuration (use to limit results)
-     * @return matching expenses ordered by date descending
-     */
-    List<Expense> findByWalletIdOrderByDateDescCreatedAtDesc(
-            UUID walletId,
-            Pageable pageable
-    );
-
-    /**
-     * Finds the most recent expenses for a wallet and category.
-     *
-     * @param walletId the wallet ID
-     * @param categoryId the category ID
-     * @param pageable pagination configuration (use to limit results)
-     * @return matching expenses ordered by date descending
-     */
-    List<Expense> findByWalletIdAndCategoryIdOrderByDateDescCreatedAtDesc(
-            UUID walletId,
-            UUID categoryId,
-            Pageable pageable
-    );
-
-    /**
      * Finds expenses for a wallet within a date range, ordered by most
      * recent first — used for "recent activity" bounded to a period.
      *
@@ -182,6 +178,23 @@ public interface RepositoryExpense extends JpaRepository<Expense, UUID> {
     List<Expense>
     findByWalletIdAndCategoryIdAndDateBetweenOrderByDateDescCreatedAtDesc(
             UUID walletId,
+            UUID categoryId,
+            LocalDate start,
+            LocalDate end,
+            Pageable pageable
+    );
+
+    List<Expense>
+    findByWalletIdInAndCategoryIdAndDateBetweenOrderByDateAsc(
+            List<UUID> walletIds,
+            UUID categoryId,
+            LocalDate start,
+            LocalDate end
+    );
+
+    List<Expense>
+    findByWalletIdInAndCategoryIdAndDateBetweenOrderByDateDescCreatedAtDesc(
+            List<UUID> walletIds,
             UUID categoryId,
             LocalDate start,
             LocalDate end,

@@ -46,13 +46,13 @@ public final class BudgetValidationService {
      */
     public void validateBudgetConstraints(
             final BudgetScope scope,
+            final UUID walletId,
             final UUID categoryId,
             final Integer warning,
             final Integer critical
     ) {
-
         validateThresholds(warning, critical);
-        validateBudgetScope(scope, categoryId);
+        validateBudgetScope(scope, walletId, categoryId);
     }
 
     /**
@@ -99,22 +99,53 @@ public final class BudgetValidationService {
     }
 
     /**
-     * Validate that category-scoped budgets have a category ID.
+     * Validate that wallet/category presence matches the budget's scope.
      *
      * @param scope the budget scope
-     * @param categoryId the category ID
-     * @throws InvalidBudgetScopeException if CATEGORY scope lacks categoryId
+     * @param walletId the wallet ID (nullable depending on scope)
+     * @param categoryId the category ID (nullable depending on scope)
+     * @throws InvalidBudgetScopeException if the combination is invalid
      */
     public void validateBudgetScope(
             final BudgetScope scope,
+            final UUID walletId,
             final UUID categoryId
     ) {
-
-        if (scope == BudgetScope.CATEGORY
-                && categoryId == null) {
-
-            throw new InvalidBudgetScopeException(
-                    "Category budget requires categoryId"
+        switch (scope) {
+            case WALLET -> {
+                if (walletId == null) {
+                    throw new InvalidBudgetScopeException(
+                            "WALLET scope requires walletId"
+                    );
+                }
+                if (categoryId != null) {
+                    throw new InvalidBudgetScopeException(
+                            "WALLET scope must not have a categoryId"
+                    );
+                }
+            }
+            case WALLET_CATEGORY -> {
+                if (walletId == null || categoryId == null) {
+                    throw new InvalidBudgetScopeException(
+                            "WALLET_CATEGORY scope requires both "
+                                    + "walletId and categoryId"
+                    );
+                }
+            }
+            case CATEGORY_GLOBAL -> {
+                if (categoryId == null) {
+                    throw new InvalidBudgetScopeException(
+                            "CATEGORY_GLOBAL scope requires categoryId"
+                    );
+                }
+                if (walletId != null) {
+                    throw new InvalidBudgetScopeException(
+                            "CATEGORY_GLOBAL scope must not have a walletId"
+                    );
+                }
+            }
+            default -> throw new InvalidBudgetScopeException(
+                    "Unsupported budget scope"
             );
         }
     }

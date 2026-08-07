@@ -65,4 +65,10 @@ public class BudgetPatchRequest {
      * Updated category ID.
      */
     private UUID categoryId;
+
+    /**
+     * Updated wallet ID. Required when patching scope to WALLET or
+     * WALLET_CATEGORY from CATEGORY_GLOBAL.
+     */
+    private UUID walletId;
 }

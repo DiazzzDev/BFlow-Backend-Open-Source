@@ -1,4 +1,4 @@
-package bflow.budget;
+package bflow.budget.repository;
 
 import bflow.budget.entity.Budget;
 import bflow.budget.enums.BudgetScope;
@@ -112,11 +112,16 @@ public interface RepositoryBudget extends JpaRepository<Budget, UUID>,
      */
     long countByUserId(UUID userId);
 
-    /**
-     * Find all budgets for a specific user.
-     *
-     * @param userId the user ID
-     * @return list of budgets
-     */
-    List<Budget> findAllByUserIdOrderByUpdatedAtDesc(UUID userId);
+    boolean existsByUserIdAndScopeAndCategoryIdAndPeriod(
+            UUID userId, BudgetScope scope, UUID categoryId, PeriodType period
+    );
+
+    boolean existsByUserIdAndScopeAndCategoryIdAndPeriodAndIdNot(
+            UUID userId, BudgetScope scope, UUID categoryId,
+            PeriodType period, UUID id
+    );
+
+    List<Budget> findByUserIdAndScopeAndCategoryId(
+            UUID userId, BudgetScope scope, UUID categoryId
+    );
 }

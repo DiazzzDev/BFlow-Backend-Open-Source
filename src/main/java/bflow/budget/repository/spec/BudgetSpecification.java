@@ -1,4 +1,4 @@
-package bflow.budget.specification;
+package bflow.budget.repository.spec;
 
 import bflow.budget.DTO.BudgetSearchRequest;
 import bflow.budget.entity.Budget;

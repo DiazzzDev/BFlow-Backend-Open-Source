@@ -23,7 +23,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/v1/expenses")
 @RequiredArgsConstructor
-public class ControllerExpense {
+public final class ControllerExpense {
     /**
      * Service for expense business logic operations.
      */
