@@ -7,6 +7,8 @@ import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
+import java.math.BigDecimal;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -22,4 +24,15 @@ public interface RepositoryWallet extends JpaRepository<Wallet, UUID> {
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT w FROM Wallet w WHERE w.id = :id")
     Optional<Wallet> findByIdForUpdate(UUID id);
+
+    /**
+     * Sums the current balance across the given wallets.
+     *
+     * @param walletIds the wallet identifiers to include
+     * @return the total balance
+     */
+    @Query(
+    "SELECT COALESCE(SUM(w.balance), 0) FROM Wallet w WHERE w.id IN :walletIds"
+    )
+    BigDecimal sumBalanceByWalletIds(List<UUID> walletIds);
 }

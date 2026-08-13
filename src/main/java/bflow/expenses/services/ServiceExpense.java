@@ -258,8 +258,8 @@ public class ServiceExpense {
         repositoryExpense.delete(expense);
 
         serviceBudget.evaluateBudgetsForExpenseEvent(
-                wallet.getId(),
-                expense.getCategory() != null ? expense.getCategory().getId() : null
+            wallet.getId(),
+            expense.getCategory() != null ? expense.getCategory().getId() : null
         );
     }
 

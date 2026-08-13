@@ -198,7 +198,9 @@ public class BudgetService {
         );
 
         planLimitService.assertCanCreate(
-                userId, FeatureCodes.BUDGETS, repositoryBudget.countByUserId(userId)
+            userId,
+            FeatureCodes.BUDGETS,
+            repositoryBudget.countByUserId(userId)
         );
 
         Budget budget = new Budget();
@@ -208,11 +210,14 @@ public class BudgetService {
         budget.setThresholdCritical(request.getThresholdCritical());
         budget.setStartDate(request.getStartDate());
         budget.setScope(request.getScope());
+        budget.setLastAlertStatus(BudgetStatus.OK);
 
         if (request.getScope() != BudgetScope.CATEGORY_GLOBAL) {
             validateWalletAccess(request.getWalletId(), userId);
             budget.setWallet(
-                    entityManager.getReference(Wallet.class, request.getWalletId())
+                entityManager.getReference(
+                        Wallet.class, request.getWalletId()
+                )
             );
         }
 
@@ -706,7 +711,7 @@ public class BudgetService {
                             budget.getUser().getId()
                     );
             return repositoryExpense
-                .findByWalletIdInAndCategoryIdAndDateBetweenOrderByDateDescCreatedAtDesc(
+       .findByWalletIdInAndCategoryIdAndDateBetweenOrderByDateDescCreatedAtDesc(
                     walletIds,
                     budget.getCategory().getId(),
                     start,
@@ -720,14 +725,14 @@ public class BudgetService {
                         && budget.getCategory() != null;
 
         if (scopedToCategory) {
-            return repositoryExpense
-                    .findByWalletIdAndCategoryIdAndDateBetweenOrderByDateDescCreatedAtDesc(
-                            budget.getWallet().getId(),
-                            budget.getCategory().getId(),
-                            start,
-                            end,
-                            pageable
-                    );
+        return repositoryExpense
+        .findByWalletIdAndCategoryIdAndDateBetweenOrderByDateDescCreatedAtDesc(
+                        budget.getWallet().getId(),
+                        budget.getCategory().getId(),
+                        start,
+                        end,
+                        pageable
+                );
         }
 
         return repositoryExpense

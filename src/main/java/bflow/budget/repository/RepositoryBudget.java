@@ -112,16 +112,54 @@ public interface RepositoryBudget extends JpaRepository<Budget, UUID>,
      */
     long countByUserId(UUID userId);
 
+    /**
+     * Checks whether a budget exists for the specified user, scope,
+     * category, and period.
+     *
+     * @param userId   the ID of the user
+     * @param scope    the budget scope
+     * @param categoryId the ID of the category
+     * @param period   the budget period
+     * @return true if a matching budget exists, otherwise false
+     */
     boolean existsByUserIdAndScopeAndCategoryIdAndPeriod(
             UUID userId, BudgetScope scope, UUID categoryId, PeriodType period
     );
 
+    /**
+     * Checks whether a budget exists for the specified user, scope,
+     * category, and period, excluding the budget with the specified ID.
+     *
+     * @param userId   the ID of the user
+     * @param scope    the budget scope
+     * @param categoryId the ID of the category
+     * @param period   the budget period
+     * @param id       the ID of the budget to exclude
+     * @return true if a matching budget exists, otherwise false
+     */
     boolean existsByUserIdAndScopeAndCategoryIdAndPeriodAndIdNot(
             UUID userId, BudgetScope scope, UUID categoryId,
             PeriodType period, UUID id
     );
 
+    /**
+     * Finds budgets for the specified user, scope, and category.
+     *
+     * @param userId     the ID of the user
+     * @param scope      the budget scope
+     * @param categoryId the ID of the category
+     * @return a list of matching budgets
+     */
     List<Budget> findByUserIdAndScopeAndCategoryId(
             UUID userId, BudgetScope scope, UUID categoryId
     );
+
+    /**
+     * Finds the 3 most recently updated budgets for a user — used for the
+     * "Budgets health" dashboard widget.
+     *
+     * @param userId the user ID
+     * @return up to 3 budgets ordered by most recently updated
+     */
+    List<Budget> findTop3ByUserIdOrderByUpdatedAtDesc(UUID userId);
 }

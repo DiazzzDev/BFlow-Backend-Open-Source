@@ -63,6 +63,7 @@ public final class BudgetOverlapValidationService {
      *
      * @param budget the budget entity being updated
      * @param scope the new budget scope
+     * @param walletId the wallet ID
      * @param categoryId the new category ID
      * @param period the new period type
      * @param userId the ID of the user (owner)
