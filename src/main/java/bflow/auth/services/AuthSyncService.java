@@ -2,17 +2,20 @@ package bflow.auth.services;
 
 import bflow.auth.DTO.Record.SyncUserRequest;
 import bflow.auth.DTO.Record.SyncUserResponse;
+import bflow.auth.DTO.UserMeResponse;
 import bflow.auth.entities.User;
 import bflow.auth.enums.PictureSource;
 import bflow.auth.enums.UserStatus;
+import bflow.auth.mapper.UserMapper;
 import bflow.auth.repository.RepositoryUser;
+import bflow.auth.security.CognitoIdTokenValidator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import java.util.Optional;
 import java.util.Set;
-import org.springframework.transaction.annotation.Transactional;
-import bflow.auth.security.CognitoIdTokenValidator;
 
 /**
  * Synchronizes Cognito users with the local database.
@@ -37,7 +40,13 @@ public class AuthSyncService {
     private final CognitoIdTokenValidator idTokenValidator;
 
     /**
-     * Synchronizes the authenticated Cognito user with the local database.
+     * Mapper for building user-facing response DTOs.
+     */
+    private final UserMapper userMapper;
+
+    /**
+     * Synchronizes the authenticated Cognito user with the local database
+     * and returns the initial session data required by the client.
      *
      * @param accessJwt validated access token
      * @param request synchronization request
@@ -48,7 +57,6 @@ public class AuthSyncService {
             final Jwt accessJwt,
             final SyncUserRequest request
     ) {
-        // Validate idToken signature with Cognito JWKs — no manual parsing
         Jwt idToken = idTokenValidator.validate(request.idToken());
 
         String sub = idToken.getSubject();
@@ -57,41 +65,36 @@ public class AuthSyncService {
         String name = idToken.getClaimAsString("name");
         String picture = idToken.getClaimAsString("picture");
 
-        // Verify sub consistency between access token and id token
         if (!accessJwt.getSubject().equals(sub)) {
-            throw new IllegalArgumentException(
-                    "Token subject mismatch"
-            );
+            throw new IllegalArgumentException("Token subject mismatch");
         }
 
         Optional<User> existingBySub = repositoryUser.findByCognitoSub(sub);
+
         if (existingBySub.isPresent()) {
             User user = existingBySub.get();
+
             applyProfileClaims(user, name, picture);
             repositoryUser.save(user);
-            return new SyncUserResponse(
-                    user.getId(),
-                    user.getEmail(),
-                    String.join(",", user.getRoles()),
-                    false
-            );
+
+            return buildResponse(user, false);
         }
 
         Optional<User> existingByEmail = repositoryUser.findByEmail(email);
+
         if (existingByEmail.isPresent()) {
             User user = existingByEmail.get();
+
             user.setCognitoSub(sub);
+
             if (Boolean.TRUE.equals(emailVerified)) {
                 user.setEmailVerified(true);
             }
+
             applyProfileClaims(user, name, picture);
             repositoryUser.save(user);
-            return new SyncUserResponse(
-                    user.getId(),
-                    user.getEmail(),
-                    String.join(",", user.getRoles()),
-                    false
-            );
+
+            return buildResponse(user, false);
         }
 
         User newUser = User.builder()
@@ -99,8 +102,11 @@ public class AuthSyncService {
                 .email(email)
                 .name(name)
                 .pictureUrl(picture)
-                .pictureSource(picture != null && !picture.isBlank()
-                        ? PictureSource.GOOGLE : PictureSource.NONE)
+                .pictureSource(
+                        picture != null && !picture.isBlank()
+                                ? PictureSource.GOOGLE
+                                : PictureSource.NONE
+                )
                 .status(UserStatus.ACTIVE)
                 .emailVerified(Boolean.TRUE.equals(emailVerified))
                 .roles(Set.of("ROLE_USER"))
@@ -109,11 +115,31 @@ public class AuthSyncService {
         repositoryUser.save(newUser);
         authBootstrapService.bootstrap(newUser);
 
+        return buildResponse(newUser, true);
+    }
+
+    /**
+     * Builds the session response returned after authentication
+     * synchronization.
+     *
+     * @param user authenticated user
+     * @param isNewUser whether the user was created during synchronization
+     * @return complete synchronization response
+     */
+    private SyncUserResponse buildResponse(
+            final User user,
+            final boolean isNewUser
+    ) {
+        UserMeResponse meResponse = userMapper.toMeResponse(user);
+
         return new SyncUserResponse(
-                newUser.getId(),
-                newUser.getEmail(),
-                "ROLE_USER",
-                true
+                meResponse.id(),
+                user.getEmail(),
+                meResponse.roles(),
+                isNewUser,
+                meResponse.subscription(),
+                meResponse.wallets(),
+                meResponse.profile()
         );
     }
 
