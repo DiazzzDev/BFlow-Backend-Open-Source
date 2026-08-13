@@ -37,6 +37,9 @@ public final class BudgetCalculationService {
      */
     private final BudgetLifecycleService lifecycleService;
 
+    /**
+     * Repository for managing wallet-user relationships.
+     */
     private final RepositoryWalletUser repositoryWalletUser;
 
     /**

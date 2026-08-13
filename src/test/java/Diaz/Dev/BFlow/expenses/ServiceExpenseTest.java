@@ -191,7 +191,7 @@ class ServiceExpenseTest {
                 () -> serviceExpense.newExpense(request, userId));
 
         verify(repositoryExpense, never()).saveAndFlush(any(Expense.class));
-        verify(serviceBudget, never()).evaluateBudgetsForWallet(any());
+        verify(serviceBudget, never()).evaluateBudgetsForExpenseEvent(any(), any());
     }
 
     /**
@@ -229,7 +229,7 @@ class ServiceExpenseTest {
 
         assertNotNull(result);
         verify(repositoryExpense).saveAndFlush(any(Expense.class));
-        verify(serviceBudget).evaluateBudgetsForWallet(walletId);
+        verify(serviceBudget).evaluateBudgetsForExpenseEvent(eq(walletId), any());
     }
 
     /**

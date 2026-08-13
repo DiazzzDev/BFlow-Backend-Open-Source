@@ -38,6 +38,7 @@ public final class BudgetValidationService {
      * Validate budget constraints including thresholds and scope.
      *
      * @param scope the budget scope
+     * @param walletId the wallet ID (required for WALLET scope)
      * @param categoryId the category ID (required for CATEGORY scope)
      * @param warning the warning threshold percentage
      * @param critical the critical threshold percentage

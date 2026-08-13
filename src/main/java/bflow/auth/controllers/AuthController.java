@@ -4,6 +4,7 @@ import bflow.auth.DTO.Record.SyncUserRequest;
 import bflow.auth.DTO.Record.SyncUserResponse;
 import bflow.auth.DTO.UserMeResponse;
 import bflow.auth.entities.User;
+import bflow.auth.mapper.UserMapper;
 import bflow.auth.services.AuthSyncService;
 import bflow.auth.services.CurrentUserService;
 import bflow.common.response.ApiResponse;
@@ -21,8 +22,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
-
 @RestController
 @RequestMapping("/api/v1/auth")
 @RequiredArgsConstructor
@@ -36,6 +35,9 @@ public class AuthController {
 
     /** Service used to resolve the authenticated user. */
     private final CurrentUserService currentUserService;
+
+    /** Mapper for building user-facing response DTOs. */
+    private final UserMapper userMapper;
 
     /**
      * Returns the current authenticated user's details.
@@ -53,14 +55,7 @@ public class AuthController {
         }
         User user = currentUserService.getCurrentUser(authentication);
 
-        UserMeResponse response = new UserMeResponse(
-                user.getId(),
-                user.getEmail(),
-                List.copyOf(user.getRoles()),
-                null,
-                List.of(),
-                null
-        );
+        UserMeResponse response = userMapper.toMeResponse(user);
 
         return ResponseEntity.ok(
                 ApiResponse.success(

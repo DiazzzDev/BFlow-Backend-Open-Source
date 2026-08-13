@@ -2,10 +2,9 @@ package bflow.auth.services;
 
 import bflow.auth.DTO.UserMeResponse;
 import bflow.auth.entities.User;
-import bflow.auth.repository.RepositoryAuthAccount;
+import bflow.auth.mapper.UserMapper;
 import bflow.auth.repository.RepositoryUser;
 import bflow.common.exception.ResourceNotFoundException;
-import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
@@ -21,10 +20,11 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 public class AuthService {
 
-    /** Repository for authentication account data. */
-    private final RepositoryAuthAccount authAccountRepository;
     /** Repository for core user profile data. */
     private final RepositoryUser userRepository;
+
+    /** Mapper for building user-facing response DTOs. */
+    private final UserMapper userMapper;
 
     /**
      * Finds a user by their unique identifier.
@@ -65,13 +65,6 @@ public class AuthService {
                                 "User not found"
                         ));
 
-        return new UserMeResponse(
-                user.getId(),
-                user.getEmail(),
-                List.copyOf(user.getRoles()),
-                null,
-                List.of(),
-                null
-        );
+        return userMapper.toMeResponse(user);
     }
 }

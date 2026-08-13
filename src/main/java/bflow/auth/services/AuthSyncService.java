@@ -3,6 +3,7 @@ package bflow.auth.services;
 import bflow.auth.DTO.Record.SyncUserRequest;
 import bflow.auth.DTO.Record.SyncUserResponse;
 import bflow.auth.entities.User;
+import bflow.auth.enums.PictureSource;
 import bflow.auth.enums.UserStatus;
 import bflow.auth.repository.RepositoryUser;
 import lombok.RequiredArgsConstructor;
@@ -53,6 +54,8 @@ public class AuthSyncService {
         String sub = idToken.getSubject();
         String email = idToken.getClaimAsString("email");
         Boolean emailVerified = idToken.getClaimAsBoolean("email_verified");
+        String name = idToken.getClaimAsString("name");
+        String picture = idToken.getClaimAsString("picture");
 
         // Verify sub consistency between access token and id token
         if (!accessJwt.getSubject().equals(sub)) {
@@ -64,6 +67,8 @@ public class AuthSyncService {
         Optional<User> existingBySub = repositoryUser.findByCognitoSub(sub);
         if (existingBySub.isPresent()) {
             User user = existingBySub.get();
+            applyProfileClaims(user, name, picture);
+            repositoryUser.save(user);
             return new SyncUserResponse(
                     user.getId(),
                     user.getEmail(),
@@ -79,6 +84,7 @@ public class AuthSyncService {
             if (Boolean.TRUE.equals(emailVerified)) {
                 user.setEmailVerified(true);
             }
+            applyProfileClaims(user, name, picture);
             repositoryUser.save(user);
             return new SyncUserResponse(
                     user.getId(),
@@ -91,6 +97,10 @@ public class AuthSyncService {
         User newUser = User.builder()
                 .cognitoSub(sub)
                 .email(email)
+                .name(name)
+                .pictureUrl(picture)
+                .pictureSource(picture != null && !picture.isBlank()
+                        ? PictureSource.GOOGLE : PictureSource.NONE)
                 .status(UserStatus.ACTIVE)
                 .emailVerified(Boolean.TRUE.equals(emailVerified))
                 .roles(Set.of("ROLE_USER"))
@@ -105,5 +115,31 @@ public class AuthSyncService {
                 "ROLE_USER",
                 true
         );
+    }
+
+    /**
+     * Updates the user's name and, if the picture didn't come from an S3
+     * upload, their picture URL — sourced from the Cognito ID token.
+     *
+     * @param user the user to update
+     * @param name the display name claim, or {@code null}
+     * @param picture the picture URL claim, or {@code null}
+     */
+    private void applyProfileClaims(
+            final User user,
+            final String name,
+            final String picture
+    ) {
+        if (name != null && !name.isBlank()) {
+            user.setName(name);
+        }
+
+        boolean canOverwritePicture =
+                user.getPictureSource() != PictureSource.S3;
+
+        if (picture != null && !picture.isBlank() && canOverwritePicture) {
+            user.setPictureUrl(picture);
+            user.setPictureSource(PictureSource.GOOGLE);
+        }
     }
 }

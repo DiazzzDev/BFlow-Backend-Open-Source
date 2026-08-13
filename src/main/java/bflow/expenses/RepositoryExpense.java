@@ -1,5 +1,7 @@
 package bflow.expenses;
 
+import bflow.dashboard.projection.CategorySpendingProjection;
+import bflow.dashboard.projection.MonthlyTotalProjection;
 import bflow.expenses.entity.Expense;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -45,8 +47,9 @@ public interface RepositoryExpense extends JpaRepository<Expense, UUID> {
     );
 
     /**
-     * Sum expenses for a category within a date range.
+     * Sum expenses for a wallet and category within a date range.
      *
+     * @param walletId the wallet ID
      * @param categoryId the category ID
      * @param start the start date
      * @param end the end date
@@ -184,6 +187,16 @@ public interface RepositoryExpense extends JpaRepository<Expense, UUID> {
             Pageable pageable
     );
 
+    /**
+     * Finds expenses for a category across a set of wallets within a date
+     * range, ordered chronologically.
+     *
+     * @param walletIds the wallet IDs to search
+     * @param categoryId the category ID
+     * @param start range start (inclusive)
+     * @param end range end (inclusive)
+     * @return matching expenses ordered by date ascending
+     */
     List<Expense>
     findByWalletIdInAndCategoryIdAndDateBetweenOrderByDateAsc(
             List<UUID> walletIds,
@@ -192,10 +205,93 @@ public interface RepositoryExpense extends JpaRepository<Expense, UUID> {
             LocalDate end
     );
 
+    /**
+     * Finds expenses for a category across a set of wallets within a date
+     * range, ordered by most recent first.
+     *
+     * @param walletIds the wallet IDs to search
+     * @param categoryId the category ID
+     * @param start range start (inclusive)
+     * @param end range end (inclusive)
+     * @param pageable pagination configuration
+     * @return matching expenses ordered by date descending
+     */
     List<Expense>
     findByWalletIdInAndCategoryIdAndDateBetweenOrderByDateDescCreatedAtDesc(
             List<UUID> walletIds,
             UUID categoryId,
+            LocalDate start,
+            LocalDate end,
+            Pageable pageable
+    );
+
+    /**
+     * Sums expenses across a set of wallets within a date range.
+     *
+     * @param walletIds the wallet IDs to search
+     * @param start range start (inclusive)
+     * @param end range end (inclusive)
+     * @return the sum of expenses
+     */
+    @Query("""
+    SELECT COALESCE(SUM(e.amount), 0)
+    FROM Expense e
+    WHERE e.wallet.id IN :walletIds
+    AND e.date BETWEEN :start AND :end
+""")
+    BigDecimal sumByWalletsAndDateRange(
+            List<UUID> walletIds, LocalDate start, LocalDate end);
+
+    /**
+     * Groups expenses by month within a date range.
+     *
+     * @param walletIds the wallet IDs to search
+     * @param start range start (inclusive)
+     * @param end range end (inclusive)
+     * @return monthly expense totals
+     */
+    @Query("""
+    SELECT EXTRACT(MONTH FROM e.date) as month,
+           COALESCE(SUM(e.amount), 0) as total
+    FROM Expense e
+    WHERE e.wallet.id IN :walletIds
+    AND e.date BETWEEN :start AND :end
+    GROUP BY EXTRACT(MONTH FROM e.date)
+""")
+    List<MonthlyTotalProjection> sumGroupedByMonth(
+            List<UUID> walletIds, LocalDate start, LocalDate end);
+
+    /**
+     * Retrieves the most recent expenses across a set of wallets.
+     *
+     * @param walletIds the wallet IDs to search
+     * @param pageable pagination configuration
+     * @return expenses ordered by creation date descending
+     */
+    List<Expense> findByWalletIdInOrderByCreatedAtDesc(
+            List<UUID> walletIds, Pageable pageable);
+
+    /**
+     * Groups expenses by category within a date range.
+     *
+     * @param walletIds the wallet IDs to search
+     * @param start range start (inclusive)
+     * @param end range end (inclusive)
+     * @param pageable pagination configuration
+     * @return category spending totals ordered by amount descending
+     */
+    @Query("""
+    SELECT e.category.id as categoryId,
+           e.category.name as categoryName,
+           COALESCE(SUM(e.amount), 0) as total
+    FROM Expense e
+    WHERE e.wallet.id IN :walletIds
+    AND e.date BETWEEN :start AND :end
+    GROUP BY e.category.id, e.category.name
+    ORDER BY SUM(e.amount) DESC
+""")
+    List<CategorySpendingProjection> sumGroupedByCategory(
+            List<UUID> walletIds,
             LocalDate start,
             LocalDate end,
             Pageable pageable
