@@ -3,7 +3,7 @@ package Diaz.Dev.BFlow.income;
 import bflow.auth.entities.User;
 import bflow.auth.enums.UserStatus;
 import bflow.auth.repository.RepositoryUser;
-import bflow.auth.services.UserServiceImpl;
+import bflow.auth.services.UserService;
 import bflow.income.DTO.IncomeRequest;
 import bflow.income.DTO.IncomeResponse;
 import bflow.income.RepositoryIncome;
@@ -75,7 +75,7 @@ class ServiceIncomeTest {
     private ServiceWallet serviceWallet;
 
     @Mock
-    private UserServiceImpl userService;
+    private UserService userService;
 
     @InjectMocks
     private ServiceIncome serviceIncome;

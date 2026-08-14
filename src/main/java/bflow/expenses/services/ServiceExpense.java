@@ -2,7 +2,7 @@ package bflow.expenses.services;
 
 import bflow.auth.entities.User;
 import bflow.auth.repository.RepositoryUser;
-import bflow.auth.services.UserServiceImpl;
+import bflow.auth.services.UserService;
 import bflow.budget.services.BudgetService;
 import bflow.category.entity.Category;
 import bflow.category.enums.CategoryType;
@@ -60,7 +60,7 @@ public class ServiceExpense {
     /**
      * Service for user business logic operations.
      */
-    private final UserServiceImpl userService;
+    private final UserService userService;
 
     /**
      * Repository for category entity operations.

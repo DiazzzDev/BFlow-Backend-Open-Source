@@ -1,7 +1,7 @@
 package bflow.budget.services;
 
 import bflow.auth.entities.User;
-import bflow.auth.services.UserServiceImpl;
+import bflow.auth.services.UserService;
 import bflow.budget.DTO.BudgetDetailResponse;
 import bflow.budget.DTO.BudgetPatchRequest;
 import bflow.budget.DTO.BudgetRequest;
@@ -78,7 +78,7 @@ public class BudgetService {
     /**
      * Service for user business logic operations.
      */
-    private final UserServiceImpl userService;
+    private final UserService userService;
 
     /**
      * Service for notification operations.

@@ -1,6 +1,6 @@
 package bflow.wallet.service;
 
-import bflow.auth.services.UserServiceImpl;
+import bflow.auth.services.UserService;
 import bflow.expenses.DTO.ExpenseResponse;
 import bflow.expenses.RepositoryExpense;
 import bflow.expenses.entity.Expense;
@@ -65,7 +65,7 @@ public class ServiceWallet {
     private final RepositoryUser repositoryUser;
 
     /** Service for user business logic operations. */
-    private final UserServiceImpl userService;
+    private final UserService userService;
 
     /** Repository for expense persistence operations. */
     private final RepositoryExpense repositoryExpense;

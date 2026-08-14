@@ -3,7 +3,7 @@ package Diaz.Dev.BFlow.expenses;
 import bflow.auth.entities.User;
 import bflow.auth.enums.UserStatus;
 import bflow.auth.repository.RepositoryUser;
-import bflow.auth.services.UserServiceImpl;
+import bflow.auth.services.UserService;
 import bflow.budget.services.BudgetService;
 import bflow.category.CategoryValidator;
 import bflow.category.RepositoryCategory;
@@ -75,7 +75,7 @@ class ServiceExpenseTest {
     private ServiceWallet serviceWallet;
 
     @Mock
-    private UserServiceImpl userService;
+    private UserService userService;
 
     @Mock
     private BudgetService serviceBudget;

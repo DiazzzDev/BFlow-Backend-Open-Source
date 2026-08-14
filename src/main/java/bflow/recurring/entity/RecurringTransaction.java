@@ -41,12 +41,12 @@ public final class RecurringTransaction {
      * Default interval value.
      */
     private static final int DEFAULT_INTERVAL = 1;
-    
+
     /**
      * Decimal precision.
      */
     private static final int DECIMAL_PRECISION = 15;
-    
+
     /**
      * Decimal scale.
      */

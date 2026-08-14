@@ -2,6 +2,7 @@ package bflow.dashboard.controller;
 
 import bflow.auth.services.CurrentUserService;
 import bflow.common.response.ApiResponse;
+import bflow.dashboard.dto.ActivityBreakdownResponse;
 import bflow.dashboard.dto.AveragesResponse;
 import bflow.dashboard.dto.BalanceSummaryResponse;
 import bflow.dashboard.dto.BudgetHealthItem;
@@ -169,6 +170,30 @@ public final class ControllerDashboard {
         return ApiResponse.success(
                 "Budgets health retrieved successfully",
                 health,
+                request.getRequestURI()
+        );
+    }
+
+    /**
+     * Retrieves the "Activity breakdown" widget data (income/expense/transfer
+     * share this month, plus activity change vs last month).
+     *
+     * @param authentication authenticated user.
+     * @param request current HTTP request.
+     * @return the activity breakdown.
+     */
+    @GetMapping("/activity-breakdown")
+    public ApiResponse<ActivityBreakdownResponse> getActivityBreakdown(
+            final Authentication authentication,
+            final HttpServletRequest request
+    ) {
+        UUID userId = currentUserService.getCurrentUserId(authentication);
+        ActivityBreakdownResponse breakdown = serviceDashboard
+                .getActivityBreakdown(userId);
+
+        return ApiResponse.success(
+                "Activity breakdown retrieved successfully",
+                breakdown,
                 request.getRequestURI()
         );
     }

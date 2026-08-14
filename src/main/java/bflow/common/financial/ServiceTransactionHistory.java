@@ -1,6 +1,6 @@
 package bflow.common.financial;
 
-import bflow.auth.services.UserServiceImpl;
+import bflow.auth.services.UserService;
 import bflow.wallet.repository.RepositoryWalletUser;
 import lombok.AllArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -28,7 +28,7 @@ public class ServiceTransactionHistory {
     /**
      * Service used to validate user status.
      */
-    private final UserServiceImpl userService;
+    private final UserService userService;
 
     /**
      * Retrieves the unified transaction history across every wallet the user

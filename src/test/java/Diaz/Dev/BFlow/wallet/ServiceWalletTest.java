@@ -3,7 +3,7 @@ package Diaz.Dev.BFlow.wallet;
 import bflow.auth.entities.User;
 import bflow.auth.enums.UserStatus;
 import bflow.auth.repository.RepositoryUser;
-import bflow.auth.services.UserServiceImpl;
+import bflow.auth.services.UserService;
 import bflow.wallet.DTO.UpdateWalletRequest;
 import bflow.wallet.DTO.WalletResponse;
 import bflow.wallet.repository.RepositoryWallet;
@@ -20,15 +20,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
 
 import java.math.BigDecimal;
 import java.time.Instant;
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -54,7 +49,7 @@ class ServiceWalletTest {
     private RepositoryUser repositoryUser;
 
     @Mock
-    private UserServiceImpl userService;
+    private UserService userService;
 
     @InjectMocks
     private ServiceWallet serviceWallet;

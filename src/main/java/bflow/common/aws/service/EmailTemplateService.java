@@ -210,6 +210,15 @@ public final class EmailTemplateService {
     /**
      * Sends a notification email when a recurring transaction fails to
      * execute (e.g. insufficient wallet balance).
+     *
+     * @param toEmail recipient email address
+     * @param userName recipient display name
+     * @param transactionTitle title of the recurring transaction
+     * @param amount the transaction amount
+     * @param attempts number of consecutive failed attempts so far
+     * @param deactivated whether the recurring transaction was
+     *        auto-deactivated after reaching the failure threshold
+     * @param reason short description of why the execution failed
      */
     public void sendRecurringFailedEmail(
             final String toEmail,

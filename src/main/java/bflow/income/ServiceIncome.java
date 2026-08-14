@@ -2,7 +2,7 @@ package bflow.income;
 
 import bflow.auth.entities.User;
 import bflow.auth.repository.RepositoryUser;
-import bflow.auth.services.UserServiceImpl;
+import bflow.auth.services.UserService;
 import bflow.category.entity.Category;
 import bflow.category.enums.CategoryType;
 import bflow.category.RepositoryCategory;
@@ -63,7 +63,7 @@ public class ServiceIncome {
     /**
      * Service for user business logic operations.
      */
-    private final UserServiceImpl userService;
+    private final UserService userService;
 
     /**
      * Repository for category entity operations.

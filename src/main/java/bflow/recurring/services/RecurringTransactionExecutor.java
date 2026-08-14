@@ -1,6 +1,5 @@
 package bflow.recurring.services;
 
-import bflow.common.aws.service.EmailTemplateService;
 import bflow.expenses.DTO.ExpenseRequest;
 import bflow.expenses.services.ServiceExpense;
 import bflow.income.DTO.IncomeRequest;
@@ -30,14 +29,25 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class RecurringTransactionExecutor {
 
-    /** Consecutive failures after which the recurring transaction is auto-paused. */
+    /**
+     * Consecutive failures after which the recurring
+     * transaction is auto-paused.
+     */
     private static final int MAX_FAILED_ATTEMPTS = 3;
 
     /** Max length stored for the failure reason (matches column size). */
     private static final int MAX_REASON_LENGTH = 150;
 
+    /** Repository for recurring transaction persistence. */
     private final RepositoryRecurringTransaction repository;
+
+    /**
+     * Service used to create the expense
+     * when the recurring type is EXPENSE.
+     */
     private final ServiceExpense serviceExpense;
+
+    /** Service used to create the income when the recurring type is INCOME. */
     private final ServiceIncome serviceIncome;
 
     /**
@@ -173,6 +183,15 @@ public class RecurringTransactionExecutor {
     /**
      * Data needed to compose the failure email, extracted while the
      * recurring transaction's persistence context is still open.
+     *
+     * @param email recipient email address
+     * @param userName recipient display name
+     * @param transactionTitle title of the recurring transaction
+     * @param amount the transaction amount
+     * @param attempts number of consecutive failed attempts so far
+     * @param deactivated whether the recurring transaction was
+     *        auto-deactivated after reaching the failure threshold
+     * @param reason short description of why the execution failed
      */
     public record FailureNotification(
             String email,

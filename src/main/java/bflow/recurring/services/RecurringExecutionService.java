@@ -1,6 +1,6 @@
 package bflow.recurring.services;
 
-import bflow.auth.services.UserServiceImpl;
+import bflow.auth.services.UserService;
 import bflow.category.RepositoryCategory;
 import bflow.category.entity.Category;
 import bflow.common.aws.service.EmailTemplateService;
@@ -55,7 +55,7 @@ public class RecurringExecutionService {
     /**
      * Service for user validation.
      */
-    private final UserServiceImpl userService;
+    private final UserService userService;
 
     /**
      * Repository for category persistence.
