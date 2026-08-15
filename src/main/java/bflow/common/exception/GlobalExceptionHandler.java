@@ -790,4 +790,28 @@ public final class GlobalExceptionHandler {
                         request.getRequestURI()
                 ));
     }
+
+    /**
+     * Handle errors related to object storage (AWS S3) and return
+     * a service unavailable response.
+     *
+     * @param ex the storage exception
+     * @param request the HTTP request
+     * @return a service unavailable response entity
+     */
+    @ExceptionHandler(StorageException.class)
+    public ResponseEntity<ApiResponse<Void>> handleStorageException(
+            final StorageException ex,
+            final HttpServletRequest request
+    ) {
+
+        return ResponseEntity
+                .status(HttpStatus.SERVICE_UNAVAILABLE)
+                .body(
+                        ApiResponse.error(
+                                ex.getMessage(),
+                                request.getRequestURI()
+                        )
+                );
+    }
 }

@@ -34,11 +34,12 @@ public class UserService {
     }
 
     /**
-    * Implementation of {@link UserService}.
-    *
-    * <p>This class is not intended to be extended.
-    * It is proxied by Spring for transactional behavior.
-    */
+     * Updates the profile information of an active user.
+     *
+     * @param userId the unique identifier of the user to update.
+     * @param request the profile update request containing the new information.
+     * @return the updated user profile response.
+     */
     public UserProfileResponse updateProfile(
             final UUID userId,
             final UpdateUserProfileRequest request
