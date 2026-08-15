@@ -52,8 +52,8 @@ public final class GlobalExceptionHandler {
             final IllegalStateException ex,
             final HttpServletRequest request) {
         return ResponseEntity
-            .status(HttpStatus.CONFLICT)
-            .body(ApiResponse.error(ex.getMessage(), request.getRequestURI()));
+                .status(HttpStatus.CONFLICT)
+                .body(ApiResponse.error(ex.getMessage(), request.getRequestURI()));
     }
 
     /**
@@ -129,8 +129,8 @@ public final class GlobalExceptionHandler {
                 .status(HttpStatus.FORBIDDEN)
                 .body(ApiResponse.error(
                         ex.getMessage() != null
-                            ? ex.getMessage()
-                            : "Access denied",
+                                ? ex.getMessage()
+                                : "Access denied",
                         request.getRequestURI()
                 ));
     }
@@ -156,6 +156,26 @@ public final class GlobalExceptionHandler {
     }
 
     /**
+     * Handles file access denied exceptions (file-specific
+     * permission violations).
+     * @param ex the exception.
+     * @param request the current request.
+     * @return error response with FORBIDDEN status.
+     */
+    @ExceptionHandler(FileAccessDeniedException.class)
+    public ResponseEntity<ApiResponse<Void>> handleFileAccessDenied(
+            final FileAccessDeniedException ex,
+            final HttpServletRequest request
+    ) {
+        return ResponseEntity
+                .status(HttpStatus.FORBIDDEN)
+                .body(ApiResponse.error(
+                        ex.getMessage(),
+                        request.getRequestURI()
+                ));
+    }
+
+    /**
      * Handles bean validation errors.
      * @param ex the exception.
      * @param request the current request.
@@ -166,13 +186,13 @@ public final class GlobalExceptionHandler {
             final MethodArgumentNotValidException ex,
             final HttpServletRequest request) {
         String errorMsg = ex.getBindingResult().getFieldErrors()
-            .stream()
-            .map(err -> err.getField() + ": "
-                + err.getDefaultMessage())
-            .collect(Collectors.joining(", "));
+                .stream()
+                .map(err -> err.getField() + ": "
+                        + err.getDefaultMessage())
+                .collect(Collectors.joining(", "));
         return ResponseEntity
-            .status(HttpStatus.BAD_REQUEST)
-            .body(ApiResponse.error(errorMsg, request.getRequestURI()));
+                .status(HttpStatus.BAD_REQUEST)
+                .body(ApiResponse.error(errorMsg, request.getRequestURI()));
     }
 
     /**
@@ -323,14 +343,14 @@ public final class GlobalExceptionHandler {
                 ));
     }
 
-        /**
-         * Handle errors related to email delivery and return a service
-         * unavailable response.
-         *
-         * @param ex the email delivery exception
-         * @param request the HTTP request
-         * @return a service unavailable response entity
-         */
+    /**
+     * Handle errors related to email delivery and return a service
+     * unavailable response.
+     *
+     * @param ex the email delivery exception
+     * @param request the HTTP request
+     * @return a service unavailable response entity
+     */
     @ExceptionHandler(EmailDeliveryException.class)
     public ResponseEntity<ApiResponse<Void>> handleEmailDeliveryException(
             final EmailDeliveryException ex,
@@ -390,15 +410,15 @@ public final class GlobalExceptionHandler {
      */
     @ExceptionHandler(EntityNotFoundException.class)
     public ResponseEntity<ApiResponse<Void>> handleEntityNotFound(
-        final EntityNotFoundException ex,
-        final HttpServletRequest request
+            final EntityNotFoundException ex,
+            final HttpServletRequest request
     ) {
-    return ResponseEntity
-        .status(HttpStatus.NOT_FOUND)
-        .body(ApiResponse.error(
-            ex.getMessage(),
-            request.getRequestURI()
-        ));
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(ApiResponse.error(
+                        ex.getMessage(),
+                        request.getRequestURI()
+                ));
     }
 
     /**
@@ -410,16 +430,16 @@ public final class GlobalExceptionHandler {
      */
     @ExceptionHandler(RestClientException.class)
     public ResponseEntity<ApiResponse<Void>> handleRestClientException(
-        final RestClientException ex,
-        final HttpServletRequest request
+            final RestClientException ex,
+            final HttpServletRequest request
     ) {
         log.error("Error comunicándose con Wompi", ex);
         return ResponseEntity
-            .status(HttpStatus.BAD_GATEWAY)
-            .body(ApiResponse.error(
-                "No fue posible comunicarse con el proveedor de pagos.",
-                request.getRequestURI()
-        ));
+                .status(HttpStatus.BAD_GATEWAY)
+                .body(ApiResponse.error(
+                        "No fue posible comunicarse con el proveedor de pagos.",
+                        request.getRequestURI()
+                ));
     }
 
     /**
@@ -518,8 +538,8 @@ public final class GlobalExceptionHandler {
      */
     @ExceptionHandler(ConflictException.class)
     public ResponseEntity<ApiResponse<Void>> handleConflict(
-        final ConflictException ex,
-        final HttpServletRequest request
+            final ConflictException ex,
+            final HttpServletRequest request
     ) {
 
         log.warn(
@@ -546,37 +566,37 @@ public final class GlobalExceptionHandler {
      */
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     public ResponseEntity<ApiResponse<Void>> handleMethodArgumentTypeMismatch(
-        final MethodArgumentTypeMismatchException ex,
-        final HttpServletRequest request
+            final MethodArgumentTypeMismatchException ex,
+            final HttpServletRequest request
     ) {
 
         String message = "Invalid value for parameter '%s'."
-            .formatted(ex.getName());
+                .formatted(ex.getName());
 
         if (ex.getRequiredType() != null
-            && ex.getRequiredType().isEnum()) {
+                && ex.getRequiredType().isEnum()) {
 
             Object[] values = ex.getRequiredType().getEnumConstants();
 
             String allowedValues = java.util.Arrays.stream(values)
-                .map(Object::toString)
-                .collect(java.util.stream.Collectors.joining(", "));
+                    .map(Object::toString)
+                    .collect(java.util.stream.Collectors.joining(", "));
 
             message = "Invalid value '%s' for "
-            + "parameter '%s'. Allowed values: %s."
-                .formatted(
-                        ex.getValue(),
-                        ex.getName(),
-                        allowedValues
-                );
+                    + "parameter '%s'. Allowed values: %s."
+                    .formatted(
+                            ex.getValue(),
+                            ex.getName(),
+                            allowedValues
+                    );
         }
 
         return ResponseEntity
-            .status(HttpStatus.BAD_REQUEST)
-            .body(ApiResponse.error(
-                    message,
-                    request.getRequestURI()
-            ));
+                .status(HttpStatus.BAD_REQUEST)
+                .body(ApiResponse.error(
+                        message,
+                        request.getRequestURI()
+                ));
     }
 
     /**
