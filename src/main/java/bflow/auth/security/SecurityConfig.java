@@ -43,6 +43,9 @@ public class SecurityConfig {
     /** JSON serializer used by the idempotency filter. */
     private final ObjectMapper objectMapper;
 
+    /** Entry point invoked for unauthenticated/rejected requests. */
+    private final RestAuthenticationEntryPoint restAuthenticationEntryPoint;
+
     /**
      * Configures the security filter chain.
      * @param http the security object to configure.
@@ -58,17 +61,17 @@ public class SecurityConfig {
         );
 
         return http
-                 /*
-                * CSRF protection is intentionally disabled.
-                *
-                * This application is a stateless REST API authenticated
-                * exclusively through OAuth2 JWT Bearer tokens issued
-                * by AWS Cognito.
-                *
-                * Since authentication does not rely on cookies or
-                * HTTP sessions,
-                * CSRF attacks are not applicable.
-                */
+                /*
+                 * CSRF protection is intentionally disabled.
+                 *
+                 * This application is a stateless REST API authenticated
+                 * exclusively through OAuth2 JWT Bearer tokens issued
+                 * by AWS Cognito.
+                 *
+                 * Since authentication does not rely on cookies or
+                 * HTTP sessions,
+                 * CSRF attacks are not applicable.
+                 */
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(Customizer.withDefaults())
                 .sessionManagement(sess ->
@@ -76,17 +79,9 @@ public class SecurityConfig {
                                 SessionCreationPolicy.STATELESS
                         ))
                 .exceptionHandling(ex -> ex
-                        .authenticationEntryPoint((req, res, e) -> {
-                            res.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                            res.setContentType("application/json");
-                            res.getWriter().write(
-                        """
-                                {
-                                  "error": "unauthorized",
-                                  "message": "Authentication required"
-                                }
-                            """);
-                        })
+                        .authenticationEntryPoint(
+                                restAuthenticationEntryPoint
+                        )
                 )
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
@@ -103,7 +98,7 @@ public class SecurityConfig {
                         ).permitAll()
                         .requestMatchers("/api/test")
                         .authenticated()
-                    .anyRequest().authenticated()
+                        .anyRequest().authenticated()
                 )
                 .oauth2ResourceServer(oauth2 ->
                         oauth2.jwt(Customizer.withDefaults())

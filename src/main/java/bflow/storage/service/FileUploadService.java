@@ -7,6 +7,7 @@ import bflow.common.exception.FileAccessDeniedException;
 import bflow.common.exception.InvalidFileException;
 import bflow.common.exception.ResourceNotFoundException;
 import bflow.storage.DTO.FileResponse;
+import bflow.storage.DTO.PresignedDownloadResponse;
 import bflow.storage.DTO.PresignedUploadRequest;
 import bflow.storage.DTO.PresignedUploadResponse;
 import bflow.storage.entity.StoredFile;
@@ -17,8 +18,11 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
+import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
+import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
+import software.amazon.awssdk.services.s3.presigner.model.PresignedGetObjectRequest;
 import software.amazon.awssdk.services.s3.presigner.model.PresignedPutObjectRequest;
 import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignRequest;
 
@@ -85,6 +89,10 @@ public class FileUploadService {
     @Value("${app.storage.presign-duration-minutes}")
     private long presignDurationMinutes;
 
+    /** How long a presigned download URL remains valid, in minutes. */
+    @Value("${app.storage.download-presign-duration-minutes}")
+    private long downloadPresignDurationMinutes;
+
     /**
      * Creates a {@link StoredFile} record in {@code PENDING} status
      * and issues a presigned S3 URL the client can use to upload the
@@ -139,15 +147,13 @@ public class FileUploadService {
         PresignedPutObjectRequest presigned =
                 s3Presigner.presignPutObject(presignRequest);
 
+        // Only surface the headers the client can and must actually
+        // set (Content-Type). "host" and "content-length" are part
+        // of the signature but are managed automatically by any
+        // HTTP client/browser and cannot be overridden manually, so
+        // exposing them here would only be misleading.
         Map<String, String> requiredHeaders = new LinkedHashMap<>();
-        presigned.signedHeaders().forEach(
-                (name, values) -> requiredHeaders.put(
-                        name, String.join(",", values)
-                )
-        );
-        requiredHeaders.putIfAbsent(
-                "Content-Type", request.getContentType()
-        );
+        requiredHeaders.put("Content-Type", request.getContentType());
 
         return new PresignedUploadResponse(
                 saved.getId(),
@@ -216,6 +222,76 @@ public class FileUploadService {
         }
 
         return toResponse(updated);
+    }
+
+    /**
+     * Issues a presigned S3 download URL for a file the requesting
+     * user owns.
+     *
+     * <p>Only files in {@code UPLOADED} status can be downloaded:
+     * a {@code PENDING} file may not actually exist in S3 yet, and
+     * a {@code FAILED} file never made it there.</p>
+     *
+     * @param userId the authenticated user's identifier
+     * @param fileId the stored file identifier
+     * @return the presigned download URL and file metadata
+     * @throws FileAccessDeniedException if no such file exists for
+     *         this user
+     * @throws IllegalStateException if the file is not in
+     *         {@code UPLOADED} status
+     */
+    @Transactional(readOnly = true)
+    public PresignedDownloadResponse createDownloadUrl(
+            final UUID userId,
+            final UUID fileId
+    ) {
+
+        StoredFile file = repositoryStoredFile
+                .findByIdAndUserId(fileId, userId)
+                .orElseThrow(() -> new FileAccessDeniedException(
+                        "File not found or access denied"
+                ));
+
+        if (file.getStatus() != FileStatus.UPLOADED) {
+            throw new IllegalStateException(
+                    "File is not available for download "
+                            + "(status: " + file.getStatus() + ")"
+            );
+        }
+
+        Duration signatureDuration = Duration.ofMinutes(
+                downloadPresignDurationMinutes
+        );
+
+        GetObjectRequest getObjectRequest = GetObjectRequest.builder()
+                .bucket(bucket)
+                .key(file.getObjectKey())
+                .responseContentDisposition(
+                        "attachment; filename=\""
+                                + sanitizedForHeader(
+                                file.getOriginalFilename()
+                        )
+                                + "\""
+                )
+                .build();
+
+        GetObjectPresignRequest presignRequest =
+                GetObjectPresignRequest.builder()
+                        .signatureDuration(signatureDuration)
+                        .getObjectRequest(getObjectRequest)
+                        .build();
+
+        PresignedGetObjectRequest presigned =
+                s3Presigner.presignGetObject(presignRequest);
+
+        return new PresignedDownloadResponse(
+                file.getId(),
+                presigned.url().toString(),
+                file.getOriginalFilename(),
+                file.getContentType(),
+                file.getSizeBytes(),
+                Instant.now().plus(signatureDuration)
+        );
     }
 
     /**
@@ -320,5 +396,22 @@ public class FileUploadService {
                 file.getStatus(),
                 file.getCreatedAt()
         );
+    }
+
+    /**
+     * Strips characters that could break or inject into the
+     * {@code Content-Disposition} response header (quotes, carriage
+     * returns, newlines) from a client-supplied file name.
+     *
+     * @param originalFilename the client-supplied file name
+     * @return a header-safe version of the file name
+     */
+    private String sanitizedForHeader(final String originalFilename) {
+
+        if (!StringUtils.hasText(originalFilename)) {
+            return "download";
+        }
+
+        return originalFilename.replaceAll("[\"\\r\\n]", "_");
     }
 }

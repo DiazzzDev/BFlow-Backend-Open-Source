@@ -3,6 +3,7 @@ package bflow.storage.controllers;
 import bflow.auth.services.CurrentUserService;
 import bflow.common.response.ApiResponse;
 import bflow.storage.DTO.FileResponse;
+import bflow.storage.DTO.PresignedDownloadResponse;
 import bflow.storage.DTO.PresignedUploadRequest;
 import bflow.storage.DTO.PresignedUploadResponse;
 import bflow.storage.service.FileUploadService;
@@ -17,7 +18,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
+import org.springframework.web.bind.annotation.GetMapping;
 import java.util.UUID;
 
 /**
@@ -91,6 +92,35 @@ public final class ControllerFileUpload {
 
         return ResponseEntity.ok(ApiResponse.success(
                 "File upload completed successfully",
+                response,
+                request.getRequestURI()
+        ));
+    }
+
+    /**
+     * Issues a presigned S3 download URL for a file the
+     * authenticated user owns.
+     *
+     * @param id the stored file identifier.
+     * @param authentication the authenticated user's principal.
+     * @param request the HTTP request for path information.
+     * @return a standard API response containing the presigned
+     *         download URL and file metadata.
+     */
+    @GetMapping("/{id}/download")
+    public ResponseEntity<ApiResponse<PresignedDownloadResponse>>
+    createDownloadUrl(
+            @PathVariable final UUID id,
+            final Authentication authentication,
+            final HttpServletRequest request
+    ) {
+        UUID userId = currentUserService.getCurrentUserId(authentication);
+
+        PresignedDownloadResponse response = fileUploadService
+                .createDownloadUrl(userId, id);
+
+        return ResponseEntity.ok(ApiResponse.success(
+                "Presigned download URL generated successfully",
                 response,
                 request.getRequestURI()
         ));
