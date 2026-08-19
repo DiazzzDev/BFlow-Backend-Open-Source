@@ -2,8 +2,13 @@ package bflow.storage.repository;
 
 import bflow.storage.entity.StoredFile;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -43,4 +48,25 @@ public interface RepositoryStoredFile
      * @return true if a record exists for that key
      */
     boolean existsByObjectKey(String objectKey);
+
+    @Modifying
+    @Query(value = """
+    WITH orphaned AS (
+        SELECT sf.id, sf.object_key
+        FROM stored_files sf
+        WHERE (sf.status = 'PENDING' AND sf.created_at < :pendingCutoff)
+           OR (sf.status = 'UPLOADED' AND sf.created_at < :unreferencedCutoff
+               AND NOT EXISTS (
+                   SELECT 1 FROM expenses e
+                   WHERE e.receipt_file_id = sf.id
+               ))
+    )
+    DELETE FROM stored_files sf
+    USING orphaned o
+    WHERE sf.id = o.id
+    RETURNING o.object_key
+    """, nativeQuery = true)
+    List<String> deleteOrphanedAndReturnKeys(
+            @Param("pendingCutoff") Instant pendingCutoff,
+            @Param("unreferencedCutoff") Instant unreferencedCutoff);
 }

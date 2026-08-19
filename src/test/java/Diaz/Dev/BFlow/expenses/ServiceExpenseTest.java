@@ -9,6 +9,7 @@ import bflow.category.CategoryValidator;
 import bflow.category.RepositoryCategory;
 import bflow.category.entity.Category;
 import bflow.category.enums.CategoryType;
+import bflow.common.exception.FileAccessDeniedException;
 import bflow.common.exception.WalletAccessDeniedException;
 import bflow.expenses.DTO.ExpenseRequest;
 import bflow.expenses.DTO.ExpenseResponse;
@@ -18,6 +19,9 @@ import bflow.expenses.services.ServiceExpense;
 import bflow.recurring.entity.RecurringTransaction;
 import bflow.recurring.enums.RecurringType;
 import bflow.recurring.services.RecurringLinkService;
+import bflow.storage.entity.StoredFile;
+import bflow.storage.enums.FileStatus;
+import bflow.storage.repository.RepositoryStoredFile;
 import bflow.wallet.repository.RepositoryWallet;
 import bflow.wallet.entities.Wallet;
 import bflow.wallet.entities.WalletUser;
@@ -89,6 +93,9 @@ class ServiceExpenseTest {
 
     @InjectMocks
     private ServiceExpense serviceExpense;
+
+    @Mock
+    private RepositoryStoredFile repositoryStoredFile;
 
     private UUID userId;
     private UUID walletId;
@@ -493,5 +500,105 @@ class ServiceExpenseTest {
 
         verify(recurringLinkService, never()).linkRecurring(
                 any(RecurringLinkService.RecurringCreateRequest.class));
+    }
+
+    @Test
+    void testCreateExpense_withUploadedReceipt_attachesReceiptFileId() {
+        ExpenseRequest request = new ExpenseRequest();
+        request.setWalletId(walletId);
+        request.setCategoryId(categoryId);
+        request.setTitle("Grocery run");
+        request.setAmount(BigDecimal.valueOf(45));
+        UUID receiptId = UUID.randomUUID();
+        request.setReceiptFileId(receiptId);
+
+        StoredFile receipt = new StoredFile();
+        receipt.setId(receiptId);
+        receipt.setStatus(FileStatus.UPLOADED);
+        receipt.setContentType("image/jpeg");
+
+        Expense expense = new Expense();
+        expense.setId(UUID.randomUUID());
+        expense.setCategory(category);
+        expense.setContributor(user);
+        expense.setWallet(wallet);
+        expense.setAmount(BigDecimal.valueOf(45));
+        expense.setCreatedAt(Instant.now());
+
+        doNothing().when(userService).validateUserActive(userId);
+        doNothing().when(categoryValidator).validateExpenseCategory(category);
+        when(repositoryUser.findById(userId)).thenReturn(Optional.of(user));
+        when(repositoryWalletUser.findByWalletIdAndUserId(walletId, userId))
+                .thenReturn(Optional.of(walletUser));
+        when(repositoryWallet.findByIdForUpdate(walletId))
+                .thenReturn(Optional.of(wallet));
+        when(repositoryCategory.findById(categoryId))
+                .thenReturn(Optional.of(category));
+        when(repositoryStoredFile.findByIdAndUserId(receiptId, userId))
+                .thenReturn(Optional.of(receipt));
+        when(repositoryExpense.saveAndFlush(any(Expense.class)))
+                .thenReturn(expense);
+
+        ExpenseResponse result = serviceExpense.newExpense(request, userId);
+
+        assertNotNull(result);
+        verify(repositoryStoredFile).findByIdAndUserId(receiptId, userId);
+    }
+
+    @Test
+    void testCreateExpense_receiptNotUploaded_throwsIllegalStateException() {
+        ExpenseRequest request = new ExpenseRequest();
+        request.setWalletId(walletId);
+        request.setCategoryId(categoryId);
+        request.setTitle("Grocery run");
+        request.setAmount(BigDecimal.valueOf(45));
+        UUID receiptId = UUID.randomUUID();
+        request.setReceiptFileId(receiptId);
+
+        StoredFile receipt = new StoredFile();
+        receipt.setId(receiptId);
+        receipt.setStatus(FileStatus.PENDING);
+
+        doNothing().when(userService).validateUserActive(userId);
+        doNothing().when(categoryValidator).validateExpenseCategory(category);
+        when(repositoryUser.findById(userId)).thenReturn(Optional.of(user));
+        when(repositoryWalletUser.findByWalletIdAndUserId(walletId, userId))
+                .thenReturn(Optional.of(walletUser));
+        when(repositoryWallet.findByIdForUpdate(walletId))
+                .thenReturn(Optional.of(wallet));
+        when(repositoryCategory.findById(categoryId))
+                .thenReturn(Optional.of(category));
+        when(repositoryStoredFile.findByIdAndUserId(receiptId, userId))
+                .thenReturn(Optional.of(receipt));
+
+        assertThrows(IllegalStateException.class,
+                () -> serviceExpense.newExpense(request, userId));
+
+        verify(repositoryExpense, never()).saveAndFlush(any());
+    }
+
+    @Test
+    void testCreateExpense_receiptNotOwnedByUser_throwsFileAccessDenied() {
+        ExpenseRequest request = new ExpenseRequest();
+        request.setWalletId(walletId);
+        request.setCategoryId(categoryId);
+        request.setTitle("Grocery run");
+        request.setAmount(BigDecimal.valueOf(45));
+        request.setReceiptFileId(UUID.randomUUID());
+
+        doNothing().when(userService).validateUserActive(userId);
+        doNothing().when(categoryValidator).validateExpenseCategory(category);
+        when(repositoryUser.findById(userId)).thenReturn(Optional.of(user));
+        when(repositoryWalletUser.findByWalletIdAndUserId(walletId, userId))
+                .thenReturn(Optional.of(walletUser));
+        when(repositoryWallet.findByIdForUpdate(walletId))
+                .thenReturn(Optional.of(wallet));
+        when(repositoryCategory.findById(categoryId))
+                .thenReturn(Optional.of(category));
+        when(repositoryStoredFile.findByIdAndUserId(any(), any()))
+                .thenReturn(Optional.empty());
+
+        assertThrows(FileAccessDeniedException.class,
+                () -> serviceExpense.newExpense(request, userId));
     }
 }
