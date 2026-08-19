@@ -180,7 +180,10 @@ public class ServiceWallet {
                 )
                 .stream()
                 .map(rt -> new UpcomingTransactionResponse(
-                        rt.getTitle(), rt.getAmount(), rt.getType(), rt.getNextExecutionDate()
+                    rt.getTitle(),
+                    rt.getAmount(),
+                    rt.getType(),
+                    rt.getNextExecutionDate()
                 ))
                 .toList();
 

@@ -10,6 +10,8 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
 
+import java.util.UUID;
+
 @Entity
 @Table(name = "expenses")
 @Getter
@@ -36,6 +38,10 @@ public class Expense extends Transaction {
      */
     @Column
     private String recurrencePattern;
+
+    /** ID of the RecurringTransaction this entry is linked to, if any. */
+    @Column(name = "recurring_transaction_id")
+    private UUID recurringTransactionId;
 
     /**
      * Indicates if the expense is reimbursable.

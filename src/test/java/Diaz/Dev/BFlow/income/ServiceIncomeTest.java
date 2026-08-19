@@ -12,6 +12,9 @@ import bflow.income.entity.Income;
 import bflow.category.entity.Category;
 import bflow.category.enums.CategoryType;
 import bflow.category.RepositoryCategory;
+import bflow.recurring.entity.RecurringTransaction;
+import bflow.recurring.enums.RecurringType;
+import bflow.recurring.services.RecurringLinkService;
 import bflow.wallet.repository.RepositoryWallet;
 import bflow.wallet.entities.Wallet;
 import bflow.wallet.entities.WalletUser;
@@ -23,6 +26,7 @@ import bflow.wallet.service.ServiceWallet;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -44,6 +48,7 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -76,6 +81,9 @@ class ServiceIncomeTest {
 
     @Mock
     private UserService userService;
+
+    @Mock
+    private RecurringLinkService recurringLinkService;
 
     @InjectMocks
     private ServiceIncome serviceIncome;
@@ -244,5 +252,136 @@ class ServiceIncomeTest {
         Set<ConstraintViolation<IncomeRequest>> violations = validator.validate(request);
 
         assertFalse(violations.isEmpty());
+    }
+
+    @Test
+    void testCreateIncome_recurring_createsRecurringLinkAndStoresId() {
+        IncomeRequest request = new IncomeRequest();
+        request.setWalletId(walletId);
+        request.setCategoryId(categoryId);
+        request.setTitle("Freelance retainer");
+        request.setAmount(BigDecimal.valueOf(500));
+        request.setDate(LocalDate.of(2026, 8, 17));
+        request.setRecurring(true);
+        request.setRecurrencePattern("MONTHLY");
+
+        RecurringTransaction recurring = new RecurringTransaction();
+        recurring.setId(UUID.randomUUID());
+
+        Income income = new Income();
+        income.setId(UUID.randomUUID());
+        income.setCategory(category);
+        income.setContributor(user);
+        income.setWallet(wallet);
+        income.setAmount(BigDecimal.valueOf(500));
+        income.setCreatedAt(Instant.now());
+
+        doNothing().when(userService).validateUserActive(userId);
+        doNothing().when(categoryValidator).validateIncomeCategory(category);
+        when(repositoryUser.findById(userId)).thenReturn(Optional.of(user));
+        when(repositoryWalletUser.findByWalletIdAndUserId(walletId, userId))
+                .thenReturn(Optional.of(walletUser));
+        when(repositoryWallet.findByIdForUpdate(walletId))
+                .thenReturn(Optional.of(wallet));
+        when(repositoryCategory.findById(categoryId))
+                .thenReturn(Optional.of(category));
+        when(recurringLinkService.linkRecurring(
+                any(RecurringLinkService.RecurringCreateRequest.class)))
+                .thenReturn(recurring);
+        when(repositoryIncome.saveAndFlush(any(Income.class)))
+                .thenReturn(income);
+
+        IncomeResponse result = serviceIncome.newIncome(request, userId);
+
+        assertNotNull(result);
+
+        ArgumentCaptor<RecurringLinkService.RecurringCreateRequest> captor =
+                ArgumentCaptor.forClass(
+                        RecurringLinkService.RecurringCreateRequest.class);
+        verify(recurringLinkService).linkRecurring(captor.capture());
+
+        RecurringLinkService.RecurringCreateRequest captured = captor.getValue();
+        assertEquals(RecurringType.INCOME, captured.type());
+        assertEquals("MONTHLY", captured.rawFrequency());
+        assertEquals(wallet, captured.wallet());
+        assertEquals(category, captured.category());
+        assertEquals(user, captured.user());
+    }
+
+    @Test
+    void testCreateIncome_recurringFalse_neverCallsRecurringLinkService() {
+        IncomeRequest request = new IncomeRequest();
+        request.setWalletId(walletId);
+        request.setCategoryId(categoryId);
+        request.setTitle("Regular payout");
+        request.setAmount(BigDecimal.valueOf(500));
+
+        Income income = new Income();
+        income.setId(UUID.randomUUID());
+        income.setCategory(category);
+        income.setContributor(user);
+        income.setWallet(wallet);
+        income.setAmount(BigDecimal.valueOf(500));
+        income.setCreatedAt(Instant.now());
+
+        doNothing().when(userService).validateUserActive(userId);
+        doNothing().when(categoryValidator).validateIncomeCategory(category);
+        when(repositoryUser.findById(userId)).thenReturn(Optional.of(user));
+        when(repositoryWalletUser.findByWalletIdAndUserId(walletId, userId))
+                .thenReturn(Optional.of(walletUser));
+        when(repositoryWallet.findByIdForUpdate(walletId))
+                .thenReturn(Optional.of(wallet));
+        when(repositoryCategory.findById(categoryId))
+                .thenReturn(Optional.of(category));
+        when(repositoryIncome.saveAndFlush(any(Income.class)))
+                .thenReturn(income);
+
+        serviceIncome.newIncome(request, userId);
+
+        verify(recurringLinkService, never()).linkRecurring(
+                any(RecurringLinkService.RecurringCreateRequest.class));
+    }
+
+    /**
+     * Simulates RecurringTransactionExecutor firing a due recurring
+     * income (source="recurring", recurring=true). Must NOT create
+     * another RecurringTransaction, or every scheduled execution would
+     * spawn a new template indefinitely.
+     */
+    @Test
+    void testCreateIncome_autoGeneratedByExecutor_neverCreatesAnotherLink() {
+        IncomeRequest request = new IncomeRequest();
+        request.setWalletId(walletId);
+        request.setCategoryId(categoryId);
+        request.setTitle("Monthly salary");
+        request.setAmount(BigDecimal.valueOf(500));
+        request.setRecurring(true);
+        request.setRecurrencePattern("MONTHLY");
+        request.setSource("recurring");
+
+        Income income = new Income();
+        income.setId(UUID.randomUUID());
+        income.setCategory(category);
+        income.setContributor(user);
+        income.setWallet(wallet);
+        income.setAmount(BigDecimal.valueOf(500));
+        income.setCreatedAt(Instant.now());
+
+        doNothing().when(userService).validateUserActive(userId);
+        doNothing().when(categoryValidator).validateIncomeCategory(category);
+        when(repositoryUser.findById(userId)).thenReturn(Optional.of(user));
+        when(repositoryWalletUser.findByWalletIdAndUserId(walletId, userId))
+                .thenReturn(Optional.of(walletUser));
+        when(repositoryWallet.findByIdForUpdate(walletId))
+                .thenReturn(Optional.of(wallet));
+        when(repositoryCategory.findById(categoryId))
+                .thenReturn(Optional.of(category));
+        when(repositoryIncome.saveAndFlush(any(Income.class)))
+                .thenReturn(income);
+
+        serviceIncome.newIncome(request, userId);
+
+        verify(recurringLinkService, never()).linkRecurring(
+                any(RecurringLinkService.RecurringCreateRequest.class));
     }
 }

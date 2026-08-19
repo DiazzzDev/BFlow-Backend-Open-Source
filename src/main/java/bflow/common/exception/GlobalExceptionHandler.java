@@ -52,8 +52,11 @@ public final class GlobalExceptionHandler {
             final IllegalStateException ex,
             final HttpServletRequest request) {
         return ResponseEntity
-                .status(HttpStatus.CONFLICT)
-                .body(ApiResponse.error(ex.getMessage(), request.getRequestURI()));
+            .status(HttpStatus.CONFLICT)
+            .body(ApiResponse.error(
+                ex.getMessage(),
+                request.getRequestURI())
+        );
     }
 
     /**

@@ -15,6 +15,9 @@ import bflow.expenses.DTO.ExpenseResponse;
 import bflow.expenses.RepositoryExpense;
 import bflow.expenses.entity.Expense;
 import bflow.expenses.services.ServiceExpense;
+import bflow.recurring.entity.RecurringTransaction;
+import bflow.recurring.enums.RecurringType;
+import bflow.recurring.services.RecurringLinkService;
 import bflow.wallet.repository.RepositoryWallet;
 import bflow.wallet.entities.Wallet;
 import bflow.wallet.entities.WalletUser;
@@ -33,6 +36,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -79,6 +83,9 @@ class ServiceExpenseTest {
 
     @Mock
     private BudgetService serviceBudget;
+
+    @Mock
+    private RecurringLinkService recurringLinkService;
 
     @InjectMocks
     private ServiceExpense serviceExpense;
@@ -355,5 +362,136 @@ class ServiceExpenseTest {
         ExpenseResponse result = serviceExpense.newExpense(request, userId);
 
         assertNotNull(result);
+    }
+
+    @Test
+    void testCreateExpense_recurring_createsRecurringLinkAndStoresId() {
+        ExpenseRequest request = new ExpenseRequest();
+        request.setWalletId(walletId);
+        request.setCategoryId(categoryId);
+        request.setTitle("Netflix subscription");
+        request.setAmount(BigDecimal.valueOf(15));
+        request.setDate(LocalDate.of(2026, 8, 17));
+        request.setRecurring(true);
+        request.setRecurrencePattern("MONTHLY");
+
+        RecurringTransaction recurring = new RecurringTransaction();
+        recurring.setId(UUID.randomUUID());
+
+        Expense expense = new Expense();
+        expense.setId(UUID.randomUUID());
+        expense.setCategory(category);
+        expense.setContributor(user);
+        expense.setWallet(wallet);
+        expense.setAmount(BigDecimal.valueOf(15));
+        expense.setCreatedAt(Instant.now());
+
+        doNothing().when(userService).validateUserActive(userId);
+        doNothing().when(categoryValidator).validateExpenseCategory(category);
+        when(repositoryUser.findById(userId)).thenReturn(Optional.of(user));
+        when(repositoryWalletUser.findByWalletIdAndUserId(walletId, userId))
+                .thenReturn(Optional.of(walletUser));
+        when(repositoryWallet.findByIdForUpdate(walletId))
+                .thenReturn(Optional.of(wallet));
+        when(repositoryCategory.findById(categoryId))
+                .thenReturn(Optional.of(category));
+        when(recurringLinkService.linkRecurring(
+                any(RecurringLinkService.RecurringCreateRequest.class)))
+                .thenReturn(recurring);
+        when(repositoryExpense.saveAndFlush(any(Expense.class)))
+                .thenReturn(expense);
+
+        ExpenseResponse result = serviceExpense.newExpense(request, userId);
+
+        assertNotNull(result);
+
+        ArgumentCaptor<RecurringLinkService.RecurringCreateRequest> captor =
+                ArgumentCaptor.forClass(
+                        RecurringLinkService.RecurringCreateRequest.class);
+        verify(recurringLinkService).linkRecurring(captor.capture());
+
+        RecurringLinkService.RecurringCreateRequest captured = captor.getValue();
+        assertEquals(RecurringType.EXPENSE, captured.type());
+        assertEquals("MONTHLY", captured.rawFrequency());
+        assertEquals(wallet, captured.wallet());
+        assertEquals(category, captured.category());
+        assertEquals(user, captured.user());
+    }
+
+    @Test
+    void testCreateExpense_recurringFalse_neverCallsRecurringLinkService() {
+        ExpenseRequest request = new ExpenseRequest();
+        request.setWalletId(walletId);
+        request.setCategoryId(categoryId);
+        request.setTitle("Regular purchase");
+        request.setAmount(BigDecimal.valueOf(50));
+
+        Expense expense = new Expense();
+        expense.setId(UUID.randomUUID());
+        expense.setCategory(category);
+        expense.setContributor(user);
+        expense.setWallet(wallet);
+        expense.setAmount(BigDecimal.valueOf(50));
+        expense.setCreatedAt(Instant.now());
+
+        doNothing().when(userService).validateUserActive(userId);
+        doNothing().when(categoryValidator).validateExpenseCategory(category);
+        when(repositoryUser.findById(userId)).thenReturn(Optional.of(user));
+        when(repositoryWalletUser.findByWalletIdAndUserId(walletId, userId))
+                .thenReturn(Optional.of(walletUser));
+        when(repositoryWallet.findByIdForUpdate(walletId))
+                .thenReturn(Optional.of(wallet));
+        when(repositoryCategory.findById(categoryId))
+                .thenReturn(Optional.of(category));
+        when(repositoryExpense.saveAndFlush(any(Expense.class)))
+                .thenReturn(expense);
+
+        serviceExpense.newExpense(request, userId);
+
+        verify(recurringLinkService, never()).linkRecurring(
+                any(RecurringLinkService.RecurringCreateRequest.class));
+    }
+
+    /**
+     * Simulates RecurringTransactionExecutor firing a due recurring
+     * expense (source="recurring", recurring=true). Must NOT create
+     * another RecurringTransaction, or every scheduled execution would
+     * spawn a new template indefinitely.
+     */
+    @Test
+    void testCreateExpense_autoGeneratedByExecutor_neverCreatesAnotherLink() {
+        ExpenseRequest request = new ExpenseRequest();
+        request.setWalletId(walletId);
+        request.setCategoryId(categoryId);
+        request.setTitle("Netflix subscription");
+        request.setAmount(BigDecimal.valueOf(15));
+        request.setRecurring(true);
+        request.setRecurrencePattern("MONTHLY");
+        request.setSource("recurring");
+
+        Expense expense = new Expense();
+        expense.setId(UUID.randomUUID());
+        expense.setCategory(category);
+        expense.setContributor(user);
+        expense.setWallet(wallet);
+        expense.setAmount(BigDecimal.valueOf(15));
+        expense.setCreatedAt(Instant.now());
+
+        doNothing().when(userService).validateUserActive(userId);
+        doNothing().when(categoryValidator).validateExpenseCategory(category);
+        when(repositoryUser.findById(userId)).thenReturn(Optional.of(user));
+        when(repositoryWalletUser.findByWalletIdAndUserId(walletId, userId))
+                .thenReturn(Optional.of(walletUser));
+        when(repositoryWallet.findByIdForUpdate(walletId))
+                .thenReturn(Optional.of(wallet));
+        when(repositoryCategory.findById(categoryId))
+                .thenReturn(Optional.of(category));
+        when(repositoryExpense.saveAndFlush(any(Expense.class)))
+                .thenReturn(expense);
+
+        serviceExpense.newExpense(request, userId);
+
+        verify(recurringLinkService, never()).linkRecurring(
+                any(RecurringLinkService.RecurringCreateRequest.class));
     }
 }
