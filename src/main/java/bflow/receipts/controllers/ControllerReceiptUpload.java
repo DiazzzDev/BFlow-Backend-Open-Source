@@ -11,7 +11,12 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 
 import java.util.UUID;
 
@@ -20,7 +25,10 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public final class ControllerReceiptUpload {
 
+    /** Service responsible for receipt upload and processing operations. */
     private final ReceiptUploadService receiptUploadService;
+
+    /** Service responsible for resolving the authenticated user. */
     private final CurrentUserService currentUserService;
 
     /**
@@ -28,6 +36,11 @@ public final class ControllerReceiptUpload {
      * Camera-first flow: file already uploaded via the existing
      * presigned-upload endpoints; this is the only extra input the
      * user provides — everything else comes from OCR later.
+     *
+     * @param body request containing the uploaded receipt information
+     * @param authentication authentication information of the current user
+     * @param request HTTP request used to obtain the request URI
+     * @return response containing the registered receipt information
      */
     @PostMapping
     public ResponseEntity<ApiResponse<ReceiptUploadResponse>> register(
@@ -45,7 +58,15 @@ public final class ControllerReceiptUpload {
                         response, request.getRequestURI()));
     }
 
-    /** Lets the frontend poll while OCR processes the receipt. */
+    /**
+     * Retrieves the current processing status of a receipt.
+     * Lets the frontend poll while OCR processes the receipt.
+     *
+     * @param id identifier of the receipt
+     * @param authentication authentication information of the current user
+     * @param request HTTP request used to obtain the request URI
+     * @return response containing the current receipt processing status
+     */
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<ReceiptUploadResponse>> getStatus(
             @PathVariable final UUID id,

@@ -30,12 +30,44 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class ReceiptUploadService {
 
+    /**
+     * Repository for persisting and querying receipt upload
+     * records.
+     */
     private final RepositoryReceiptUpload repositoryReceiptUpload;
+
+    /**
+     * Repository for looking up the uploaded file backing a
+     * receipt.
+     */
     private final RepositoryStoredFile repositoryStoredFile;
+
+    /**
+     * Repository for verifying the user has access to a wallet.
+     */
     private final RepositoryWalletUser repositoryWalletUser;
+
+    /**
+     * Repository for obtaining a reference to the current user.
+     */
     private final RepositoryUser repositoryUser;
+
+    /**
+     * Service used to create the Expense a receipt is confirmed
+     * into.
+     */
     private final ServiceExpense serviceExpense;
+
+    /**
+     * Service used to create the Income a receipt is confirmed
+     * into.
+     */
     private final ServiceIncome serviceIncome;
+
+    /**
+     * Service used to delete the underlying file when a receipt is
+     * discarded.
+     */
     private final StorageService storageService;
 
     /**
@@ -44,6 +76,10 @@ public class ReceiptUploadService {
      * right after the user picks a wallet for the photo they just
      * took — no title, amount, or category exists yet.
      *
+     * @param userId the id of the user registering the receipt
+     * @param request the file and wallet to register the receipt
+     *         against
+     * @return the newly registered receipt, in RECEIVED status
      * @throws FileAccessDeniedException if the file doesn't belong
      *         to the user or isn't UPLOADED yet
      * @throws WalletAccessDeniedException if the wallet doesn't
@@ -96,6 +132,12 @@ public class ReceiptUploadService {
      * Lets the frontend poll for status while OCR processes the
      * receipt, so the UX can show "processing..." and then navigate
      * to the resulting expense once ready.
+     *
+     * @param userId the id of the user requesting the status
+     * @param receiptId the id of the receipt to look up
+     * @return the current state of the receipt
+     * @throws FileAccessDeniedException if the receipt doesn't
+     *         belong to the user
      */
     @Transactional(readOnly = true)
     public ReceiptUploadResponse getStatus(
@@ -109,6 +151,19 @@ public class ReceiptUploadService {
         return toResponse(receipt);
     }
 
+    /**
+     * Confirms a receipt's suggested data — as edited by the user —
+     * into a new Expense or Income, and links the receipt to it.
+     *
+     * @param userId the id of the user confirming the receipt
+     * @param receiptId the id of the receipt being confirmed
+     * @param request the confirmed transaction data
+     * @return the receipt, now in CONFIRMED status
+     * @throws FileAccessDeniedException if the receipt doesn't
+     *         belong to the user
+     * @throws IllegalStateException if the receipt isn't in
+     *         EXTRACTED status
+     */
     @Transactional
     public ReceiptUploadResponse confirm(
             final UUID userId, final UUID receiptId,
@@ -165,6 +220,18 @@ public class ReceiptUploadService {
         return toResponse(receipt);
     }
 
+    /**
+     * Discards a receipt the user doesn't want to keep, deleting
+     * its underlying file immediately rather than waiting for the
+     * cleanup job.
+     *
+     * @param userId the id of the user discarding the receipt
+     * @param receiptId the id of the receipt to discard
+     * @throws FileAccessDeniedException if the receipt doesn't
+     *         belong to the user
+     * @throws IllegalStateException if the receipt is already
+     *         CONFIRMED
+     */
     @Transactional
     public void discard(final UUID userId, final UUID receiptId) {
         ReceiptUpload receipt = repositoryReceiptUpload
@@ -190,7 +257,7 @@ public class ReceiptUploadService {
                 receipt.getStoredFile().getId(),
                 receipt.getWallet().getId(),
                 receipt.getStatus(),
-                receipt.getResultingExpenseId(),
+                receipt.getResultingTransactionId(),
                 receipt.getCreatedAt()
         );
     }

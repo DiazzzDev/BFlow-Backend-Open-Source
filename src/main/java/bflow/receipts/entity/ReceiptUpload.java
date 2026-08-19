@@ -41,23 +41,38 @@ import java.util.UUID;
 @Setter
 public final class ReceiptUpload {
 
+    /**
+     * The unique identifier for this receipt upload.
+     */
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     @Column(nullable = false, updatable = false)
     private UUID id;
 
+    /**
+     * The user who uploaded this receipt.
+     */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false, updatable = false)
     private User user;
 
+    /**
+     * The uploaded receipt image file.
+     */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "stored_file_id", nullable = false, updatable = false)
     private StoredFile storedFile;
 
+    /**
+     * The wallet this receipt was uploaded against.
+     */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "wallet_id", nullable = false, updatable = false)
     private Wallet wallet;
 
+    /**
+     * The current lifecycle status of this receipt upload.
+     */
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private ReceiptStatus status;
@@ -68,29 +83,54 @@ public final class ReceiptUpload {
     @Column(name = "suggested_type")
     private ReceiptTransactionType suggestedType;
 
+    /**
+     * Textract's suggested title for the resulting transaction.
+     */
     @Column(name = "suggested_title")
     private String suggestedTitle;
 
+    /**
+     * Textract's suggested amount for the resulting transaction.
+     */
     @Column(name = "suggested_amount")
     private BigDecimal suggestedAmount;
 
+    /**
+     * Textract's suggested category for the resulting transaction.
+     */
     @Column(name = "suggested_category_id")
     private UUID suggestedCategoryId;
 
+    /**
+     * Textract's suggested date for the resulting transaction.
+     */
     @Column(name = "suggested_date")
     private LocalDate suggestedDate;
 
+    /**
+     * Textract's confidence score for its suggestion.
+     */
     @Column(name = "confidence_score")
     private BigDecimal confidenceScore;
 
+    /**
+     * The raw OCR payload returned by Textract, stored as JSON.
+     */
     @Column(name = "raw_ocr_payload", columnDefinition = "jsonb")
     private String rawOcrPayload;
 
-    /** Populated only once the user confirms. */
+    /**
+     * The type of transaction (Expense or Income) that this receipt
+     * resulted in. Populated only once the user confirms.
+     */
     @Enumerated(EnumType.STRING)
     @Column(name = "resulting_transaction_type")
     private ReceiptTransactionType resultingTransactionType;
 
+    /**
+     * The identifier of the Expense or Income that this receipt
+     * resulted in. Populated only once the user confirms.
+     */
     @Column(name = "resulting_transaction_id")
     private UUID resultingTransactionId;
 
@@ -98,10 +138,16 @@ public final class ReceiptUpload {
     @Column(name = "failure_reason")
     private String failureReason;
 
+    /**
+     * The timestamp at which this receipt upload was created.
+     */
     @CreationTimestamp
     @Column(nullable = false, updatable = false)
     private Instant createdAt;
 
+    /**
+     * The timestamp at which this receipt upload was last updated.
+     */
     @UpdateTimestamp
     @Column(nullable = false)
     private Instant updatedAt;

@@ -49,6 +49,15 @@ public interface RepositoryStoredFile
      */
     boolean existsByObjectKey(String objectKey);
 
+    /**
+     * Deletes orphaned stored file records and returns their S3 object keys.
+     * Pending files older than the pending cutoff and uploaded files older
+     * than the unreferenced cutoff without an associated expense are removed.
+     *
+     * @param pendingCutoff cutoff timestamp for pending files
+     * @param unreferencedCutoff timestamp for uploaded unreferenced files
+     * @return the S3 object keys of the deleted file records
+     */
     @Modifying
     @Query(value = """
     WITH orphaned AS (

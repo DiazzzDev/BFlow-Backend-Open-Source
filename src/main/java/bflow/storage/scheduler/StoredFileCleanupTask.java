@@ -31,15 +31,36 @@ import java.util.List;
 @RequiredArgsConstructor
 public class StoredFileCleanupTask {
 
+    /**
+     * Repository used to find and delete orphaned stored file
+     * records.
+     */
     private final RepositoryStoredFile repository;
+
+    /**
+     * Service used to delete the underlying S3 objects.
+     */
     private final StorageService storageService;
 
+    /**
+     * Hours a file may remain PENDING before it's considered
+     * abandoned.
+     */
     @Value("${app.storage.pending-cleanup-hours:24}")
     private long pendingCleanupHours;
 
+    /**
+     * Days a file may remain UPLOADED but unreferenced before it's
+     * considered abandoned.
+     */
     @Value("${app.storage.unreferenced-cleanup-days:7}")
     private long unreferencedCleanupDays;
 
+    /**
+     * Deletes StoredFile records that never became useful, along
+     * with their underlying S3 objects, and logs how many were
+     * removed.
+     */
     @Scheduled(cron = "0 30 * * * *")
     @Transactional
     public void purgeOrphanedFiles() {

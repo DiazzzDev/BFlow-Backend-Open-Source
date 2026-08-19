@@ -11,9 +11,11 @@ import java.util.UUID;
 @Setter
 public class ReceiptUploadRequest {
 
+    /** Identifier of the previously uploaded file. */
     @NotNull(message = "The file id is required")
     private UUID fileId;
 
+    /** Identifier of the wallet associated with the receipt. */
     @NotNull(message = "The wallet id is required")
     private UUID walletId;
 }
