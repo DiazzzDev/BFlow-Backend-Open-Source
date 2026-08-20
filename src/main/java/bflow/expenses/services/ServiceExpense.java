@@ -8,6 +8,7 @@ import bflow.category.entity.Category;
 import bflow.category.enums.CategoryType;
 import bflow.category.RepositoryCategory;
 import bflow.category.CategoryValidator;
+import bflow.common.exception.FileAccessDeniedException;
 import bflow.common.exception.ResourceNotFoundException;
 import bflow.common.exception.WalletAccessDeniedException;
 import bflow.common.financial.TransactionMapper;
@@ -18,6 +19,9 @@ import bflow.expenses.entity.Expense;
 import bflow.recurring.entity.RecurringTransaction;
 import bflow.recurring.enums.RecurringType;
 import bflow.recurring.services.RecurringLinkService;
+import bflow.storage.entity.StoredFile;
+import bflow.storage.enums.FileStatus;
+import bflow.storage.repository.RepositoryStoredFile;
 import bflow.wallet.DTO.WalletPair;
 import bflow.wallet.repository.RepositoryWallet;
 import bflow.wallet.repository.RepositoryWalletUser;
@@ -90,6 +94,11 @@ public class ServiceExpense {
      */
     private final RecurringLinkService recurringLinkService;
 
+    /**
+     * Repository for file storage persistence.
+     */
+    private final RepositoryStoredFile repositoryStoredFile;
+
 
     /**
      * Creates a new expense entry for the specified wallet and user.
@@ -122,7 +131,14 @@ public class ServiceExpense {
                         "Authenticated user not found"
                 ));
 
+        StoredFile receiptFile = resolveReceiptFile(
+                request.getReceiptFileId(),
+                userId
+        );
+
         Expense expense = mapToEntity(request, wallet, contributor);
+        expense.setReceiptFile(receiptFile);
+
         serviceWallet.subtractBalance(wallet, expense.getAmount());
 
         Expense savedExpense = repositoryExpense.saveAndFlush(expense);
@@ -222,13 +238,17 @@ public class ServiceExpense {
                 )
         );
 
+        UUID oldCategoryId = expense.getCategory() != null
+                ? expense.getCategory().getId()
+                : null;
+
         expense.setTitle(request.getTitle());
         expense.setDescription(request.getDescription());
         expense.setAmount(newAmount);
         expense.setDate(request.getDate());
         expense.setCategory(category);
-        expense.setTaxDeductible(Boolean.TRUE.equals(
-                request.getTaxDeductible())
+        expense.setTaxDeductible(
+                Boolean.TRUE.equals(request.getTaxDeductible())
         );
         expense.setRecurring(willBeRecurring);
         expense.setRecurrencePattern(request.getRecurrencePattern());
@@ -236,15 +256,15 @@ public class ServiceExpense {
 
         repositoryExpense.save(expense);
 
-        UUID oldCategoryId = expense.getCategory() != null
-                ? expense.getCategory().getId() : null;
-
         serviceBudget.evaluateBudgetsForExpenseEvent(
-                newWallet.getId(), category.getId()
+                newWallet.getId(),
+                category.getId()
         );
+
         if (!oldWalletId.equals(newWalletId)) {
             serviceBudget.evaluateBudgetsForExpenseEvent(
-                    oldWallet.getId(), oldCategoryId
+                    oldWallet.getId(),
+                    oldCategoryId
             );
         }
 
@@ -415,7 +435,35 @@ public class ServiceExpense {
                         : null
         );
 
+        response.setReceiptFileId(
+                expense.getReceiptFile() != null
+                        ? expense.getReceiptFile().getId().toString()
+                        : null
+        );
+
         return response;
     }
 
+    private StoredFile resolveReceiptFile(
+            final UUID receiptFileId,
+            final UUID userId
+    ) {
+        if (receiptFileId == null) {
+            return null;
+        }
+
+        StoredFile receipt = repositoryStoredFile
+                .findByIdAndUserId(receiptFileId, userId)
+                .orElseThrow(() -> new FileAccessDeniedException(
+                        "You do not have access to this file"
+                ));
+
+        if (receipt.getStatus() != FileStatus.UPLOADED) {
+            throw new IllegalStateException(
+                    "Receipt file is not ready for attachment"
+            );
+        }
+
+        return receipt;
+    }
 }

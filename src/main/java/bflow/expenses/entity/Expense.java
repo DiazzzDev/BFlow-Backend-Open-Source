@@ -1,8 +1,12 @@
 package bflow.expenses.entity;
 
 import bflow.common.financial.Transaction;
+import bflow.storage.entity.StoredFile;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -54,4 +58,11 @@ public class Expense extends Transaction {
      */
     @Column(nullable = false)
     private Boolean isDefault = false;
+
+    /**
+     * Receipt file associated with this expense.
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "receipt_file_id")
+    private StoredFile receiptFile;
 }

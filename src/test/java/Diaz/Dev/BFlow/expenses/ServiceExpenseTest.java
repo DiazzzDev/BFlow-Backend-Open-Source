@@ -552,6 +552,7 @@ class ServiceExpenseTest {
         request.setCategoryId(categoryId);
         request.setTitle("Grocery run");
         request.setAmount(BigDecimal.valueOf(45));
+
         UUID receiptId = UUID.randomUUID();
         request.setReceiptFileId(receiptId);
 
@@ -560,21 +561,38 @@ class ServiceExpenseTest {
         receipt.setStatus(FileStatus.PENDING);
 
         doNothing().when(userService).validateUserActive(userId);
-        doNothing().when(categoryValidator).validateExpenseCategory(category);
-        when(repositoryUser.findById(userId)).thenReturn(Optional.of(user));
+
         when(repositoryWalletUser.findByWalletIdAndUserId(walletId, userId))
                 .thenReturn(Optional.of(walletUser));
+
         when(repositoryWallet.findByIdForUpdate(walletId))
                 .thenReturn(Optional.of(wallet));
-        when(repositoryCategory.findById(categoryId))
-                .thenReturn(Optional.of(category));
+
+        when(repositoryUser.findById(userId))
+                .thenReturn(Optional.of(user));
+
         when(repositoryStoredFile.findByIdAndUserId(receiptId, userId))
                 .thenReturn(Optional.of(receipt));
 
-        assertThrows(IllegalStateException.class,
-                () -> serviceExpense.newExpense(request, userId));
+        assertThrows(
+                IllegalStateException.class,
+                () -> serviceExpense.newExpense(request, userId)
+        );
 
-        verify(repositoryExpense, never()).saveAndFlush(any());
+        verify(repositoryStoredFile)
+                .findByIdAndUserId(receiptId, userId);
+
+        verify(repositoryCategory, never())
+                .findById(any());
+
+        verify(categoryValidator, never())
+                .validateExpenseCategory(any());
+
+        verify(serviceWallet, never())
+                .subtractBalance(any(), any());
+
+        verify(repositoryExpense, never())
+                .saveAndFlush(any());
     }
 
     @Test
@@ -584,21 +602,42 @@ class ServiceExpenseTest {
         request.setCategoryId(categoryId);
         request.setTitle("Grocery run");
         request.setAmount(BigDecimal.valueOf(45));
-        request.setReceiptFileId(UUID.randomUUID());
+
+        UUID receiptId = UUID.randomUUID();
+        request.setReceiptFileId(receiptId);
 
         doNothing().when(userService).validateUserActive(userId);
-        doNothing().when(categoryValidator).validateExpenseCategory(category);
-        when(repositoryUser.findById(userId)).thenReturn(Optional.of(user));
+
         when(repositoryWalletUser.findByWalletIdAndUserId(walletId, userId))
                 .thenReturn(Optional.of(walletUser));
+
         when(repositoryWallet.findByIdForUpdate(walletId))
                 .thenReturn(Optional.of(wallet));
-        when(repositoryCategory.findById(categoryId))
-                .thenReturn(Optional.of(category));
-        when(repositoryStoredFile.findByIdAndUserId(any(), any()))
+
+        when(repositoryUser.findById(userId))
+                .thenReturn(Optional.of(user));
+
+        when(repositoryStoredFile.findByIdAndUserId(receiptId, userId))
                 .thenReturn(Optional.empty());
 
-        assertThrows(FileAccessDeniedException.class,
-                () -> serviceExpense.newExpense(request, userId));
+        assertThrows(
+                FileAccessDeniedException.class,
+                () -> serviceExpense.newExpense(request, userId)
+        );
+
+        verify(repositoryStoredFile)
+                .findByIdAndUserId(receiptId, userId);
+
+        verify(repositoryCategory, never())
+                .findById(any());
+
+        verify(categoryValidator, never())
+                .validateExpenseCategory(any());
+
+        verify(serviceWallet, never())
+                .subtractBalance(any(), any());
+
+        verify(repositoryExpense, never())
+                .saveAndFlush(any());
     }
 }

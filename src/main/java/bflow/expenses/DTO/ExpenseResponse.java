@@ -114,4 +114,9 @@ public class ExpenseResponse {
      * Identifier of the recurring transaction associated with this expense.
      */
     private String recurringTransactionId;
+
+    /**
+     * Identifier of the receipt file associated with this expense.
+     */
+    private String receiptFileId;
 }
