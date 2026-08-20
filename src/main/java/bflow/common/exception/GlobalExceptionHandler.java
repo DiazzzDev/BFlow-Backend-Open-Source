@@ -1,6 +1,8 @@
 package bflow.common.exception;
 
+import bflow.common.idempotency.exception.IdempotencyConflictException;
 import bflow.common.response.ApiResponse;
+import bflow.legal.exception.LegalDocumentNotFoundException;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
@@ -836,5 +838,62 @@ public final class GlobalExceptionHandler {
                                 request.getRequestURI()
                         )
                 );
+    }
+
+    /**
+     * Handles idempotency key reuse with a mismatched payload.
+     *
+     * @param ex the exception
+     * @param request the current HTTP request
+     * @return a response with CONFLICT status
+     */
+    @ExceptionHandler(IdempotencyConflictException.class)
+    public ResponseEntity<ApiResponse<Void>> handleIdempotencyConflict(
+            final IdempotencyConflictException ex,
+            final HttpServletRequest request
+    ) {
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(ApiResponse.error(
+                        ex.getMessage(), request.getRequestURI()
+                ));
+    }
+
+    /**
+     * Handles invalid budget date ranges (e.g. end date before start).
+     *
+     * @param ex the exception
+     * @param request the current HTTP request
+     * @return a response with BAD_REQUEST status
+     */
+    @ExceptionHandler(InvalidBudgetDateException.class)
+    public ResponseEntity<ApiResponse<Void>> handleInvalidBudgetDate(
+            final InvalidBudgetDateException ex,
+            final HttpServletRequest request
+    ) {
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(ApiResponse.error(
+                        ex.getMessage(), request.getRequestURI()
+                ));
+    }
+
+    /**
+     * Handles requests for a legal document version that doesn't exist.
+     *
+     * @param ex the exception
+     * @param request the current HTTP request
+     * @return a response with NOT_FOUND status
+     */
+    @ExceptionHandler(LegalDocumentNotFoundException.class)
+    public ResponseEntity<ApiResponse<Void>> handleLegalDocumentNotFound(
+            final LegalDocumentNotFoundException ex,
+            final HttpServletRequest request
+    ) {
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(ApiResponse.error(
+                        ex.getMessage(), request.getRequestURI()
+                ));
     }
 }

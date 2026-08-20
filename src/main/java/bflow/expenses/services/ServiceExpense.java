@@ -209,9 +209,9 @@ public class ServiceExpense {
         }
 
         if (oldWalletId.equals(newWalletId)) {
-            serviceWallet.adjustBalanceForUpdate(
-                oldWallet, oldAmount, newAmount
-        );
+            serviceWallet.adjustBalanceForExpenseUpdate(
+                    oldWallet, oldAmount, newAmount
+            );
         } else {
             serviceWallet.reverseTransactionImpact(oldWallet, oldAmount);
             serviceWallet.subtractBalance(newWallet, newAmount);
@@ -308,8 +308,8 @@ public class ServiceExpense {
         repositoryExpense.delete(expense);
 
         serviceBudget.evaluateBudgetsForExpenseEvent(
-            wallet.getId(),
-            expense.getCategory() != null ? expense.getCategory().getId() : null
+                wallet.getId(),
+                expense.getCategory() != null ? expense.getCategory().getId() : null
         );
     }
 
@@ -405,7 +405,7 @@ public class ServiceExpense {
         response.setAmount(expense.getAmount());
         response.setDate(expense.getDate());
         response.setCategory(
-            TransactionMapper.mapCategoryToResponse(expense.getCategory())
+                TransactionMapper.mapCategoryToResponse(expense.getCategory())
         );
 
         response.setTaxDeductible(expense.getTaxDeductible());
