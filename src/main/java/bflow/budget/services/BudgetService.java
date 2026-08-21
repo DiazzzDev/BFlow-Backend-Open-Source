@@ -372,23 +372,19 @@ public class BudgetService {
                         ? request.getThresholdCritical()
                         : budget.getThresholdCritical();
 
-        BudgetScope finalScope =
-                request.getScope() != null
+        BudgetScope finalScope = request.getScope() != null
                         ? request.getScope()
                         : budget.getScope();
 
-        UUID currentCategoryId =
-                budget.getCategory() != null
+        UUID currentCategoryId = budget.getCategory() != null
                         ? budget.getCategory().getId()
                         : null;
 
-        UUID finalCategoryId =
-                request.getCategoryId() != null
+        UUID finalCategoryId = request.getCategoryId() != null
                         ? request.getCategoryId()
                         : currentCategoryId;
 
-        UUID currentWalletId =
-                budget.getWallet() != null
+        UUID currentWalletId = budget.getWallet() != null
                         ? budget.getWallet().getId()
                         : null;
 
@@ -413,10 +409,9 @@ public class BudgetService {
                 finalCritical
         );
 
-        PeriodType finalPeriod =
-                request.getPeriod() != null
-                        ? request.getPeriod()
-                        : budget.getPeriod();
+        PeriodType finalPeriod = request.getPeriod() != null
+                ? request.getPeriod()
+                : budget.getPeriod();
 
         overlapValidationService.validatePatchOverlap(
                 budget,
@@ -449,7 +444,6 @@ public class BudgetService {
 
         budget.setThresholdWarning(finalWarning);
         budget.setThresholdCritical(finalCritical);
-
         budget.setScope(finalScope);
 
         Currency finalCurrency;
@@ -473,10 +467,9 @@ public class BudgetService {
                         finalScope, request.getCurrency(), walletCurrency
                 );
             }
-
             finalCurrency = walletCurrency;
             budget.setWallet(
-                    entityManager.getReference(Wallet.class, finalWalletId)
+                entityManager.getReference(Wallet.class, finalWalletId)
             );
         } else {
             // CATEGORY_GLOBAL: an explicit currency on the patch
@@ -490,7 +483,6 @@ public class BudgetService {
             validationService.validateCurrency(
                     BudgetScope.CATEGORY_GLOBAL, finalCurrency, null
             );
-
             budget.setWallet(null);
         }
 
@@ -509,7 +501,6 @@ public class BudgetService {
         }
 
         Budget updated = repositoryBudget.save(budget);
-
         return calculationService.calculate(updated);
     }
 
@@ -760,13 +751,13 @@ public class BudgetService {
                             budget.getUser().getId()
                     );
             return repositoryExpense
-                    .findByWalletIdInAndCategoryIdAndDateBetweenOrderByDateDescCreatedAtDesc(
-                            walletIds,
-                            budget.getCategory().getId(),
-                            start,
-                            end,
-                            pageable
-                    );
+       .findByWalletIdInAndCategoryIdAndDateBetweenOrderByDateDescCreatedAtDesc(
+                walletIds,
+                budget.getCategory().getId(),
+                start,
+                end,
+                pageable
+            );
         }
 
         boolean scopedToCategory =
@@ -775,7 +766,7 @@ public class BudgetService {
 
         if (scopedToCategory) {
             return repositoryExpense
-                    .findByWalletIdAndCategoryIdAndDateBetweenOrderByDateDescCreatedAtDesc(
+        .findByWalletIdAndCategoryIdAndDateBetweenOrderByDateDescCreatedAtDesc(
                             budget.getWallet().getId(),
                             budget.getCategory().getId(),
                             start,

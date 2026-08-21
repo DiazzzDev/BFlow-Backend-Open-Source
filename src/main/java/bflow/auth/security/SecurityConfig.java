@@ -87,8 +87,7 @@ public class SecurityConfig {
                                 "/swagger-ui/**",
                                 "/actuator/health",
                                 "/v3/api-docs/**",
-                                "/actuator/info",
-                                "/actuator/startup"
+                                "/actuator/info"
                         ).permitAll()
                         .requestMatchers("/api/v1/legal/**").permitAll()
                         .requestMatchers("/api/v1/webhooks/wompi").permitAll()
