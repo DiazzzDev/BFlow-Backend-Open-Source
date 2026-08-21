@@ -2,6 +2,7 @@ package bflow.budget.DTO;
 
 import bflow.budget.enums.BudgetScope;
 import bflow.budget.enums.PeriodType;
+import bflow.wallet.enums.Currency;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Positive;
@@ -71,4 +72,9 @@ public class BudgetPatchRequest {
      * WALLET_CATEGORY from CATEGORY_GLOBAL.
      */
     private UUID walletId;
+
+    /**
+     * Updated wallets currency.
+     */
+    private Currency currency;
 }

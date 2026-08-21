@@ -152,8 +152,20 @@ public final class BudgetCalculationService {
             }
             case CATEGORY_GLOBAL -> {
                 requireCategory(budget);
+                requireCurrency(budget);
+
+                // Only wallets denominated in the SAME currency as
+                // the budget are included — summing raw amounts
+                // across currencies (e.g. MXN + USD) would silently
+                // produce a meaningless number. A user with wallets
+                // in multiple currencies needs one CATEGORY_GLOBAL
+                // budget per currency to track spend across all of
+                // them correctly.
                 List<UUID> walletIds = repositoryWalletUser
-                        .findWalletIdsByUserId(budget.getUser().getId());
+                        .findWalletIdsByUserIdAndCurrency(
+                                budget.getUser().getId(),
+                                budget.getCurrency()
+                        );
 
                 if (walletIds.isEmpty()) {
                     yield BigDecimal.ZERO;
@@ -177,6 +189,17 @@ public final class BudgetCalculationService {
                     "Budget " + budget.getId()
                             + " has scope " + budget.getScope()
                             + " but no category set"
+            );
+        }
+    }
+
+    private void requireCurrency(final Budget budget) {
+        if (budget.getCurrency() == null) {
+            throw new IllegalStateException(
+                    "Budget " + budget.getId()
+                            + " has scope CATEGORY_GLOBAL but no "
+                            + "currency set — cannot determine which "
+                            + "wallets to include in the spend total"
             );
         }
     }
