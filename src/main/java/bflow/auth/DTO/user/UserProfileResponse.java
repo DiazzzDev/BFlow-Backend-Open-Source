@@ -21,6 +21,12 @@ public class UserProfileResponse {
     /** The user's email address. */
     private String email;
 
+    /** The user's display name. */
+    private String name;
+
+    /** The URL of the user's profile picture. */
+    private String pictureUrl;
+
     /** The user's assigned roles. */
     private Set<String> roles;
 

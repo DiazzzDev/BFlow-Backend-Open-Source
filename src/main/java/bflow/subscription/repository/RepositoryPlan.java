@@ -8,8 +8,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Repository
-public interface RepositoryPlan
-        extends JpaRepository<Plan, UUID> {
+public interface RepositoryPlan extends JpaRepository<Plan, UUID> {
 
     /**
      * Find a plan by its unique code.
@@ -18,4 +17,6 @@ public interface RepositoryPlan
      * @return optional plan matching the code
      */
     Optional<Plan> findByCode(String code);
+
 }
+

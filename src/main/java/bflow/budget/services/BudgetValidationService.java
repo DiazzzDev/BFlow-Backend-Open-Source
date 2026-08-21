@@ -4,6 +4,7 @@ import bflow.budget.enums.BudgetScope;
 import bflow.common.exception.InvalidBudgetDateException;
 import bflow.common.exception.InvalidBudgetScopeException;
 import bflow.common.exception.InvalidBudgetThresholdException;
+import bflow.wallet.enums.Currency;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
@@ -38,6 +39,7 @@ public final class BudgetValidationService {
      * Validate budget constraints including thresholds and scope.
      *
      * @param scope the budget scope
+     * @param walletId the wallet ID (required for WALLET scope)
      * @param categoryId the category ID (required for CATEGORY scope)
      * @param warning the warning threshold percentage
      * @param critical the critical threshold percentage
@@ -46,13 +48,13 @@ public final class BudgetValidationService {
      */
     public void validateBudgetConstraints(
             final BudgetScope scope,
+            final UUID walletId,
             final UUID categoryId,
             final Integer warning,
             final Integer critical
     ) {
-
         validateThresholds(warning, critical);
-        validateBudgetScope(scope, categoryId);
+        validateBudgetScope(scope, walletId, categoryId);
     }
 
     /**
@@ -99,22 +101,100 @@ public final class BudgetValidationService {
     }
 
     /**
-     * Validate that category-scoped budgets have a category ID.
+     * Validate that wallet/category presence matches the budget's scope.
      *
      * @param scope the budget scope
-     * @param categoryId the category ID
-     * @throws InvalidBudgetScopeException if CATEGORY scope lacks categoryId
+     * @param walletId the wallet ID (nullable depending on scope)
+     * @param categoryId the category ID (nullable depending on scope)
+     * @throws InvalidBudgetScopeException if the combination is invalid
      */
     public void validateBudgetScope(
             final BudgetScope scope,
+            final UUID walletId,
             final UUID categoryId
     ) {
+        switch (scope) {
+            case WALLET -> {
+                if (walletId == null) {
+                    throw new InvalidBudgetScopeException(
+                            "WALLET scope requires walletId"
+                    );
+                }
+                if (categoryId != null) {
+                    throw new InvalidBudgetScopeException(
+                            "WALLET scope must not have a categoryId"
+                    );
+                }
+            }
+            case WALLET_CATEGORY -> {
+                if (walletId == null || categoryId == null) {
+                    throw new InvalidBudgetScopeException(
+                            "WALLET_CATEGORY scope requires both "
+                                    + "walletId and categoryId"
+                    );
+                }
+            }
+            case CATEGORY_GLOBAL -> {
+                if (categoryId == null) {
+                    throw new InvalidBudgetScopeException(
+                            "CATEGORY_GLOBAL scope requires categoryId"
+                    );
+                }
+                if (walletId != null) {
+                    throw new InvalidBudgetScopeException(
+                            "CATEGORY_GLOBAL scope must not have a walletId"
+                    );
+                }
+            }
+            default -> throw new InvalidBudgetScopeException(
+                    "Unsupported budget scope"
+            );
+        }
+    }
 
-        if (scope == BudgetScope.CATEGORY
-                && categoryId == null) {
-
+    /**
+     * Validates that a budget's declared currency is consistent
+     * with its scope. WALLET and WALLET_CATEGORY budgets must match
+     * their wallet's own currency exactly — a mismatch would mean
+     * the budget's limit and the wallet's actual spend are
+     * denominated in different units with no conversion applied,
+     * making every percentage and remaining-amount calculation
+     * meaningless (e.g. a 300 USD limit silently compared against
+     * MXN spend).
+     *
+     * <p>CATEGORY_GLOBAL budgets have no single wallet to compare
+     * against — any declared currency is valid there; it instead
+     * defines which of the user's wallets get included when
+     * summing spend (see {@link BudgetCalculationService}).
+     *
+     * @param scope the budget scope
+     * @param requestedCurrency the currency declared on the request
+     * @param walletCurrency the associated wallet's actual
+     *        currency, or {@code null} for CATEGORY_GLOBAL
+     * @throws InvalidBudgetScopeException if a WALLET/WALLET_CATEGORY
+     *         budget's currency doesn't match its wallet's currency
+     */
+    public void validateCurrency(
+            final BudgetScope scope,
+            final Currency requestedCurrency,
+            final Currency walletCurrency
+    ) {
+        if (requestedCurrency == null) {
             throw new InvalidBudgetScopeException(
-                    "Category budget requires categoryId"
+                    "Budget currency is required"
+            );
+        }
+
+        if (scope == BudgetScope.CATEGORY_GLOBAL) {
+            return;
+        }
+
+        if (walletCurrency != null
+                && requestedCurrency != walletCurrency) {
+            throw new InvalidBudgetScopeException(
+                    "Budget currency (" + requestedCurrency
+                            + ") must match the wallet's currency ("
+                            + walletCurrency + ")"
             );
         }
     }

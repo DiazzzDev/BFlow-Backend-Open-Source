@@ -2,7 +2,7 @@ package bflow.auth.services;
 
 import bflow.auth.entities.User;
 import bflow.subscription.services.SubscriptionService;
-import bflow.wallet.ServiceWallet;
+import bflow.wallet.service.ServiceWallet;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

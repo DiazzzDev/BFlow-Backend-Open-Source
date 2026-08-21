@@ -2,6 +2,7 @@ package bflow.budget.DTO;
 
 import bflow.budget.enums.BudgetScope;
 import bflow.budget.enums.PeriodType;
+import bflow.wallet.enums.Currency;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
@@ -38,9 +39,9 @@ public class BudgetRequest {
     private static final int CRITICAL_THRESHOLD_DEFAULT = 90;
 
     /**
-     * The wallet ID for the budget.
+     * The wallet ID for the budget. Required for WALLET and
+     * WALLET_CATEGORY scopes; must be omitted for CATEGORY_GLOBAL.
      */
-    @NotNull
     private UUID walletId;
 
     /**
@@ -84,5 +85,17 @@ public class BudgetRequest {
     /**
      * The budget scope (WALLET or CATEGORY).
      */
+    @NotNull
     private BudgetScope scope;
+
+    /**
+     * The currency this budget's amount is denominated in. For
+     * WALLET/WALLET_CATEGORY scope it must match the target
+     * wallet's own currency. For CATEGORY_GLOBAL scope, this
+     * declares which currency is being tracked — only wallets in
+     * this currency are included when calculating spend, since
+     * amounts in different currencies cannot be summed directly.
+     */
+    @NotNull
+    private Currency currency;
 }

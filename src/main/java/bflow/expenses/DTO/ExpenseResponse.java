@@ -104,4 +104,19 @@ public class ExpenseResponse {
      * The confidence score for the expense categorization.
      */
     private Double confidenceScore;
+
+    /**
+     * Recurrence pattern of the transaction, if applicable.
+     */
+    private String recurrencePattern;
+
+    /**
+     * Identifier of the recurring transaction associated with this expense.
+     */
+    private String recurringTransactionId;
+
+    /**
+     * Identifier of the receipt file associated with this expense.
+     */
+    private String receiptFileId;
 }

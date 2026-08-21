@@ -25,7 +25,9 @@ public class CorsConfig {
 
         //Development
         configuration.addAllowedOrigin("http://localhost:5173");
+        configuration.addAllowedOrigin("http://localhost:5174");
         configuration.addAllowedOrigin("http://127.0.0.1:5173");
+        configuration.addAllowedOrigin("http://127.0.0.1:5174");
 
         //Production
         configuration.addAllowedOrigin("https://bflow-2why.onrender.com");
@@ -36,13 +38,18 @@ public class CorsConfig {
         ));
 
         configuration.setAllowedHeaders(List.of(
-                "Content-Type", "Accept", "Authorization", "X-CSRF-TOKEN"
+                "Content-Type",
+                "Accept",
+                "Authorization",
+                "X-CSRF-TOKEN",
+                "Idempotency-Key"
         ));
 
         configuration.addExposedHeader("Set-Cookie");
 
         UrlBasedCorsConfigurationSource source =
                 new UrlBasedCorsConfigurationSource();
+
         source.registerCorsConfiguration("/**", configuration);
         return source;
     }

@@ -1,10 +1,10 @@
 package bflow.budget.services;
 
 import bflow.budget.DTO.BudgetRequest;
-import bflow.budget.RepositoryBudget;
 import bflow.budget.entity.Budget;
 import bflow.budget.enums.BudgetScope;
 import bflow.budget.enums.PeriodType;
+import bflow.budget.repository.RepositoryBudget;
 import bflow.common.exception.BudgetOverlapException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -32,29 +32,23 @@ public final class BudgetOverlapValidationService {
             final BudgetRequest request,
             final UUID userId
     ) {
-
-        boolean exists;
-
-        if (request.getScope() == BudgetScope.WALLET) {
-
-            exists = repositoryBudget
+        boolean exists = switch (request.getScope()) {
+            case WALLET -> repositoryBudget
                     .existsByWalletIdAndUserIdAndScopeAndPeriod(
-                            request.getWalletId(),
-                            userId,
-                            request.getScope(),
-                            request.getPeriod()
+                            request.getWalletId(), userId,
+                            request.getScope(), request.getPeriod()
                     );
-
-        } else {
-
-            exists = repositoryBudget
+            case WALLET_CATEGORY -> repositoryBudget
                     .existsByWalletIdAndUserIdAndCategoryIdAndPeriod(
-                            request.getWalletId(),
-                            userId,
-                            request.getCategoryId(),
-                            request.getPeriod()
+                            request.getWalletId(), userId,
+                            request.getCategoryId(), request.getPeriod()
                     );
-        }
+            case CATEGORY_GLOBAL -> repositoryBudget
+                    .existsByUserIdAndScopeAndCategoryIdAndPeriod(
+                            userId, request.getScope(),
+                            request.getCategoryId(), request.getPeriod()
+                    );
+        };
 
         if (exists) {
             throw new BudgetOverlapException(
@@ -69,6 +63,7 @@ public final class BudgetOverlapValidationService {
      *
      * @param budget the budget entity being updated
      * @param scope the new budget scope
+     * @param walletId the wallet ID
      * @param categoryId the new category ID
      * @param period the new period type
      * @param userId the ID of the user (owner)
@@ -77,35 +72,25 @@ public final class BudgetOverlapValidationService {
     public void validatePatchOverlap(
             final Budget budget,
             final BudgetScope scope,
+            final UUID walletId,
             final UUID categoryId,
             final PeriodType period,
             final UUID userId
     ) {
-
-        boolean exists;
-
-        if (scope == BudgetScope.WALLET) {
-
-            exists = repositoryBudget
+        boolean exists = switch (scope) {
+            case WALLET -> repositoryBudget
                     .existsByWalletIdAndUserIdAndScopeAndPeriodAndIdNot(
-                            budget.getWallet().getId(),
-                            userId,
-                            scope,
-                            period,
-                            budget.getId()
+                            walletId, userId, scope, period, budget.getId()
                     );
-
-        } else {
-
-            exists = repositoryBudget
+            case WALLET_CATEGORY -> repositoryBudget
                     .existsByWalletIdAndUserIdAndCategoryIdAndPeriodAndIdNot(
-                            budget.getWallet().getId(),
-                            userId,
-                            categoryId,
-                            period,
-                            budget.getId()
+                            walletId, userId, categoryId, period, budget.getId()
                     );
-        }
+            case CATEGORY_GLOBAL -> repositoryBudget
+                    .existsByUserIdAndScopeAndCategoryIdAndPeriodAndIdNot(
+                            userId, scope, categoryId, period, budget.getId()
+                    );
+        };
 
         if (exists) {
             throw new BudgetOverlapException(

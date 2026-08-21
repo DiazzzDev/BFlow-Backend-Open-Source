@@ -6,7 +6,6 @@ import bflow.common.idempotency.filter.IdempotencyFilter;
 import bflow.common.idempotency.service.IdempotencyService;
 import bflow.rate_limit.filter.RateLimitFilter;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -19,7 +18,6 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import bflow.common.response.ApiResponse;
 
 /**
  * Main security configuration for the application.
@@ -44,6 +42,9 @@ public class SecurityConfig {
     /** JSON serializer used by the idempotency filter. */
     private final ObjectMapper objectMapper;
 
+    /** Entry point invoked for unauthenticated/rejected requests. */
+    private final RestAuthenticationEntryPoint restAuthenticationEntryPoint;
+
     /**
      * Configures the security filter chain.
      * @param http the security object to configure.
@@ -59,17 +60,17 @@ public class SecurityConfig {
         );
 
         return http
-                 /*
-                * CSRF protection is intentionally disabled.
-                *
-                * This application is a stateless REST API authenticated
-                * exclusively through OAuth2 JWT Bearer tokens issued
-                * by AWS Cognito.
-                *
-                * Since authentication does not rely on cookies or
-                * HTTP sessions,
-                * CSRF attacks are not applicable.
-                */
+                /*
+                 * CSRF protection is intentionally disabled.
+                 *
+                 * This application is a stateless REST API authenticated
+                 * exclusively through OAuth2 JWT Bearer tokens issued
+                 * by AWS Cognito.
+                 *
+                 * Since authentication does not rely on cookies or
+                 * HTTP sessions,
+                 * CSRF attacks are not applicable.
+                 */
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(Customizer.withDefaults())
                 .sessionManagement(sess ->
@@ -77,17 +78,9 @@ public class SecurityConfig {
                                 SessionCreationPolicy.STATELESS
                         ))
                 .exceptionHandling(ex -> ex
-                        .authenticationEntryPoint((req, res, e) -> {
-                            res.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                            res.setContentType("application/json");
-                            ApiResponse<Void> body = ApiResponse.error(
-                                "Authentication required",
-                                req.getRequestURI()
-                            );
-                            res.getWriter().write(
-                                objectMapper.writeValueAsString(body)
-                            );
-                        })
+                        .authenticationEntryPoint(
+                                restAuthenticationEntryPoint
+                        )
                 )
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
@@ -97,12 +90,13 @@ public class SecurityConfig {
                                 "/actuator/info"
                         ).permitAll()
                         .requestMatchers("/api/v1/legal/**").permitAll()
+                        .requestMatchers("/api/v1/webhooks/wompi").permitAll()
                         .requestMatchers(
                                 "/api/auth/verify-email"
                         ).permitAll()
                         .requestMatchers("/api/test")
                         .authenticated()
-                    .anyRequest().authenticated()
+                        .anyRequest().authenticated()
                 )
                 .oauth2ResourceServer(oauth2 ->
                         oauth2.jwt(Customizer.withDefaults())

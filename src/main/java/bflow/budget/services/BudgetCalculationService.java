@@ -5,12 +5,15 @@ import bflow.budget.entity.Budget;
 import bflow.budget.enums.BudgetScope;
 import bflow.budget.enums.BudgetStatus;
 import bflow.expenses.RepositoryExpense;
+import bflow.wallet.repository.RepositoryWalletUser;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.util.List;
+import java.util.UUID;
 
 /**
  * Service for budget calculations.
@@ -35,6 +38,11 @@ public final class BudgetCalculationService {
     private final BudgetLifecycleService lifecycleService;
 
     /**
+     * Repository for managing wallet-user relationships.
+     */
+    private final RepositoryWalletUser repositoryWalletUser;
+
+    /**
      * Calculate budget response from a budget entity.
      *
      * @param budget the budget entity
@@ -45,26 +53,7 @@ public final class BudgetCalculationService {
         LocalDate start = budget.getStartDate();
         LocalDate end = lifecycleService.calculateEndDate(budget);
 
-        BigDecimal spent;
-
-        if (budget.getScope() == BudgetScope.WALLET) {
-            spent = repositoryExpense.sumExpensesByWalletAndDateRange(
-                    budget.getWallet().getId(),
-                    start,
-                    end
-            );
-        } else {
-            spent = repositoryExpense.sumByCategoryAndDateRange(
-                    budget.getCategory() != null
-                            ? budget.getCategory().getId() : null,
-                    start,
-                    end
-            );
-        }
-
-        if (spent == null) {
-            spent = BigDecimal.ZERO;
-        }
+        BigDecimal spent = calculateSpent(budget, start, end);
 
         BigDecimal amount = budget.getAmount();
 
@@ -95,7 +84,12 @@ public final class BudgetCalculationService {
 
         BudgetResponse response = new BudgetResponse();
         response.setId(budget.getId());
-        response.setWalletId(budget.getWallet().getId());
+
+        if (budget.getWallet() != null) {
+            response.setWalletId(budget.getWallet().getId());
+        }
+
+        response.setScope(budget.getScope());
         response.setPeriod(budget.getPeriod());
         response.setStartDate(budget.getStartDate());
 
@@ -104,7 +98,7 @@ public final class BudgetCalculationService {
 
         BigDecimal remaining = budget.getAmount().subtract(spent);
 
-        if (remaining.compareTo(BigDecimal.ZERO) < 0) {
+        if (remaining.compareTo(BigDecimal.ZERO) <= 0) {
             remaining = BigDecimal.ZERO;
         }
 
@@ -119,5 +113,94 @@ public final class BudgetCalculationService {
         response.setCreatedAt(budget.getCreatedAt());
 
         return response;
+    }
+
+    /**
+     * Resolves the amount spent for a budget's current period, scoped
+     * correctly to its wallet (and category, when applicable).
+     *
+     * @param budget the budget entity
+     * @param start the period start date
+     * @param end the period end date
+     * @return the total spent amount, never {@code null}
+     */
+    private BigDecimal calculateSpent(
+            final Budget budget,
+            final LocalDate start,
+            final LocalDate end
+    ) {
+        BudgetScope scope = budget.getScope();
+
+        if (scope == null) {
+            throw new IllegalStateException(
+                    "Budget " + budget.getId() + " has no scope defined"
+            );
+        }
+
+        BigDecimal spent = switch (scope) {
+            case WALLET -> repositoryExpense.sumExpensesByWalletAndDateRange(
+                    budget.getWallet().getId(), start, end
+            );
+            case WALLET_CATEGORY -> {
+                requireCategory(budget);
+                yield repositoryExpense.sumByWalletAndCategoryAndDateRange(
+                        budget.getWallet().getId(),
+                        budget.getCategory().getId(),
+                        start,
+                        end
+                );
+            }
+            case CATEGORY_GLOBAL -> {
+                requireCategory(budget);
+                requireCurrency(budget);
+
+                // Only wallets denominated in the SAME currency as
+                // the budget are included — summing raw amounts
+                // across currencies (e.g. MXN + USD) would silently
+                // produce a meaningless number. A user with wallets
+                // in multiple currencies needs one CATEGORY_GLOBAL
+                // budget per currency to track spend across all of
+                // them correctly.
+                List<UUID> walletIds = repositoryWalletUser
+                        .findWalletIdsByUserIdAndCurrency(
+                                budget.getUser().getId(),
+                                budget.getCurrency()
+                        );
+
+                if (walletIds.isEmpty()) {
+                    yield BigDecimal.ZERO;
+                }
+
+                yield repositoryExpense.sumByWalletsAndCategoryAndDateRange(
+                        walletIds,
+                        budget.getCategory().getId(),
+                        start,
+                        end
+                );
+            }
+        };
+
+        return spent != null ? spent : BigDecimal.ZERO;
+    }
+
+    private void requireCategory(final Budget budget) {
+        if (budget.getCategory() == null) {
+            throw new IllegalStateException(
+                    "Budget " + budget.getId()
+                            + " has scope " + budget.getScope()
+                            + " but no category set"
+            );
+        }
+    }
+
+    private void requireCurrency(final Budget budget) {
+        if (budget.getCurrency() == null) {
+            throw new IllegalStateException(
+                    "Budget " + budget.getId()
+                            + " has scope CATEGORY_GLOBAL but no "
+                            + "currency set — cannot determine which "
+                            + "wallets to include in the spend total"
+            );
+        }
     }
 }

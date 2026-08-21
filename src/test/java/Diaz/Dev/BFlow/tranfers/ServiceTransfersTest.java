@@ -3,17 +3,18 @@ package Diaz.Dev.BFlow.tranfers;
 import bflow.auth.entities.User;
 import bflow.auth.enums.UserStatus;
 import bflow.auth.repository.RepositoryUser;
-import bflow.auth.services.UserServiceImpl;
+import bflow.auth.services.UserService;
 import bflow.common.exception.ResourceNotFoundException;
 import bflow.tranfers.DTO.TransferenceResponse;
 import bflow.tranfers.RepositoryTransfers;
 import bflow.tranfers.ServiceTransfers;
 import bflow.tranfers.entities.Transfer;
 import bflow.tranfers.enums.TransferStatus;
-import bflow.wallet.RepositoryWallet;
-import bflow.wallet.RepositoryWalletUser;
-import bflow.wallet.ServiceWallet;
+import bflow.wallet.repository.RepositoryWallet;
 import bflow.wallet.entities.Wallet;
+import bflow.wallet.repository.RepositoryWalletUser;
+import bflow.wallet.service.ServiceWallet;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -59,7 +60,7 @@ class ServiceTransfersTest {
     private ServiceWallet serviceWallet;
 
     @Mock
-    private UserServiceImpl userService;
+    private UserService userService;
 
     @InjectMocks
     private ServiceTransfers serviceTransfers;

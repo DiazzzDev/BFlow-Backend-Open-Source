@@ -22,7 +22,7 @@
 			<dependency>
 				<groupId>software.amazon.awssdk</groupId>
 				<artifactId>bom</artifactId>
-				<version>2.25.57</version>
+				<version>2.51.0</version>
 				<type>pom</type>
 				<scope>import</scope>
 			</dependency>
@@ -76,7 +76,7 @@
 		<dependency>
 			<groupId>org.bouncycastle</groupId>
 			<artifactId>bcprov-jdk18on</artifactId>
-			<version>1.84</version>
+			<version>1.85.2</version>
 		</dependency>
 
 		<dependency>
@@ -97,7 +97,7 @@
 		<dependency>
 			<groupId>org.springdoc</groupId>
 			<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
-			<version>2.8.6</version>
+			<version>3.1.0</version>
 		</dependency>
 
 		<dependency>
@@ -110,6 +110,12 @@
 		<dependency>
 			<groupId>software.amazon.awssdk</groupId>
 			<artifactId>ses</artifactId>
+		</dependency>
+
+		<!-- AWS dependency for S3 -->
+		<dependency>
+			<groupId>software.amazon.awssdk</groupId>
+			<artifactId>s3</artifactId>
 		</dependency>
 
 		<dependency>
@@ -156,18 +162,11 @@
             			</exclude>
         			</excludes>
     			</configuration>
-    			<executions>
-        			<execution>
-            			<goals>
-                			<goal>build-info</goal>
-            			</goals>
-        			</execution>
-    			</executions>
 			</plugin>
 			<plugin>
 				<groupId>org.jacoco</groupId>
 				<artifactId>jacoco-maven-plugin</artifactId>
-				<version>0.8.10</version>
+				<version>0.8.15</version>
 				<executions>
 					<execution>
 						<goals>
@@ -194,30 +193,12 @@
 										<limit>
 											<counter>LINE</counter>
 											<value>COVEREDRATIO</value>
-											<minimum>0.10</minimum>
+											<minimum>0.25</minimum>
 										</limit>
 									</limits>
 								</rule>
 							</rules>
 						</configuration>
-					</execution>
-				</executions>
-			</plugin>
-			<plugin>
-				<groupId>pl.project13.maven</groupId>
-				<artifactId>git-commit-id-plugin</artifactId>
-				<version>4.9.10</version>
-
-				<configuration>
-					<failOnNoGitDirectory>false</failOnNoGitDirectory>
-					<generateGitPropertiesFile>true</generateGitPropertiesFile>
-				</configuration>
-
-				<executions>
-					<execution>
-						<goals>
-							<goal>revision</goal>
-						</goals>
 					</execution>
 				</executions>
 			</plugin>

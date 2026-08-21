@@ -6,6 +6,7 @@ import bflow.budget.enums.BudgetStatus;
 import bflow.budget.enums.PeriodType;
 import bflow.category.entity.Category;
 import bflow.wallet.entities.Wallet;
+import bflow.wallet.enums.Currency;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Enumerated;
@@ -46,9 +47,10 @@ public class Budget {
 
     /**
      * The associated wallet.
+     * Null when scope is CATEGORY_GLOBAL.
      */
     @ManyToOne
-    @JoinColumn(name = "wallet_id", nullable = false)
+    @JoinColumn(name = "wallet_id")
     private Wallet wallet;
 
     /**
@@ -68,6 +70,18 @@ public class Budget {
      * The budget amount.
      */
     private BigDecimal amount;
+
+    /**
+     * The currency this budget's amount is denominated in.
+     * Required for every scope: for WALLET/WALLET_CATEGORY it must
+     * match the associated wallet's currency; for CATEGORY_GLOBAL
+     * there is no single wallet to infer it from, so it must be
+     * explicit — it also scopes which of the user's wallets are
+     * included when summing spend (only wallets in this currency).
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private Currency currency;
 
     /**
      * The warning threshold percentage.

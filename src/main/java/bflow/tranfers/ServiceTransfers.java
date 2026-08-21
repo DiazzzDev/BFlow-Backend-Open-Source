@@ -2,17 +2,18 @@ package bflow.tranfers;
 
 import bflow.auth.entities.User;
 import bflow.auth.repository.RepositoryUser;
-import bflow.auth.services.UserServiceImpl;
+import bflow.auth.services.UserService;
 import bflow.common.exception.ResourceNotFoundException;
 import bflow.tranfers.DTO.TransferenceRequest;
 import bflow.tranfers.DTO.TransferenceResponse;
 import bflow.tranfers.entities.Transfer;
 import bflow.tranfers.enums.TransferStatus;
-import bflow.wallet.RepositoryWallet;
-import bflow.wallet.RepositoryWalletUser;
-import bflow.wallet.ServiceWallet;
+import bflow.wallet.repository.RepositoryWallet;
 import bflow.wallet.entities.Wallet;
 import bflow.wallet.entities.WalletUser;
+import bflow.wallet.repository.RepositoryWalletUser;
+import bflow.wallet.service.ServiceWallet;
+
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -47,7 +48,7 @@ public class ServiceTransfers {
     private final ServiceWallet serviceWallet;
 
     /** The service for user business logic. */
-    private final UserServiceImpl userService;
+    private final UserService userService;
 
     /**
      * Retrieves a transfer by its ID, validating user authorization.

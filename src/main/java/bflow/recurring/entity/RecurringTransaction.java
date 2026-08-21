@@ -19,6 +19,7 @@ import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.UUID;
 
@@ -35,14 +36,17 @@ public final class RecurringTransaction {
      * Maximum description length.
      */
     private static final int MAX_DESC_LENGTH = 150;
+
     /**
      * Default interval value.
      */
     private static final int DEFAULT_INTERVAL = 1;
+
     /**
      * Decimal precision.
      */
     private static final int DECIMAL_PRECISION = 15;
+
     /**
      * Decimal scale.
      */
@@ -137,4 +141,21 @@ public final class RecurringTransaction {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
+
+    /**
+     * Number of consecutive failed execution attempts.
+     */
+    @Column(nullable = false)
+    private Integer failedAttempts = 0;
+
+    /**
+     * Reason for the last failed execution attempt, if any.
+     */
+    @Column(length = MAX_DESC_LENGTH)
+    private String lastFailureReason;
+
+    /**
+     * Timestamp of the last failed execution attempt.
+     */
+    private Instant lastFailureAt;
 }

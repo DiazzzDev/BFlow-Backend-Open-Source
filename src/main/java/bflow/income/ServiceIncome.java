@@ -2,7 +2,7 @@ package bflow.income;
 
 import bflow.auth.entities.User;
 import bflow.auth.repository.RepositoryUser;
-import bflow.auth.services.UserServiceImpl;
+import bflow.auth.services.UserService;
 import bflow.category.entity.Category;
 import bflow.category.enums.CategoryType;
 import bflow.category.RepositoryCategory;
@@ -13,11 +13,14 @@ import bflow.common.financial.TransactionMapper;
 import bflow.income.DTO.IncomeRequest;
 import bflow.income.DTO.IncomeResponse;
 import bflow.income.entity.Income;
+import bflow.recurring.entity.RecurringTransaction;
+import bflow.recurring.enums.RecurringType;
+import bflow.recurring.services.RecurringLinkService;
 import bflow.wallet.DTO.WalletPair;
-import bflow.wallet.RepositoryWallet;
-import bflow.wallet.RepositoryWalletUser;
-import bflow.wallet.ServiceWallet;
-import bflow.wallet.WalletLockService;
+import bflow.wallet.repository.RepositoryWallet;
+import bflow.wallet.repository.RepositoryWalletUser;
+import bflow.wallet.service.ServiceWallet;
+import bflow.wallet.service.WalletLockService;
 import bflow.wallet.entities.Wallet;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -63,7 +66,7 @@ public class ServiceIncome {
     /**
      * Service for user business logic operations.
      */
-    private final UserServiceImpl userService;
+    private final UserService userService;
 
     /**
      * Repository for category entity operations.
@@ -81,6 +84,11 @@ public class ServiceIncome {
     private final WalletLockService walletLockService;
 
     /**
+     * Service for transaction recurring creation.
+     */
+    private final RecurringLinkService recurringLinkService;
+
+    /**
      * Creates a new income entry for the specified wallet and user.
      *
      * @param request the income request containing income details
@@ -96,13 +104,13 @@ public class ServiceIncome {
         userService.validateUserActive(userId);
 
         repositoryWalletUser
-        .findByWalletIdAndUserId(request.getWalletId(), userId)
+                .findByWalletIdAndUserId(request.getWalletId(), userId)
                 .orElseThrow(() -> new WalletAccessDeniedException(
                         "You do not have access to this wallet"));
 
         Wallet wallet = repositoryWallet.findByIdForUpdate(
-                request.getWalletId()
-        )
+                        request.getWalletId()
+                )
                 .orElseThrow(
                         () -> new ResourceNotFoundException(
                                 "Wallet not found"
@@ -171,19 +179,39 @@ public class ServiceIncome {
 
         if (category.getType() != CategoryType.INCOME) {
             throw new IllegalArgumentException(
-                "Category must be of type INCOME"
+                    "Category must be of type INCOME"
             );
         }
 
         if (oldWalletId.equals(newWalletId)) {
-            serviceWallet.adjustBalanceForUpdate(
-                oldWallet, oldAmount, newAmount
-        );
+            serviceWallet.adjustBalanceForIncomeUpdate(
+                    oldWallet, oldAmount, newAmount
+            );
         } else {
             serviceWallet.subtractBalance(oldWallet, oldAmount);
             serviceWallet.addBalance(newWallet, newAmount);
             income.setWallet(newWallet);
         }
+
+        boolean wasRecurring = Boolean.TRUE.equals(income.getRecurring());
+        boolean willBeRecurring = Boolean.TRUE.equals(request.getRecurring());
+
+        UUID recurringId = recurringLinkService.syncOnUpdate(
+                new RecurringLinkService.RecurringSyncRequest(
+                        RecurringType.INCOME,
+                        wasRecurring,
+                        income.getRecurringTransactionId(),
+                        willBeRecurring,
+                        request.getRecurrencePattern(),
+                        newWallet,
+                        category,
+                        income.getContributor(),
+                        request.getTitle(),
+                        request.getDescription(),
+                        newAmount,
+                        request.getDate()
+                )
+        );
 
         income.setTitle(request.getTitle());
         income.setDescription(request.getDescription());
@@ -191,8 +219,9 @@ public class ServiceIncome {
         income.setDate(request.getDate());
         income.setCategory(category);
         income.setTaxable(Boolean.TRUE.equals(request.getTaxable()));
-        income.setRecurring(Boolean.TRUE.equals(request.getRecurring()));
+        income.setRecurring(willBeRecurring);
         income.setRecurrencePattern(request.getRecurrencePattern());
+        income.setRecurringTransactionId(recurringId);
 
         return mapToResponse(income);
     }
@@ -214,18 +243,18 @@ public class ServiceIncome {
 
         Income income = repositoryIncome.findById(incomeId)
                 .orElseThrow(() -> new ResourceNotFoundException(
-                        "Income not found"
-                )
-        );
+                                "Income not found"
+                        )
+                );
 
         repositoryWalletUser
-        .findByWalletIdAndUserId(income.getWallet().getId(), userId)
+                .findByWalletIdAndUserId(income.getWallet().getId(), userId)
                 .orElseThrow(() -> new WalletAccessDeniedException(
                         "You do not have access to this wallet"
                 ));
 
         Wallet wallet = repositoryWallet
-        .findByIdForUpdate(income.getWallet().getId())
+                .findByIdForUpdate(income.getWallet().getId())
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Wallet not found"
                 ));
@@ -280,6 +309,26 @@ public class ServiceIncome {
         income.setRecurring(Boolean.TRUE.equals(request.getRecurring()));
         income.setRecurrencePattern(request.getRecurrencePattern());
 
+        boolean isAutoGenerated = "recurring".equalsIgnoreCase(
+                request.getSource()
+        );
+        if (Boolean.TRUE.equals(income.getRecurring()) && !isAutoGenerated) {
+            RecurringTransaction recurring = recurringLinkService.linkRecurring(
+                    new RecurringLinkService.RecurringCreateRequest(
+                            RecurringType.INCOME,
+                            request.getRecurrencePattern(),
+                            wallet,
+                            category,
+                            contributor,
+                            income.getTitle(),
+                            income.getDescription(),
+                            income.getAmount(),
+                            income.getDate()
+                    )
+            );
+            income.setRecurringTransactionId(recurring.getId());
+        }
+
         return income;
     }
 
@@ -299,7 +348,7 @@ public class ServiceIncome {
         response.setAmount(income.getAmount());
         response.setDate(income.getDate());
         response.setCategory(
-            TransactionMapper.mapCategoryToResponse(income.getCategory())
+                TransactionMapper.mapCategoryToResponse(income.getCategory())
         );
 
         response.setWalletId(income.getWallet().getId().toString());
@@ -317,6 +366,14 @@ public class ServiceIncome {
         response.setCreatedAt(income.getCreatedAt());
         response.setCategorizationChanges(income.getCategorizationChanges());
         response.setEditCount(income.getEditCount());
+
+        response.setRecurring(income.getRecurring());
+        response.setRecurrencePattern(income.getRecurrencePattern());
+        response.setRecurringTransactionId(
+                income.getRecurringTransactionId() != null
+                        ? income.getRecurringTransactionId().toString()
+                        : null
+        );
 
         return response;
     }

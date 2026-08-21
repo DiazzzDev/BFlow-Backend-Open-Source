@@ -3,25 +3,33 @@ package Diaz.Dev.BFlow.expenses;
 import bflow.auth.entities.User;
 import bflow.auth.enums.UserStatus;
 import bflow.auth.repository.RepositoryUser;
-import bflow.auth.services.UserServiceImpl;
+import bflow.auth.services.UserService;
 import bflow.budget.services.BudgetService;
 import bflow.category.CategoryValidator;
 import bflow.category.RepositoryCategory;
 import bflow.category.entity.Category;
 import bflow.category.enums.CategoryType;
+import bflow.common.exception.FileAccessDeniedException;
 import bflow.common.exception.WalletAccessDeniedException;
 import bflow.expenses.DTO.ExpenseRequest;
 import bflow.expenses.DTO.ExpenseResponse;
 import bflow.expenses.RepositoryExpense;
 import bflow.expenses.entity.Expense;
 import bflow.expenses.services.ServiceExpense;
-import bflow.wallet.RepositoryWallet;
-import bflow.wallet.RepositoryWalletUser;
-import bflow.wallet.ServiceWallet;
+import bflow.recurring.entity.RecurringTransaction;
+import bflow.recurring.enums.RecurringType;
+import bflow.recurring.services.RecurringLinkService;
+import bflow.storage.entity.StoredFile;
+import bflow.storage.enums.FileStatus;
+import bflow.storage.repository.RepositoryStoredFile;
+import bflow.wallet.repository.RepositoryWallet;
 import bflow.wallet.entities.Wallet;
 import bflow.wallet.entities.WalletUser;
 import bflow.wallet.enums.Currency;
 import bflow.wallet.enums.WalletRole;
+import bflow.wallet.repository.RepositoryWalletUser;
+import bflow.wallet.service.ServiceWallet;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -32,6 +40,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -74,13 +83,19 @@ class ServiceExpenseTest {
     private ServiceWallet serviceWallet;
 
     @Mock
-    private UserServiceImpl userService;
+    private UserService userService;
 
     @Mock
     private BudgetService serviceBudget;
 
+    @Mock
+    private RecurringLinkService recurringLinkService;
+
     @InjectMocks
     private ServiceExpense serviceExpense;
+
+    @Mock
+    private RepositoryStoredFile repositoryStoredFile;
 
     private UUID userId;
     private UUID walletId;
@@ -190,7 +205,7 @@ class ServiceExpenseTest {
                 () -> serviceExpense.newExpense(request, userId));
 
         verify(repositoryExpense, never()).saveAndFlush(any(Expense.class));
-        verify(serviceBudget, never()).evaluateBudgetsForWallet(any());
+        verify(serviceBudget, never()).evaluateBudgetsForExpenseEvent(any(), any());
     }
 
     /**
@@ -228,7 +243,7 @@ class ServiceExpenseTest {
 
         assertNotNull(result);
         verify(repositoryExpense).saveAndFlush(any(Expense.class));
-        verify(serviceBudget).evaluateBudgetsForWallet(walletId);
+        verify(serviceBudget).evaluateBudgetsForExpenseEvent(eq(walletId), any());
     }
 
     /**
@@ -354,5 +369,275 @@ class ServiceExpenseTest {
         ExpenseResponse result = serviceExpense.newExpense(request, userId);
 
         assertNotNull(result);
+    }
+
+    @Test
+    void testCreateExpense_recurring_createsRecurringLinkAndStoresId() {
+        ExpenseRequest request = new ExpenseRequest();
+        request.setWalletId(walletId);
+        request.setCategoryId(categoryId);
+        request.setTitle("Netflix subscription");
+        request.setAmount(BigDecimal.valueOf(15));
+        request.setDate(LocalDate.of(2026, 8, 17));
+        request.setRecurring(true);
+        request.setRecurrencePattern("MONTHLY");
+
+        RecurringTransaction recurring = new RecurringTransaction();
+        recurring.setId(UUID.randomUUID());
+
+        Expense expense = new Expense();
+        expense.setId(UUID.randomUUID());
+        expense.setCategory(category);
+        expense.setContributor(user);
+        expense.setWallet(wallet);
+        expense.setAmount(BigDecimal.valueOf(15));
+        expense.setCreatedAt(Instant.now());
+
+        doNothing().when(userService).validateUserActive(userId);
+        doNothing().when(categoryValidator).validateExpenseCategory(category);
+        when(repositoryUser.findById(userId)).thenReturn(Optional.of(user));
+        when(repositoryWalletUser.findByWalletIdAndUserId(walletId, userId))
+                .thenReturn(Optional.of(walletUser));
+        when(repositoryWallet.findByIdForUpdate(walletId))
+                .thenReturn(Optional.of(wallet));
+        when(repositoryCategory.findById(categoryId))
+                .thenReturn(Optional.of(category));
+        when(recurringLinkService.linkRecurring(
+                any(RecurringLinkService.RecurringCreateRequest.class)))
+                .thenReturn(recurring);
+        when(repositoryExpense.saveAndFlush(any(Expense.class)))
+                .thenReturn(expense);
+
+        ExpenseResponse result = serviceExpense.newExpense(request, userId);
+
+        assertNotNull(result);
+
+        ArgumentCaptor<RecurringLinkService.RecurringCreateRequest> captor =
+                ArgumentCaptor.forClass(
+                        RecurringLinkService.RecurringCreateRequest.class);
+        verify(recurringLinkService).linkRecurring(captor.capture());
+
+        RecurringLinkService.RecurringCreateRequest captured = captor.getValue();
+        assertEquals(RecurringType.EXPENSE, captured.type());
+        assertEquals("MONTHLY", captured.rawFrequency());
+        assertEquals(wallet, captured.wallet());
+        assertEquals(category, captured.category());
+        assertEquals(user, captured.user());
+    }
+
+    @Test
+    void testCreateExpense_recurringFalse_neverCallsRecurringLinkService() {
+        ExpenseRequest request = new ExpenseRequest();
+        request.setWalletId(walletId);
+        request.setCategoryId(categoryId);
+        request.setTitle("Regular purchase");
+        request.setAmount(BigDecimal.valueOf(50));
+
+        Expense expense = new Expense();
+        expense.setId(UUID.randomUUID());
+        expense.setCategory(category);
+        expense.setContributor(user);
+        expense.setWallet(wallet);
+        expense.setAmount(BigDecimal.valueOf(50));
+        expense.setCreatedAt(Instant.now());
+
+        doNothing().when(userService).validateUserActive(userId);
+        doNothing().when(categoryValidator).validateExpenseCategory(category);
+        when(repositoryUser.findById(userId)).thenReturn(Optional.of(user));
+        when(repositoryWalletUser.findByWalletIdAndUserId(walletId, userId))
+                .thenReturn(Optional.of(walletUser));
+        when(repositoryWallet.findByIdForUpdate(walletId))
+                .thenReturn(Optional.of(wallet));
+        when(repositoryCategory.findById(categoryId))
+                .thenReturn(Optional.of(category));
+        when(repositoryExpense.saveAndFlush(any(Expense.class)))
+                .thenReturn(expense);
+
+        serviceExpense.newExpense(request, userId);
+
+        verify(recurringLinkService, never()).linkRecurring(
+                any(RecurringLinkService.RecurringCreateRequest.class));
+    }
+
+    /**
+     * Simulates RecurringTransactionExecutor firing a due recurring
+     * expense (source="recurring", recurring=true). Must NOT create
+     * another RecurringTransaction, or every scheduled execution would
+     * spawn a new template indefinitely.
+     */
+    @Test
+    void testCreateExpense_autoGeneratedByExecutor_neverCreatesAnotherLink() {
+        ExpenseRequest request = new ExpenseRequest();
+        request.setWalletId(walletId);
+        request.setCategoryId(categoryId);
+        request.setTitle("Netflix subscription");
+        request.setAmount(BigDecimal.valueOf(15));
+        request.setRecurring(true);
+        request.setRecurrencePattern("MONTHLY");
+        request.setSource("recurring");
+
+        Expense expense = new Expense();
+        expense.setId(UUID.randomUUID());
+        expense.setCategory(category);
+        expense.setContributor(user);
+        expense.setWallet(wallet);
+        expense.setAmount(BigDecimal.valueOf(15));
+        expense.setCreatedAt(Instant.now());
+
+        doNothing().when(userService).validateUserActive(userId);
+        doNothing().when(categoryValidator).validateExpenseCategory(category);
+        when(repositoryUser.findById(userId)).thenReturn(Optional.of(user));
+        when(repositoryWalletUser.findByWalletIdAndUserId(walletId, userId))
+                .thenReturn(Optional.of(walletUser));
+        when(repositoryWallet.findByIdForUpdate(walletId))
+                .thenReturn(Optional.of(wallet));
+        when(repositoryCategory.findById(categoryId))
+                .thenReturn(Optional.of(category));
+        when(repositoryExpense.saveAndFlush(any(Expense.class)))
+                .thenReturn(expense);
+
+        serviceExpense.newExpense(request, userId);
+
+        verify(recurringLinkService, never()).linkRecurring(
+                any(RecurringLinkService.RecurringCreateRequest.class));
+    }
+
+    @Test
+    void testCreateExpense_withUploadedReceipt_attachesReceiptFileId() {
+        ExpenseRequest request = new ExpenseRequest();
+        request.setWalletId(walletId);
+        request.setCategoryId(categoryId);
+        request.setTitle("Grocery run");
+        request.setAmount(BigDecimal.valueOf(45));
+        UUID receiptId = UUID.randomUUID();
+        request.setReceiptFileId(receiptId);
+
+        StoredFile receipt = new StoredFile();
+        receipt.setId(receiptId);
+        receipt.setStatus(FileStatus.UPLOADED);
+        receipt.setContentType("image/jpeg");
+
+        Expense expense = new Expense();
+        expense.setId(UUID.randomUUID());
+        expense.setCategory(category);
+        expense.setContributor(user);
+        expense.setWallet(wallet);
+        expense.setAmount(BigDecimal.valueOf(45));
+        expense.setCreatedAt(Instant.now());
+
+        doNothing().when(userService).validateUserActive(userId);
+        doNothing().when(categoryValidator).validateExpenseCategory(category);
+        when(repositoryUser.findById(userId)).thenReturn(Optional.of(user));
+        when(repositoryWalletUser.findByWalletIdAndUserId(walletId, userId))
+                .thenReturn(Optional.of(walletUser));
+        when(repositoryWallet.findByIdForUpdate(walletId))
+                .thenReturn(Optional.of(wallet));
+        when(repositoryCategory.findById(categoryId))
+                .thenReturn(Optional.of(category));
+        when(repositoryStoredFile.findByIdAndUserId(receiptId, userId))
+                .thenReturn(Optional.of(receipt));
+        when(repositoryExpense.saveAndFlush(any(Expense.class)))
+                .thenReturn(expense);
+
+        ExpenseResponse result = serviceExpense.newExpense(request, userId);
+
+        assertNotNull(result);
+        verify(repositoryStoredFile).findByIdAndUserId(receiptId, userId);
+    }
+
+    @Test
+    void testCreateExpense_receiptNotUploaded_throwsIllegalStateException() {
+        ExpenseRequest request = new ExpenseRequest();
+        request.setWalletId(walletId);
+        request.setCategoryId(categoryId);
+        request.setTitle("Grocery run");
+        request.setAmount(BigDecimal.valueOf(45));
+
+        UUID receiptId = UUID.randomUUID();
+        request.setReceiptFileId(receiptId);
+
+        StoredFile receipt = new StoredFile();
+        receipt.setId(receiptId);
+        receipt.setStatus(FileStatus.PENDING);
+
+        doNothing().when(userService).validateUserActive(userId);
+
+        when(repositoryWalletUser.findByWalletIdAndUserId(walletId, userId))
+                .thenReturn(Optional.of(walletUser));
+
+        when(repositoryWallet.findByIdForUpdate(walletId))
+                .thenReturn(Optional.of(wallet));
+
+        when(repositoryUser.findById(userId))
+                .thenReturn(Optional.of(user));
+
+        when(repositoryStoredFile.findByIdAndUserId(receiptId, userId))
+                .thenReturn(Optional.of(receipt));
+
+        assertThrows(
+                IllegalStateException.class,
+                () -> serviceExpense.newExpense(request, userId)
+        );
+
+        verify(repositoryStoredFile)
+                .findByIdAndUserId(receiptId, userId);
+
+        verify(repositoryCategory, never())
+                .findById(any());
+
+        verify(categoryValidator, never())
+                .validateExpenseCategory(any());
+
+        verify(serviceWallet, never())
+                .subtractBalance(any(), any());
+
+        verify(repositoryExpense, never())
+                .saveAndFlush(any());
+    }
+
+    @Test
+    void testCreateExpense_receiptNotOwnedByUser_throwsFileAccessDenied() {
+        ExpenseRequest request = new ExpenseRequest();
+        request.setWalletId(walletId);
+        request.setCategoryId(categoryId);
+        request.setTitle("Grocery run");
+        request.setAmount(BigDecimal.valueOf(45));
+
+        UUID receiptId = UUID.randomUUID();
+        request.setReceiptFileId(receiptId);
+
+        doNothing().when(userService).validateUserActive(userId);
+
+        when(repositoryWalletUser.findByWalletIdAndUserId(walletId, userId))
+                .thenReturn(Optional.of(walletUser));
+
+        when(repositoryWallet.findByIdForUpdate(walletId))
+                .thenReturn(Optional.of(wallet));
+
+        when(repositoryUser.findById(userId))
+                .thenReturn(Optional.of(user));
+
+        when(repositoryStoredFile.findByIdAndUserId(receiptId, userId))
+                .thenReturn(Optional.empty());
+
+        assertThrows(
+                FileAccessDeniedException.class,
+                () -> serviceExpense.newExpense(request, userId)
+        );
+
+        verify(repositoryStoredFile)
+                .findByIdAndUserId(receiptId, userId);
+
+        verify(repositoryCategory, never())
+                .findById(any());
+
+        verify(categoryValidator, never())
+                .validateExpenseCategory(any());
+
+        verify(serviceWallet, never())
+                .subtractBalance(any(), any());
+
+        verify(repositoryExpense, never())
+                .saveAndFlush(any());
     }
 }

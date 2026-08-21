@@ -7,10 +7,10 @@ import bflow.expenses.DTO.ExpenseResponse;
 import bflow.expenses.RepositoryExpense;
 import bflow.expenses.entity.Expense;
 import bflow.merchant.MerchantDetectionService;
-import bflow.wallet.RepositoryWalletUser;
 import bflow.wallet.entities.Wallet;
 import bflow.wallet.entities.WalletUser;
 import bflow.wallet.enums.WalletRole;
+import bflow.wallet.repository.RepositoryWalletUser;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -102,7 +102,10 @@ public class QuickExpenseService {
 
         Expense saved = repositoryExpense.save(expense);
 
-        budgetService.evaluateBudgetsForWallet(wallet.getId());
+        budgetService.evaluateBudgetsForExpenseEvent(
+                wallet.getId(),
+                category != null ? category.getId() : null
+        );
 
         return toResponse(saved);
     }

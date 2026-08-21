@@ -1,5 +1,6 @@
 package bflow.auth.entities;
 
+import bflow.auth.enums.PictureSource;
 import bflow.auth.enums.UserStatus;
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
@@ -44,6 +45,20 @@ public class User {
     /** Unique email address of the user. */
     @Column(nullable = false, unique = true)
     private String email;
+
+    /** Display name of the user, captured from the Cognito ID token. */
+    @Column
+    private String name;
+
+    /** URL of the user's profile picture. */
+    @Column(name = "picture_url")
+    private String pictureUrl;
+
+    /** Origin of the current profile picture. */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "picture_source", nullable = false)
+    @Builder.Default
+    private PictureSource pictureSource = PictureSource.NONE;
 
     /** The set of roles assigned to the user. */
     @ElementCollection(fetch = FetchType.EAGER)

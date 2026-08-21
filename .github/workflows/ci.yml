@@ -2,8 +2,10 @@ name: BFlow Studio CI
 
 on:
   pull_request:
-    branches: [ "main" ]
-
+    branches:
+      - "main" 
+      - "develop"
+     
 jobs:
   test-and-build:
     runs-on: ubuntu-latest

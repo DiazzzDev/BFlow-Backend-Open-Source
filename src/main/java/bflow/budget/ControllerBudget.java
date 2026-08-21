@@ -1,10 +1,16 @@
 package bflow.budget;
 
 import bflow.auth.services.CurrentUserService;
+import bflow.budget.DTO.BudgetDetailResponse;
 import bflow.budget.DTO.BudgetPatchRequest;
 import bflow.budget.DTO.BudgetRequest;
 import bflow.budget.DTO.BudgetResponse;
 import bflow.budget.DTO.BudgetSummaryResponse;
+
+import bflow.budget.DTO.BudgetSearchRequest;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+
 import bflow.budget.services.BudgetService;
 import bflow.common.response.ApiResponse;
 import jakarta.validation.Valid;
@@ -38,6 +44,63 @@ public final class ControllerBudget {
 
     /** Service used to resolve the authenticated user. */
     private final CurrentUserService currentUserService;
+
+    /**
+     * Get budgets for the authenticated user, with optional dynamic
+     * filtering (case-insensitive by wallet/category name, wallet,
+     * category, scope, period, or status), pagination, and sorting.
+     *
+     * <p>Example: {@code GET /api/v1/budgets?name=food&page=0&size=10
+     * &sort=amount,desc}
+     *
+     * @param authentication the authentication object
+     * @param filter the search criteria bound from query parameters
+     * @param pageable the pagination and sorting information
+     * @return response containing a page of budgets
+     */
+    @GetMapping
+    public ApiResponse<Page<BudgetResponse>> getBudgets(
+            final Authentication authentication,
+            final BudgetSearchRequest filter,
+            final Pageable pageable
+    ) {
+        UUID userId = currentUserService.getCurrentUserId(authentication);
+
+        Page<BudgetResponse> budgets =
+                budgetService.getBudgets(userId, filter, pageable);
+
+        return ApiResponse.success(
+                "Budgets retrieved successfully",
+                budgets,
+                "/api/v1/budgets"
+        );
+    }
+
+    /**
+     * Get the full detail view (overview, trend, recent activity) for a
+     * specific budget, used by the budget dashboard UI.
+     *
+     * @param id the budget ID
+     * @param authentication the authentication object
+     * @return response containing the budget detail
+     */
+    @GetMapping("/{id}/detail")
+    public ApiResponse<BudgetDetailResponse> getBudgetDetail(
+            @PathVariable final UUID id,
+            final Authentication authentication
+    ) {
+
+        UUID userId = currentUserService.getCurrentUserId(authentication);
+
+        BudgetDetailResponse response =
+                budgetService.getBudgetDetail(id, userId);
+
+        return ApiResponse.success(
+                "Budget detail retrieved successfully",
+                response,
+                "/api/v1/budgets/" + id + "/detail"
+        );
+    }
 
     /**
      * Get all budgets for a specific wallet.
