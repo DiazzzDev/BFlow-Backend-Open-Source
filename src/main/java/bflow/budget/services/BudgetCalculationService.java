@@ -98,7 +98,7 @@ public final class BudgetCalculationService {
 
         BigDecimal remaining = budget.getAmount().subtract(spent);
 
-        if (remaining.compareTo(BigDecimal.ZERO) < 0) {
+        if (remaining.compareTo(BigDecimal.ZERO) <= 0) {
             remaining = BigDecimal.ZERO;
         }
 

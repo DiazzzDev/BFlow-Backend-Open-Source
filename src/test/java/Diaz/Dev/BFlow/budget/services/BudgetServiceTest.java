@@ -43,6 +43,7 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -118,13 +119,15 @@ class BudgetServiceTest {
         walletId = UUID.randomUUID();
         categoryId = UUID.randomUUID();
 
-        // Common stubs shared by every test — real, non-currency
-        // related plumbing that would otherwise need repeating.
-        when(repositoryBudget.saveAndFlush(any(Budget.class)))
+        // Common stubs shared by every test — not every test reaches
+        // these call sites (tests that fail fast on wallet access or
+        // currency validation never touch save/saveAndFlush/
+        // calculate), so they're lenient rather than strict.
+        lenient().when(repositoryBudget.saveAndFlush(any(Budget.class)))
                 .thenAnswer(inv -> inv.getArgument(0));
-        when(repositoryBudget.save(any(Budget.class)))
+        lenient().when(repositoryBudget.save(any(Budget.class)))
                 .thenAnswer(inv -> inv.getArgument(0));
-        when(calculationService.calculate(any(Budget.class)))
+        lenient().when(calculationService.calculate(any(Budget.class)))
                 .thenReturn(new BudgetResponse());
     }
 
