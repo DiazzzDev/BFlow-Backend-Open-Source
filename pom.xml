@@ -26,6 +26,41 @@
 				<type>pom</type>
 				<scope>import</scope>
 			</dependency>
+
+			<!-- Security overrides: pin patched versions above whatever the AWS SDK/
+			     Spring Boot BOMs currently resolve to. See Trivy findings in CI.
+			     Remove an override once the parent BOM catches up to (or exceeds)
+			     the fixed version pinned here. -->
+			<dependency>
+				<groupId>io.netty</groupId>
+				<artifactId>netty-codec-compression</artifactId>
+				<version>4.2.16.Final</version>
+			</dependency>
+			<dependency>
+				<groupId>io.netty</groupId>
+				<artifactId>netty-codec-http</artifactId>
+				<version>4.2.16.Final</version>
+			</dependency>
+			<dependency>
+				<groupId>io.netty</groupId>
+				<artifactId>netty-codec-http2</artifactId>
+				<version>4.2.16.Final</version>
+			</dependency>
+			<dependency>
+				<groupId>org.apache.httpcomponents.core5</groupId>
+				<artifactId>httpcore5</artifactId>
+				<version>5.4.3</version>
+			</dependency>
+			<dependency>
+				<groupId>org.apache.httpcomponents.core5</groupId>
+				<artifactId>httpcore5-h2</artifactId>
+				<version>5.4.3</version>
+			</dependency>
+			<dependency>
+				<groupId>org.postgresql</groupId>
+				<artifactId>postgresql</artifactId>
+				<version>42.7.12</version>
+			</dependency>
 		</dependencies>
 	</dependencyManagement>
 	<dependencies>
