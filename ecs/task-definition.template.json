@@ -53,6 +53,10 @@
         {
           "name": "FRONTEND_URL",
           "value": "https://www.bflow-studio.com/"
+        },
+        {
+          "name": "S3_BUCKET",
+          "value": "${S3_BUCKET}"
         }
       ],
 

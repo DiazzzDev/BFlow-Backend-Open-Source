@@ -56,6 +56,7 @@ jobs:
           ECS_PUBLIC_SUBNET_1: ${{ vars.ECS_PUBLIC_SUBNET_1 }}
           ECS_PUBLIC_SUBNET_2: ${{ vars.ECS_PUBLIC_SUBNET_2 }}
           ECS_SECURITY_GROUP: ${{ vars.ECS_SECURITY_GROUP }}
+          S3_BUCKET: ${{ vars.S3_BUCKET }}
 
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ZONE_ID: ${{ vars.CLOUDFLARE_ZONE_ID }}
@@ -81,6 +82,7 @@ jobs:
             ECS_PUBLIC_SUBNET_1
             ECS_PUBLIC_SUBNET_2
             ECS_SECURITY_GROUP
+            S3_BUCKET
             CLOUDFLARE_API_TOKEN
             CLOUDFLARE_ZONE_ID
             CLOUDFLARE_DNS_RECORD_ID
@@ -289,6 +291,7 @@ jobs:
           RDS_SECRET_ARN: ${{ secrets.RDS_SECRET_ARN }}
           WOMPI_SECRET_ARN: ${{ secrets.WOMPI_SECRET_ARN }}
           COGNITO_ISSUER_URI: ${{ vars.COGNITO_ISSUER_URI }}
+          S3_BUCKET: ${{ vars.S3_BUCKET }}
         run: |
           envsubst < ecs/task-definition.template.json > ecs/task-definition.json
 
