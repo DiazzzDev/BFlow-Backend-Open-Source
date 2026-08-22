@@ -3,7 +3,7 @@
 ![GitHub stars](https://img.shields.io/github/stars/DiazzzDev/BFlow-Backend-Open-Source?style=social)
 ![GitHub forks](https://img.shields.io/github/forks/DiazzzDev/BFlow-Backend-Open-Source?style=social)
 ![GitHub license](https://img.shields.io/github/license/DiazzzDev/BFlow-Backend-Open-Source)
-![CI](https://github.com/DiazzzDev/BFlow-Backend-Open-Source/actions/workflows/github-pipeline.yml/badge.svg)
+![CI](https://github.com/DiazzzDev/BFlow-Backend-Open-Source/actions/workflows/ci.yml/badge.svg)
 ![contributors](https://img.shields.io/github/contributors/DiazzzDev/BFlow-Backend-Open-Source)
 
 
@@ -65,9 +65,9 @@ Implemented:
 - Budget rules engine
 - Rate limiter
 - Idempotency layer
+- Payment integration via Wompi
 
 Roadmap:
-- Payment integration via Wompi
 - OpenTelemetry integration
 - Shared wallet roles
 - Redis-based caching
