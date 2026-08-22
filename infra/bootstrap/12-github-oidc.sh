@@ -54,16 +54,11 @@ create_deploy_role() {
         --query "Role.Arn" \
         --output text 2>/dev/null || true)
 
-
-    if [[ -n "$ROLE_ARN" && "$ROLE_ARN" != "None" ]]; then
-
-        echo "GitHub Actions role already exists."
-
-    else
-
-        echo "Creating GitHub Actions role..."
-
-        TRUST_POLICY=$(cat <<EOF
+    # Jobs that declare "environment: production" get an OIDC token whose sub
+    # claim is "repo:OWNER/REPO:environment:production", NOT
+    # "repo:OWNER/REPO:ref:refs/heads/BRANCH". Confirmed working in production
+    # with StringEquals on this single value - kept exactly as verified.
+    TRUST_POLICY=$(cat <<EOF
 {
     "Version": "2012-10-17",
     "Statement": [
@@ -75,10 +70,8 @@ create_deploy_role() {
             "Action": "sts:AssumeRoleWithWebIdentity",
             "Condition": {
                 "StringEquals": {
+                    "token.actions.githubusercontent.com:sub": "repo:${GITHUB_OWNER}/${GITHUB_REPOSITORY}:environment:production",
                     "token.actions.githubusercontent.com:aud": "sts.amazonaws.com"
-                },
-                "StringLike": {
-                    "token.actions.githubusercontent.com:sub": "repo:${GITHUB_OWNER}/${GITHUB_REPOSITORY}:ref:refs/heads/${GITHUB_BRANCH}"
                 }
             }
         }
@@ -86,6 +79,18 @@ create_deploy_role() {
 }
 EOF
 )
+
+    if [[ -n "$ROLE_ARN" && "$ROLE_ARN" != "None" ]]; then
+
+        echo "GitHub Actions role already exists. Updating trust policy..."
+
+        aws iam update-assume-role-policy \
+            --role-name "$ROLE_NAME" \
+            --policy-document "$TRUST_POLICY"
+
+    else
+
+        echo "Creating GitHub Actions role..."
 
         ROLE_ARN=$(aws iam create-role \
             --role-name "$ROLE_NAME" \
@@ -113,6 +118,12 @@ create_inline_policy() {
 
     SECRET_ARN=$(require_output RDS_SECRET_ARN)
 
+    # Optional - only present if infra/wompi.env existed when 08-secrets.sh
+    # last ran. Fall back to the DB secret ARN (a harmless duplicate in the
+    # Resource array) so this script stays idempotent either way.
+    WOMPI_SECRET_ARN=$(grep "^WOMPI_SECRET_ARN=" "$SCRIPT_DIR/../outputs.env" | cut -d= -f2- || true)
+    WOMPI_SECRET_ARN="${WOMPI_SECRET_ARN:-$SECRET_ARN}"
+
     ACCOUNT_ID=$(aws sts get-caller-identity \
         --query Account \
         --output text)
@@ -134,7 +145,10 @@ create_inline_policy() {
             "Action": [
                 "secretsmanager:DescribeSecret"
             ],
-            "Resource": "${SECRET_ARN}"
+            "Resource": [
+                "${SECRET_ARN}",
+                "${WOMPI_SECRET_ARN}"
+            ]
         },
 
         {

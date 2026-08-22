@@ -76,6 +76,22 @@
         {
           "name": "DB_PASSWORD",
           "valueFrom": "${RDS_SECRET_ARN}:DB_PASSWORD::"
+        },
+        {
+          "name": "WOMPI_CLIENT_ID",
+          "valueFrom": "${WOMPI_SECRET_ARN}:WOMPI_CLIENT_ID::"
+        },
+        {
+          "name": "WOMPI_CLIENT_SECRET",
+          "valueFrom": "${WOMPI_SECRET_ARN}:WOMPI_CLIENT_SECRET::"
+        },
+        {
+          "name": "WOMPI_APP_ID",
+          "valueFrom": "${WOMPI_SECRET_ARN}:WOMPI_APP_ID::"
+        },
+        {
+          "name": "WOMPI_API_SECRET",
+          "valueFrom": "${WOMPI_SECRET_ARN}:WOMPI_API_SECRET::"
         }
       ],
 

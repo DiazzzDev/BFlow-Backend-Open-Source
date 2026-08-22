@@ -41,6 +41,7 @@ jobs:
         env:
           AWS_ROLE_ARN: ${{ secrets.AWS_ROLE_ARN }}
           RDS_SECRET_ARN: ${{ secrets.RDS_SECRET_ARN }}
+          WOMPI_SECRET_ARN: ${{ secrets.WOMPI_SECRET_ARN }}
 
           AWS_REGION: ${{ vars.AWS_REGION }}
           ECR_REPOSITORY: ${{ vars.ECR_REPOSITORY }}
@@ -67,6 +68,7 @@ jobs:
           required=(
             AWS_ROLE_ARN
             RDS_SECRET_ARN
+            WOMPI_SECRET_ARN
             AWS_REGION
             ECR_REPOSITORY
             ECS_CLUSTER_NAME
@@ -96,6 +98,10 @@ jobs:
         run: |
           aws secretsmanager describe-secret \
             --secret-id "${{ secrets.RDS_SECRET_ARN }}" \
+            >/dev/null
+
+          aws secretsmanager describe-secret \
+            --secret-id "${{ secrets.WOMPI_SECRET_ARN }}" \
             >/dev/null
 
       - name: Validate ECR repository
@@ -281,6 +287,7 @@ jobs:
           AWS_REGION: ${{ vars.AWS_REGION }}
           CLOUDWATCH_LOG_GROUP: ${{ vars.CLOUDWATCH_LOG_GROUP }}
           RDS_SECRET_ARN: ${{ secrets.RDS_SECRET_ARN }}
+          WOMPI_SECRET_ARN: ${{ secrets.WOMPI_SECRET_ARN }}
           COGNITO_ISSUER_URI: ${{ vars.COGNITO_ISSUER_URI }}
         run: |
           envsubst < ecs/task-definition.template.json > ecs/task-definition.json

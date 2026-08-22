@@ -120,6 +120,16 @@ echo "Creating inline task permissions..."
 
 SECRET_ARN=$(require_output RDS_SECRET_ARN)
 
+# Wompi secret is optional - only created if infra/wompi.env exists when
+# 08-secrets.sh ran. Include it in the resource list only if present, so
+# this script stays idempotent whether or not Wompi is configured yet.
+WOMPI_SECRET_ARN=$(grep "^WOMPI_SECRET_ARN=" "$SCRIPT_DIR/../outputs.env" | cut -d= -f2- || true)
+
+RESOURCE_LIST="\"$SECRET_ARN\""
+if [[ -n "$WOMPI_SECRET_ARN" ]]; then
+    RESOURCE_LIST="$RESOURCE_LIST, \"$WOMPI_SECRET_ARN\""
+fi
+
 # ECS resolves the "secrets" block in the container definition using the
 # EXECUTION role (executionRoleArn), not the task role. This must live here,
 # not on ECS_TASK_ROLE_NAME, or the task fails at launch with
@@ -136,7 +146,7 @@ aws iam put-role-policy \
                     \"secretsmanager:GetSecretValue\"
                 ],
                 \"Resource\": [
-                    \"$SECRET_ARN\"
+                    $RESOURCE_LIST
                 ]
             }
         ]
