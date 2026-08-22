@@ -88,5 +88,20 @@ public class IncomeResponse {
      * The confidence score for the income categorization.
      */
     private Double confidenceScore;
+
+    /**
+     * Indicates whether this income is a recurring transaction.
+     */
+    private Boolean recurring;
+
+    /**
+     * The recurrence pattern of the income, if applicable.
+     */
+    private String recurrencePattern;
+
+    /**
+     * The unique identifier of the associated recurring transaction.
+     */
+    private String recurringTransactionId;
 }
 

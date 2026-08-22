@@ -7,6 +7,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import java.util.List;
 import java.math.BigDecimal;
@@ -295,5 +296,22 @@ public interface RepositoryExpense extends JpaRepository<Expense, UUID> {
             LocalDate start,
             LocalDate end,
             Pageable pageable
+    );
+
+    /**
+     * Counts expenses across the given wallets within a date range.
+     *
+     * @param walletIds the wallet IDs to filter by
+     * @param start the start date of the range (inclusive)
+     * @param end the end date of the range (inclusive)
+     * @return the number of expenses in the given wallets and date range
+     */
+    @Query("SELECT COUNT(e) FROM Expense e "
+            + "WHERE e.wallet.id IN :walletIds "
+            + "AND e.date BETWEEN :start AND :end")
+    long countByWalletsAndDateRange(
+            @Param("walletIds") List<UUID> walletIds,
+            @Param("start") LocalDate start,
+            @Param("end") LocalDate end
     );
 }

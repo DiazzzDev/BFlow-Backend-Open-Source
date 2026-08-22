@@ -1,7 +1,7 @@
 package bflow.budget.services;
 
 import bflow.auth.entities.User;
-import bflow.auth.services.UserServiceImpl;
+import bflow.auth.services.UserService;
 import bflow.budget.DTO.BudgetDetailResponse;
 import bflow.budget.DTO.BudgetPatchRequest;
 import bflow.budget.DTO.BudgetRequest;
@@ -28,6 +28,8 @@ import bflow.notifications.service.NotificationService;
 import bflow.subscription.FeatureCodes;
 import bflow.subscription.services.PlanLimitService;
 import bflow.wallet.entities.Wallet;
+import bflow.wallet.entities.WalletUser;
+import bflow.wallet.enums.Currency;
 import bflow.wallet.repository.RepositoryWalletUser;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
@@ -78,7 +80,7 @@ public class BudgetService {
     /**
      * Service for user business logic operations.
      */
-    private final UserServiceImpl userService;
+    private final UserService userService;
 
     /**
      * Service for notification operations.
@@ -124,7 +126,7 @@ public class BudgetService {
      * @return the budget response
      */
     public BudgetResponse getBudgetStatus(final UUID budgetId,
-            final UUID userId) {
+                                          final UUID userId) {
 
         //Check if user has an active account
         userService.validateUserActive(userId);
@@ -198,9 +200,9 @@ public class BudgetService {
         );
 
         planLimitService.assertCanCreate(
-            userId,
-            FeatureCodes.BUDGETS,
-            repositoryBudget.countByUserId(userId)
+                userId,
+                FeatureCodes.BUDGETS,
+                repositoryBudget.countByUserId(userId)
         );
 
         Budget budget = new Budget();
@@ -213,12 +215,26 @@ public class BudgetService {
         budget.setLastAlertStatus(BudgetStatus.OK);
 
         if (request.getScope() != BudgetScope.CATEGORY_GLOBAL) {
-            validateWalletAccess(request.getWalletId(), userId);
-            budget.setWallet(
-                entityManager.getReference(
-                        Wallet.class, request.getWalletId()
-                )
+            WalletUser walletUser =
+                    requireWalletAccess(request.getWalletId(), userId);
+            Currency walletCurrency = walletUser.getWallet().getCurrency();
+
+            validationService.validateCurrency(
+                    request.getScope(), request.getCurrency(),
+                    walletCurrency
             );
+
+            budget.setCurrency(walletCurrency);
+            budget.setWallet(
+                    entityManager.getReference(
+                            Wallet.class, request.getWalletId()
+                    )
+            );
+        } else {
+            validationService.validateCurrency(
+                    BudgetScope.CATEGORY_GLOBAL, request.getCurrency(), null
+            );
+            budget.setCurrency(request.getCurrency());
         }
 
         overlapValidationService.validateCreateOverlap(request, userId);
@@ -246,12 +262,12 @@ public class BudgetService {
      * @return list of budget responses
      */
     public List<BudgetResponse> getBudgetsByWallet(final UUID walletId,
-            final UUID userId) {
+                                                   final UUID userId) {
 
         //Check if user has an active account
         userService.validateUserActive(userId);
 
-        validateWalletAccess(walletId, userId);
+        requireWalletAccess(walletId, userId);
 
         List<Budget> budgets = repositoryBudget.findByWalletId(walletId);
 
@@ -356,23 +372,19 @@ public class BudgetService {
                         ? request.getThresholdCritical()
                         : budget.getThresholdCritical();
 
-        BudgetScope finalScope =
-                request.getScope() != null
+        BudgetScope finalScope = request.getScope() != null
                         ? request.getScope()
                         : budget.getScope();
 
-        UUID currentCategoryId =
-                budget.getCategory() != null
+        UUID currentCategoryId = budget.getCategory() != null
                         ? budget.getCategory().getId()
                         : null;
 
-        UUID finalCategoryId =
-                request.getCategoryId() != null
+        UUID finalCategoryId = request.getCategoryId() != null
                         ? request.getCategoryId()
                         : currentCategoryId;
 
-        UUID currentWalletId =
-                budget.getWallet() != null
+        UUID currentWalletId = budget.getWallet() != null
                         ? budget.getWallet().getId()
                         : null;
 
@@ -397,10 +409,9 @@ public class BudgetService {
                 finalCritical
         );
 
-        PeriodType finalPeriod =
-                request.getPeriod() != null
-                        ? request.getPeriod()
-                        : budget.getPeriod();
+        PeriodType finalPeriod = request.getPeriod() != null
+                ? request.getPeriod()
+                : budget.getPeriod();
 
         overlapValidationService.validatePatchOverlap(
                 budget,
@@ -417,7 +428,8 @@ public class BudgetService {
                         || request.getStartDate() != null
                         || request.getScope() != null
                         || request.getCategoryId() != null
-                        || request.getWalletId() != null;
+                        || request.getWalletId() != null
+                        || request.getCurrency() != null;
 
         if (request.getAmount() != null) {
             validationService.validateAmount(request.getAmount());
@@ -432,20 +444,49 @@ public class BudgetService {
 
         budget.setThresholdWarning(finalWarning);
         budget.setThresholdCritical(finalCritical);
-
         budget.setScope(finalScope);
 
+        Currency finalCurrency;
+
         if (finalWalletId != null) {
-            boolean walletChanged = !finalWalletId.equals(currentWalletId);
-            if (walletChanged) {
-                validateWalletAccess(finalWalletId, userId);
+            // Access is re-verified every time, not only when the
+            // wallet actually changes — this is what protects
+            // against a user who lost access to the wallet after
+            // the budget was originally created.
+            WalletUser walletUser =
+                    requireWalletAccess(finalWalletId, userId);
+            Currency walletCurrency = walletUser.getWallet().getCurrency();
+
+            // The wallet's currency is always the source of truth
+            // for WALLET/WALLET_CATEGORY scope. An explicit currency
+            // on the patch is only used to CATCH a contradiction
+            // (client sending a currency that doesn't match the
+            // wallet); it never overrides the wallet's real value.
+            if (request.getCurrency() != null) {
+                validationService.validateCurrency(
+                        finalScope, request.getCurrency(), walletCurrency
+                );
             }
+            finalCurrency = walletCurrency;
             budget.setWallet(
-                    entityManager.getReference(Wallet.class, finalWalletId)
+                entityManager.getReference(Wallet.class, finalWalletId)
             );
         } else {
+            // CATEGORY_GLOBAL: an explicit currency on the patch
+            // overrides the budget's existing one; otherwise the
+            // existing currency carries over unchanged rather than
+            // being wiped out by a patch that never mentioned it.
+            finalCurrency = request.getCurrency() != null
+                    ? request.getCurrency()
+                    : budget.getCurrency();
+
+            validationService.validateCurrency(
+                    BudgetScope.CATEGORY_GLOBAL, finalCurrency, null
+            );
             budget.setWallet(null);
         }
+
+        budget.setCurrency(finalCurrency);
 
         if (finalCategoryId != null) {
             Category category = new Category();
@@ -460,7 +501,6 @@ public class BudgetService {
         }
 
         Budget updated = repositoryBudget.save(budget);
-
         return calculationService.calculate(updated);
     }
 
@@ -712,12 +752,12 @@ public class BudgetService {
                     );
             return repositoryExpense
        .findByWalletIdInAndCategoryIdAndDateBetweenOrderByDateDescCreatedAtDesc(
-                    walletIds,
-                    budget.getCategory().getId(),
-                    start,
-                    end,
-                    pageable
-                );
+                walletIds,
+                budget.getCategory().getId(),
+                start,
+                end,
+                pageable
+            );
         }
 
         boolean scopedToCategory =
@@ -725,14 +765,14 @@ public class BudgetService {
                         && budget.getCategory() != null;
 
         if (scopedToCategory) {
-        return repositoryExpense
+            return repositoryExpense
         .findByWalletIdAndCategoryIdAndDateBetweenOrderByDateDescCreatedAtDesc(
-                        budget.getWallet().getId(),
-                        budget.getCategory().getId(),
-                        start,
-                        end,
-                        pageable
-                );
+                            budget.getWallet().getId(),
+                            budget.getCategory().getId(),
+                            start,
+                            end,
+                            pageable
+                    );
         }
 
         return repositoryExpense
@@ -744,11 +784,11 @@ public class BudgetService {
                 );
     }
 
-    private void validateWalletAccess(
+    private WalletUser requireWalletAccess(
             final UUID walletId,
             final UUID userId
     ) {
-        repositoryWalletUser
+        return repositoryWalletUser
                 .findByWalletIdAndUserId(walletId, userId)
                 .orElseThrow(() ->
                         new WalletAccessDeniedException(
@@ -783,13 +823,13 @@ public class BudgetService {
         response.setId(budget.getId());
 
         if (budget.getWallet() != null) {
-                response.setWalletId(budget.getWallet().getId());
-                response.setWalletName(budget.getWallet().getName());
+            response.setWalletId(budget.getWallet().getId());
+            response.setWalletName(budget.getWallet().getName());
         }
 
         if (budget.getCategory() != null) {
-                response.setCategoryId(budget.getCategory().getId());
-                response.setCategoryName(budget.getCategory().getName());
+            response.setCategoryId(budget.getCategory().getId());
+            response.setCategoryName(budget.getCategory().getName());
         }
 
         response.setScope(budget.getScope());

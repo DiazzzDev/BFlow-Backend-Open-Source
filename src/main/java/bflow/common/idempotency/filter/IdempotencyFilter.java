@@ -26,7 +26,8 @@ public final class IdempotencyFilter extends OncePerRequestFilter {
 
     /** Paths protected by idempotency (prefix match). */
     private static final List<String> PROTECTED_PATHS = List.of(
-            "/api/v1/transfers", "/api/v1/expenses", "/api/v1/incomes"
+            "/api/v1/transfers", "/api/v1/expenses", "/api/v1/incomes",
+            "/api/v1/files/presigned-upload"
     );
 
     /** Minimum HTTP status code considered successful. */
@@ -68,7 +69,7 @@ public final class IdempotencyFilter extends OncePerRequestFilter {
             writeError(response, HttpServletResponse.SC_BAD_REQUEST,
                     "Idempotency-Key header is required",
                     request.getRequestURI()
-                );
+            );
             return;
         }
 
@@ -123,15 +124,15 @@ public final class IdempotencyFilter extends OncePerRequestFilter {
     }
 
     /**
-    * Writes a JSON error response consistent with the application's
-    * ApiResponse format without relying on Spring MVC exception handling.
-    *
-    * @param response HTTP response to write.
-    * @param status HTTP status code.
-    * @param message error message.
-    * @param path request URI.
-    * @throws IOException if writing the response fails.
-    */
+     * Writes a JSON error response consistent with the application's
+     * ApiResponse format without relying on Spring MVC exception handling.
+     *
+     * @param response HTTP response to write.
+     * @param status HTTP status code.
+     * @param message error message.
+     * @param path request URI.
+     * @throws IOException if writing the response fails.
+     */
     private void writeError(
             final HttpServletResponse response,
             final int status,

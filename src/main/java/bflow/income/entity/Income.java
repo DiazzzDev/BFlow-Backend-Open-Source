@@ -9,6 +9,8 @@ import lombok.NoArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.UUID;
+
 /**
  * Entity representing incomes in wallets.
  */
@@ -37,4 +39,8 @@ public class Income extends Transaction {
      */
     @Column
     private String recurrencePattern;
+
+    /** ID of the RecurringTransaction this entry is linked to, if any. */
+    @Column(name = "recurring_transaction_id")
+    private UUID recurringTransactionId;
 }

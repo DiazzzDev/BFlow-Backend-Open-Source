@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.Year;
 import java.time.ZoneOffset;
@@ -204,5 +205,50 @@ public final class EmailTemplateService {
                 inviterName + " invited you to collaborate on a wallet",
                 html
         );
+    }
+
+    /**
+     * Sends a notification email when a recurring transaction fails to
+     * execute (e.g. insufficient wallet balance).
+     *
+     * @param toEmail recipient email address
+     * @param userName recipient display name
+     * @param transactionTitle title of the recurring transaction
+     * @param amount the transaction amount
+     * @param attempts number of consecutive failed attempts so far
+     * @param deactivated whether the recurring transaction was
+     *        auto-deactivated after reaching the failure threshold
+     * @param reason short description of why the execution failed
+     */
+    public void sendRecurringFailedEmail(
+            final String toEmail,
+            final String userName,
+            final String transactionTitle,
+            final BigDecimal amount,
+            final int attempts,
+            final boolean deactivated,
+            final String reason
+    ) {
+        Context context = new Context();
+        context.setVariable("userName", userName);
+        context.setVariable("transactionTitle", transactionTitle);
+        context.setVariable("amount", amount);
+        context.setVariable("attempts", attempts);
+        context.setVariable("deactivated", deactivated);
+        context.setVariable("reason", reason);
+        context.setVariable("manageUrl",
+                frontendUrl.replaceAll("/+$", "") + "/recurring");
+        context.setVariable("year", Year.now().getValue());
+        context.setVariable("supportEmail", supportEmail);
+        context.setVariable("logoUrl", logoUrl);
+
+        String html = templateEngine.process(
+                "recurring-transaction-failed", context);
+
+        String subject = deactivated
+                ? "Action needed: \"" + transactionTitle + "\" was paused"
+                : "We couldn't process \"" + transactionTitle + "\"";
+
+        sesEmailService.sendEmail(toEmail, subject, html);
     }
 }

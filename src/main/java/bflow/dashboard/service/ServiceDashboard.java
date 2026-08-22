@@ -1,8 +1,9 @@
 package bflow.dashboard.service;
 
-import bflow.auth.services.UserServiceImpl;
+import bflow.auth.services.UserService;
 import bflow.budget.entity.Budget;
 import bflow.budget.repository.RepositoryBudget;
+import bflow.dashboard.dto.ActivityBreakdownResponse;
 import bflow.dashboard.dto.AveragesResponse;
 import bflow.dashboard.dto.BalanceSummaryResponse;
 import bflow.dashboard.dto.BudgetHealthItem;
@@ -17,6 +18,7 @@ import bflow.expenses.RepositoryExpense;
 import bflow.expenses.entity.Expense;
 import bflow.income.RepositoryIncome;
 import bflow.income.entity.Income;
+import bflow.tranfers.RepositoryTransfers;
 import bflow.wallet.repository.RepositoryWallet;
 import bflow.wallet.repository.RepositoryWalletUser;
 import lombok.RequiredArgsConstructor;
@@ -27,8 +29,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.Month;
+import java.time.ZoneOffset;
 import java.time.format.TextStyle;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -92,7 +96,10 @@ public class ServiceDashboard {
     private final RepositoryBudget repositoryBudget;
 
     /** Service for user account validation. */
-    private final UserServiceImpl userService;
+    private final UserService userService;
+
+    /** Repository for transfer aggregation queries. */
+    private final RepositoryTransfers repositoryTransfer;
 
     /**
      * Builds the "Balance total" widget: current balance across every
@@ -404,6 +411,80 @@ public class ServiceDashboard {
                         budget.getLastAlertStatus()
                 ))
                 .toList();
+    }
+
+    /**
+     * Builds the "Activity breakdown" widget: percentage share of incomes,
+     * expenses and transfers among all transactions this month, plus the
+     * overall change in transaction volume vs last month.
+     *
+     * @param userId the authenticated user's ID.
+     * @return the activity breakdown.
+     */
+    public ActivityBreakdownResponse getActivityBreakdown(final UUID userId) {
+        userService.validateUserActive(userId);
+        List<UUID> walletIds = repositoryWalletUser
+                .findWalletIdsByUserId(userId);
+
+        if (walletIds.isEmpty()) {
+            return new ActivityBreakdownResponse(0, 0.0, 0.0, 0.0, 0.0);
+        }
+
+        LocalDate today = LocalDate.now();
+        LocalDate startOfThisMonth = today.withDayOfMonth(1);
+        LocalDate endOfLastMonth = startOfThisMonth.minusDays(1);
+        LocalDate startOfLastMonth = endOfLastMonth.withDayOfMonth(1);
+
+        Instant startOfThisMonthInstant =
+                startOfThisMonth.atStartOfDay(ZoneOffset.UTC).toInstant();
+        Instant startOfTomorrowInstant =
+                today.plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant();
+        Instant startOfLastMonthInstant =
+                startOfLastMonth.atStartOfDay(ZoneOffset.UTC).toInstant();
+
+        long incomeCount = repositoryIncome.countByWalletsAndDateRange(
+                walletIds, startOfThisMonth, today);
+        long expenseCount = repositoryExpense.countByWalletsAndDateRange(
+                walletIds, startOfThisMonth, today);
+        long transferCount = repositoryTransfer.countByWalletsAndDateRange(
+                walletIds, startOfThisMonthInstant, startOfTomorrowInstant);
+
+        long totalThisMonth = incomeCount + expenseCount + transferCount;
+
+        long incomeLast = repositoryIncome.countByWalletsAndDateRange(
+                walletIds, startOfLastMonth, endOfLastMonth);
+        long expenseLast = repositoryExpense.countByWalletsAndDateRange(
+                walletIds, startOfLastMonth, endOfLastMonth);
+        long transferLast = repositoryTransfer.countByWalletsAndDateRange(
+                walletIds, startOfLastMonthInstant, startOfThisMonthInstant);
+
+        long totalLastMonth = incomeLast + expenseLast + transferLast;
+
+        return new ActivityBreakdownResponse(
+                totalThisMonth,
+                percentageOfTotal(incomeCount, totalThisMonth),
+                percentageOfTotal(expenseCount, totalThisMonth),
+                percentageOfTotal(transferCount, totalThisMonth),
+                calculatePercentageChange(
+                        BigDecimal.valueOf(totalLastMonth),
+                        BigDecimal.valueOf(totalThisMonth)
+                )
+        );
+    }
+
+    private Double percentageOfTotal(final long part, final long total) {
+        if (total == 0) {
+            return 0.0;
+        }
+        return BigDecimal.valueOf(part)
+                .divide(
+                        BigDecimal.valueOf(total),
+                        PERCENTAGE_SCALE,
+                        RoundingMode.HALF_EVEN
+                )
+                .multiply(PERCENTAGE_MULTIPLIER)
+                .setScale(PERCENTAGE_DISPLAY_SCALE, RoundingMode.HALF_EVEN)
+                .doubleValue();
     }
 
     private String resolveDisplayName(final Budget budget) {

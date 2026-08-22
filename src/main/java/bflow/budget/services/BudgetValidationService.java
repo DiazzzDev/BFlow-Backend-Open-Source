@@ -4,6 +4,7 @@ import bflow.budget.enums.BudgetScope;
 import bflow.common.exception.InvalidBudgetDateException;
 import bflow.common.exception.InvalidBudgetScopeException;
 import bflow.common.exception.InvalidBudgetThresholdException;
+import bflow.wallet.enums.Currency;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
@@ -147,6 +148,53 @@ public final class BudgetValidationService {
             }
             default -> throw new InvalidBudgetScopeException(
                     "Unsupported budget scope"
+            );
+        }
+    }
+
+    /**
+     * Validates that a budget's declared currency is consistent
+     * with its scope. WALLET and WALLET_CATEGORY budgets must match
+     * their wallet's own currency exactly — a mismatch would mean
+     * the budget's limit and the wallet's actual spend are
+     * denominated in different units with no conversion applied,
+     * making every percentage and remaining-amount calculation
+     * meaningless (e.g. a 300 USD limit silently compared against
+     * MXN spend).
+     *
+     * <p>CATEGORY_GLOBAL budgets have no single wallet to compare
+     * against — any declared currency is valid there; it instead
+     * defines which of the user's wallets get included when
+     * summing spend (see {@link BudgetCalculationService}).
+     *
+     * @param scope the budget scope
+     * @param requestedCurrency the currency declared on the request
+     * @param walletCurrency the associated wallet's actual
+     *        currency, or {@code null} for CATEGORY_GLOBAL
+     * @throws InvalidBudgetScopeException if a WALLET/WALLET_CATEGORY
+     *         budget's currency doesn't match its wallet's currency
+     */
+    public void validateCurrency(
+            final BudgetScope scope,
+            final Currency requestedCurrency,
+            final Currency walletCurrency
+    ) {
+        if (requestedCurrency == null) {
+            throw new InvalidBudgetScopeException(
+                    "Budget currency is required"
+            );
+        }
+
+        if (scope == BudgetScope.CATEGORY_GLOBAL) {
+            return;
+        }
+
+        if (walletCurrency != null
+                && requestedCurrency != walletCurrency) {
+            throw new InvalidBudgetScopeException(
+                    "Budget currency (" + requestedCurrency
+                            + ") must match the wallet's currency ("
+                            + walletCurrency + ")"
             );
         }
     }

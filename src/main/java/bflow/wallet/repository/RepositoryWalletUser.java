@@ -1,6 +1,7 @@
 package bflow.wallet.repository;
 
 import bflow.wallet.entities.WalletUser;
+import bflow.wallet.enums.Currency;
 import bflow.wallet.enums.WalletRole;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
@@ -42,7 +43,7 @@ public interface RepositoryWalletUser extends JpaRepository<WalletUser, UUID>,
      */
     boolean existsByUserId(UUID userId);
 
-     /**
+    /**
      * Counts the number of wallets where the user has the specified role.
      *
      * @param userId the user UUID
@@ -100,7 +101,26 @@ public interface RepositoryWalletUser extends JpaRepository<WalletUser, UUID>,
      * @return a list containing the wallet identifiers.
      */
     @Query(
-        "SELECT wu.wallet.id FROM WalletUser wu WHERE wu.user.id = :userId"
+            "SELECT wu.wallet.id FROM WalletUser wu WHERE wu.user.id = :userId"
     )
     List<UUID> findWalletIdsByUserId(UUID userId);
+
+    /**
+     * Retrieves the identifiers of all wallets associated with a
+     * user, filtered to a specific currency. Used by CATEGORY_GLOBAL
+     * budgets so spend is only summed across wallets denominated in
+     * the same currency as the budget itself — summing raw amounts
+     * across different currencies (e.g. MXN and USD) would be
+     * financially meaningless.
+     *
+     * @param userId the user UUID.
+     * @param currency the currency to filter wallets by.
+     * @return a list containing the matching wallet identifiers.
+     */
+    @Query(
+            "SELECT wu.wallet.id FROM WalletUser wu "
+            + "WHERE wu.user.id = :userId AND wu.wallet.currency = :currency"
+    )
+    List<UUID> findWalletIdsByUserIdAndCurrency(
+            UUID userId, Currency currency);
 }

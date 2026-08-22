@@ -2,12 +2,13 @@ package bflow.expenses.services;
 
 import bflow.auth.entities.User;
 import bflow.auth.repository.RepositoryUser;
-import bflow.auth.services.UserServiceImpl;
+import bflow.auth.services.UserService;
 import bflow.budget.services.BudgetService;
 import bflow.category.entity.Category;
 import bflow.category.enums.CategoryType;
 import bflow.category.RepositoryCategory;
 import bflow.category.CategoryValidator;
+import bflow.common.exception.FileAccessDeniedException;
 import bflow.common.exception.ResourceNotFoundException;
 import bflow.common.exception.WalletAccessDeniedException;
 import bflow.common.financial.TransactionMapper;
@@ -15,6 +16,12 @@ import bflow.expenses.DTO.ExpenseRequest;
 import bflow.expenses.DTO.ExpenseResponse;
 import bflow.expenses.RepositoryExpense;
 import bflow.expenses.entity.Expense;
+import bflow.recurring.entity.RecurringTransaction;
+import bflow.recurring.enums.RecurringType;
+import bflow.recurring.services.RecurringLinkService;
+import bflow.storage.entity.StoredFile;
+import bflow.storage.enums.FileStatus;
+import bflow.storage.repository.RepositoryStoredFile;
 import bflow.wallet.DTO.WalletPair;
 import bflow.wallet.repository.RepositoryWallet;
 import bflow.wallet.repository.RepositoryWalletUser;
@@ -60,7 +67,7 @@ public class ServiceExpense {
     /**
      * Service for user business logic operations.
      */
-    private final UserServiceImpl userService;
+    private final UserService userService;
 
     /**
      * Repository for category entity operations.
@@ -81,6 +88,17 @@ public class ServiceExpense {
      * Service for wallet locking validation.
      */
     private final WalletLockService walletLockService;
+
+    /**
+     * Service for transaction recurring creation.
+     */
+    private final RecurringLinkService recurringLinkService;
+
+    /**
+     * Repository for file storage persistence.
+     */
+    private final RepositoryStoredFile repositoryStoredFile;
+
 
     /**
      * Creates a new expense entry for the specified wallet and user.
@@ -113,7 +131,14 @@ public class ServiceExpense {
                         "Authenticated user not found"
                 ));
 
+        StoredFile receiptFile = resolveReceiptFile(
+                request.getReceiptFileId(),
+                userId
+        );
+
         Expense expense = mapToEntity(request, wallet, contributor);
+        expense.setReceiptFile(receiptFile);
+
         serviceWallet.subtractBalance(wallet, expense.getAmount());
 
         Expense savedExpense = repositoryExpense.saveAndFlush(expense);
@@ -184,37 +209,62 @@ public class ServiceExpense {
         }
 
         if (oldWalletId.equals(newWalletId)) {
-            serviceWallet.adjustBalanceForUpdate(
-                oldWallet, oldAmount, newAmount
-        );
+            serviceWallet.adjustBalanceForExpenseUpdate(
+                    oldWallet, oldAmount, newAmount
+            );
         } else {
             serviceWallet.reverseTransactionImpact(oldWallet, oldAmount);
             serviceWallet.subtractBalance(newWallet, newAmount);
             expense.setWallet(newWallet);
         }
 
+        boolean wasRecurring = Boolean.TRUE.equals(expense.getRecurring());
+        boolean willBeRecurring = Boolean.TRUE.equals(request.getRecurring());
+
+        UUID recurringId = recurringLinkService.syncOnUpdate(
+                new RecurringLinkService.RecurringSyncRequest(
+                        RecurringType.EXPENSE,
+                        wasRecurring,
+                        expense.getRecurringTransactionId(),
+                        willBeRecurring,
+                        request.getRecurrencePattern(),
+                        newWallet,
+                        category,
+                        expense.getContributor(),
+                        request.getTitle(),
+                        request.getDescription(),
+                        newAmount,
+                        request.getDate()
+                )
+        );
+
+        UUID oldCategoryId = expense.getCategory() != null
+                ? expense.getCategory().getId()
+                : null;
+
         expense.setTitle(request.getTitle());
         expense.setDescription(request.getDescription());
         expense.setAmount(newAmount);
         expense.setDate(request.getDate());
         expense.setCategory(category);
-        expense.setTaxDeductible(Boolean.TRUE.equals(
-                request.getTaxDeductible())
+        expense.setTaxDeductible(
+                Boolean.TRUE.equals(request.getTaxDeductible())
         );
-        expense.setRecurring(Boolean.TRUE.equals(request.getRecurring()));
+        expense.setRecurring(willBeRecurring);
         expense.setRecurrencePattern(request.getRecurrencePattern());
+        expense.setRecurringTransactionId(recurringId);
 
         repositoryExpense.save(expense);
 
-        UUID oldCategoryId = expense.getCategory() != null
-                ? expense.getCategory().getId() : null;
-
         serviceBudget.evaluateBudgetsForExpenseEvent(
-                newWallet.getId(), category.getId()
+                newWallet.getId(),
+                category.getId()
         );
+
         if (!oldWalletId.equals(newWalletId)) {
             serviceBudget.evaluateBudgetsForExpenseEvent(
-                    oldWallet.getId(), oldCategoryId
+                    oldWallet.getId(),
+                    oldCategoryId
             );
         }
 
@@ -316,6 +366,26 @@ public class ServiceExpense {
                 Boolean.TRUE.equals(request.getReimbursable())
         );
 
+        boolean isAutoGenerated = "recurring".equalsIgnoreCase(
+                request.getSource()
+        );
+        if (Boolean.TRUE.equals(expense.getRecurring()) && !isAutoGenerated) {
+            RecurringTransaction recurring = recurringLinkService.linkRecurring(
+                    new RecurringLinkService.RecurringCreateRequest(
+                            RecurringType.EXPENSE,
+                            request.getRecurrencePattern(),
+                            wallet,
+                            category,
+                            contributor,
+                            expense.getTitle(),
+                            expense.getDescription(),
+                            expense.getAmount(),
+                            expense.getDate()
+                    )
+            );
+            expense.setRecurringTransactionId(recurring.getId());
+        }
+
         return expense;
     }
 
@@ -335,7 +405,7 @@ public class ServiceExpense {
         response.setAmount(expense.getAmount());
         response.setDate(expense.getDate());
         response.setCategory(
-            TransactionMapper.mapCategoryToResponse(expense.getCategory())
+                TransactionMapper.mapCategoryToResponse(expense.getCategory())
         );
 
         response.setTaxDeductible(expense.getTaxDeductible());
@@ -358,7 +428,42 @@ public class ServiceExpense {
         response.setCategorizationChanges(expense.getCategorizationChanges());
         response.setEditCount(expense.getEditCount());
 
+        response.setRecurrencePattern(expense.getRecurrencePattern());
+        response.setRecurringTransactionId(
+                expense.getRecurringTransactionId() != null
+                        ? expense.getRecurringTransactionId().toString()
+                        : null
+        );
+
+        response.setReceiptFileId(
+                expense.getReceiptFile() != null
+                        ? expense.getReceiptFile().getId().toString()
+                        : null
+        );
+
         return response;
     }
 
+    private StoredFile resolveReceiptFile(
+            final UUID receiptFileId,
+            final UUID userId
+    ) {
+        if (receiptFileId == null) {
+            return null;
+        }
+
+        StoredFile receipt = repositoryStoredFile
+                .findByIdAndUserId(receiptFileId, userId)
+                .orElseThrow(() -> new FileAccessDeniedException(
+                        "You do not have access to this file"
+                ));
+
+        if (receipt.getStatus() != FileStatus.UPLOADED) {
+            throw new IllegalStateException(
+                    "Receipt file is not ready for attachment"
+            );
+        }
+
+        return receipt;
+    }
 }

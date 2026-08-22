@@ -5,6 +5,8 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.UUID;
+
 /**
  * Data transfer object for creating or updating income entries.
  */
@@ -16,4 +18,10 @@ public class IncomeRequest extends BaseTransactionRequest {
      */
     @NotNull
     private Boolean taxable = false;
+
+    /**
+     * Optional id of a previously uploaded {@code StoredFile} (in
+     * {@code UPLOADED} status) to attach as this expense's receipt.
+     */
+    private UUID receiptFileId;
 }

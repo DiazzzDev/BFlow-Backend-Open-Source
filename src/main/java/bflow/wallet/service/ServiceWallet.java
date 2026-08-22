@@ -1,6 +1,6 @@
 package bflow.wallet.service;
 
-import bflow.auth.services.UserServiceImpl;
+import bflow.auth.services.UserService;
 import bflow.expenses.DTO.ExpenseResponse;
 import bflow.expenses.RepositoryExpense;
 import bflow.expenses.entity.Expense;
@@ -65,7 +65,7 @@ public class ServiceWallet {
     private final RepositoryUser repositoryUser;
 
     /** Service for user business logic operations. */
-    private final UserServiceImpl userService;
+    private final UserService userService;
 
     /** Repository for expense persistence operations. */
     private final RepositoryExpense repositoryExpense;
@@ -174,15 +174,18 @@ public class ServiceWallet {
 
         // Top 3 upcoming active recurring transactions
         List<UpcomingTransactionResponse> upcoming =
-        repositoryRecurringTransaction
-                .findByWalletIdAndActiveTrueOrderByNextExecutionDateAsc(
-                        walletId, PageRequest.of(0, UPCOMING_LIMIT)
-                )
-                .stream()
-                .map(rt -> new UpcomingTransactionResponse(
-                        rt.getTitle(), rt.getNextExecutionDate()
-                ))
-                .toList();
+                repositoryRecurringTransaction
+                        .findByWalletIdAndActiveTrueOrderByNextExecutionDateAsc(
+                                walletId, PageRequest.of(0, UPCOMING_LIMIT)
+                        )
+                        .stream()
+                        .map(rt -> new UpcomingTransactionResponse(
+                                rt.getTitle(),
+                                rt.getAmount(),
+                                rt.getType(),
+                                rt.getNextExecutionDate()
+                        ))
+                        .toList();
 
         return new WalletInfoResponse(
                 lastActivity,
@@ -219,15 +222,15 @@ public class ServiceWallet {
     }
 
     /**
-    * Retrieves all expenses associated with a specific wallet.
-    * Validates that the authenticated user has access to the wallet.
-    *
-    * @param walletId the wallet unique identifier.
-    * @param userId the authenticated user identifier.
-    * @param pageable pagination configuration.
-    * @return a page containing expense responses.
-    * @throws AccessDeniedException if the user has no access to the wallet.
-    */
+     * Retrieves all expenses associated with a specific wallet.
+     * Validates that the authenticated user has access to the wallet.
+     *
+     * @param walletId the wallet unique identifier.
+     * @param userId the authenticated user identifier.
+     * @param pageable pagination configuration.
+     * @return a page containing expense responses.
+     * @throws AccessDeniedException if the user has no access to the wallet.
+     */
     public Page<ExpenseResponse> getWalletExpenses(
             final UUID walletId,
             final UUID userId,
@@ -259,7 +262,7 @@ public class ServiceWallet {
      * @param pageable pagination configuration.
      * @return a page containing income responses.
      * @throws AccessDeniedException if the user has no access to the wallet.
-    */
+     */
     public Page<IncomeResponse> getWalletIncomes(
             final UUID walletId,
             final UUID userId,
@@ -429,9 +432,9 @@ public class ServiceWallet {
         dto.setRole(walletUser.getRole());
         dto.setInitialValue(wallet.getInitialValue());
         dto.setMemberCount(
-            Math.toIntExact(
-                repositoryWalletUser.countByWalletId(wallet.getId())
-            )
+                Math.toIntExact(
+                        repositoryWalletUser.countByWalletId(wallet.getId())
+                )
         );
         dto.setCreatedAt(wallet.getCreatedAt());
         dto.setUpdatedAt(wallet.getUpdatedAt());
@@ -480,16 +483,17 @@ public class ServiceWallet {
     }
 
     /**
-     * Adjusts the wallet balance for an update transaction.
-     * Reverses the old amount and applies the new amount.
+     * Adjusts the wallet balance for an INCOME update on the same
+     * wallet. An increase in amount increases the balance (more
+     * income = more money); a decrease reduces it.
      *
      * @param wallet the wallet to update (not null).
-     * @param oldAmount the previous transaction amount (not null).
-     * @param newAmount the new transaction amount (not null).
+     * @param oldAmount the previous income amount (not null).
+     * @param newAmount the new income amount (not null).
      * @throws IllegalArgumentException if oldAmount or newAmount
      *         are negative, or if adjusted balance would be negative.
      */
-    public void adjustBalanceForUpdate(
+    public void adjustBalanceForIncomeUpdate(
             final Wallet wallet,
             final BigDecimal oldAmount,
             final BigDecimal newAmount
@@ -500,9 +504,50 @@ public class ServiceWallet {
             );
         }
 
-        // Reverse the impact of old amount
+        // Undo the old income's impact, then apply the new one.
         BigDecimal difference = newAmount.subtract(oldAmount);
         BigDecimal adjustedBalance = wallet.getBalance().add(difference);
+
+        if (adjustedBalance.signum() < 0) {
+            throw new IllegalArgumentException(
+                    "Insufficient balance for adjustment"
+            );
+        }
+
+        wallet.setBalance(adjustedBalance);
+    }
+
+    /**
+     * Adjusts the wallet balance for an EXPENSE update on the same
+     * wallet. This is the mirror image of
+     * {@link #adjustBalanceForIncomeUpdate}: an increase in amount
+     * DECREASES the balance (more spent = less remaining), and a
+     * decrease INCREASES it. Sharing one generic method between
+     * income and expense updates previously caused every same-wallet
+     * expense edit to move the balance in the wrong direction.
+     *
+     * @param wallet the wallet to update (not null).
+     * @param oldAmount the previous expense amount (not null).
+     * @param newAmount the new expense amount (not null).
+     * @throws IllegalArgumentException if oldAmount or newAmount
+     *         are negative, or if adjusted balance would be negative.
+     */
+    public void adjustBalanceForExpenseUpdate(
+            final Wallet wallet,
+            final BigDecimal oldAmount,
+            final BigDecimal newAmount
+    ) {
+        if (oldAmount.signum() < 0 || newAmount.signum() < 0) {
+            throw new IllegalArgumentException(
+                    "Amounts must be non-negative"
+            );
+        }
+
+        // Undo the old expense's impact (add it back), then apply
+        // the new one (subtract it).
+        BigDecimal adjustedBalance = wallet.getBalance()
+                .add(oldAmount)
+                .subtract(newAmount);
 
         if (adjustedBalance.signum() < 0) {
             throw new IllegalArgumentException(
@@ -536,12 +581,12 @@ public class ServiceWallet {
     }
 
     /**
-      * Creates the default wallet assigned to a newly registered user.
-      *
-      * @param user owner of the wallet
-      * @return the existing owner wallet if one already exists, otherwise the
-      *         newly created default wallet
-    */
+     * Creates the default wallet assigned to a newly registered user.
+     *
+     * @param user owner of the wallet
+     * @return the existing owner wallet if one already exists, otherwise the
+     *         newly created default wallet
+     */
     @Transactional
     public Wallet createDefaultWallet(
             final User user
@@ -579,11 +624,11 @@ public class ServiceWallet {
     }
 
     /**
-    * Converts an Expense entity into an ExpenseResponse DTO.
-    *
-    * @param expense the expense entity to convert.
-    * @return the mapped expense response DTO.
-    */
+     * Converts an Expense entity into an ExpenseResponse DTO.
+     *
+     * @param expense the expense entity to convert.
+     * @return the mapped expense response DTO.
+     */
     public ExpenseResponse toExpenseResponse(final Expense expense) {
         ExpenseResponse dto = new ExpenseResponse();
         dto.setId(expense.getId().toString());
@@ -592,7 +637,7 @@ public class ServiceWallet {
         dto.setAmount(expense.getAmount());
         dto.setDate(expense.getDate());
         dto.setCategory(
-            TransactionMapper.mapCategoryToResponse(expense.getCategory())
+                TransactionMapper.mapCategoryToResponse(expense.getCategory())
         );
         dto.setTaxDeductible(expense.getTaxDeductible());
         dto.setRecurring(expense.getRecurring());
@@ -606,10 +651,10 @@ public class ServiceWallet {
     }
 
     /**
-    * Converts an Income entity into an IncomeResponse DTO.
-    * @param income the income entity to convert.
-    * @return the mapped income response DTO.
-    */
+     * Converts an Income entity into an IncomeResponse DTO.
+     * @param income the income entity to convert.
+     * @return the mapped income response DTO.
+     */
     public IncomeResponse toIncomeResponse(final Income income) {
         IncomeResponse dto = new IncomeResponse();
         dto.setId(income.getId().toString());
@@ -618,7 +663,7 @@ public class ServiceWallet {
         dto.setAmount(income.getAmount());
         dto.setDate(income.getDate());
         dto.setCategory(
-            TransactionMapper.mapCategoryToResponse(income.getCategory())
+                TransactionMapper.mapCategoryToResponse(income.getCategory())
         );
         dto.setWalletId(income.getWallet().getId().toString());
         dto.setWalletName(income.getWallet().getName());

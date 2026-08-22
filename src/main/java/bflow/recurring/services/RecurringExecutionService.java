@@ -1,35 +1,36 @@
 package bflow.recurring.services;
 
-import bflow.auth.services.UserServiceImpl;
+import bflow.auth.services.UserService;
 import bflow.category.RepositoryCategory;
 import bflow.category.entity.Category;
+import bflow.common.aws.service.EmailTemplateService;
 import bflow.common.exception.ResourceNotFoundException;
 import bflow.common.exception.WalletAccessDeniedException;
-import bflow.expenses.DTO.ExpenseRequest;
-import bflow.expenses.services.ServiceExpense;
-import bflow.income.DTO.IncomeRequest;
-import bflow.income.ServiceIncome;
 import bflow.recurring.DTO.RecurringRequest;
 import bflow.recurring.DTO.RecurringResponse;
 import bflow.recurring.RepositoryRecurringTransaction;
 import bflow.recurring.entity.RecurringTransaction;
-import bflow.recurring.enums.RecurringType;
 import bflow.subscription.FeatureCodes;
 import bflow.subscription.services.PlanLimitService;
 import bflow.wallet.entities.Wallet;
 import bflow.wallet.entities.WalletUser;
 import bflow.wallet.repository.RepositoryWalletUser;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
 /**
- * Service for executing and managing recurring transactions.
+ * Service for managing recurring transactions (CRUD + scheduling
+ * orchestration). Actual execution of individual transactions and
+ * failure handling is delegated to {@link RecurringTransactionExecutor}
+ * so each one runs in its own isolated transaction.
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -41,19 +42,20 @@ public class RecurringExecutionService {
     private final RepositoryRecurringTransaction repository;
 
     /**
-     * Service for expense operations.
+     * Executor responsible for running each recurring transaction in
+     * isolation and recording failures.
      */
-    private final ServiceExpense serviceExpense;
+    private final RecurringTransactionExecutor executor;
 
     /**
-     * Service for income operations.
+     * Service used to send failure notification emails.
      */
-    private final ServiceIncome serviceIncome;
+    private final EmailTemplateService emailTemplateService;
 
     /**
      * Service for user validation.
      */
-    private final UserServiceImpl userService;
+    private final UserService userService;
 
     /**
      * Repository for category persistence.
@@ -73,19 +75,60 @@ public class RecurringExecutionService {
 
     /**
      * Execute all due recurring transactions on the current date.
+     * Each one runs in its own isolated transaction (delegated to
+     * {@link RecurringTransactionExecutor}); a failure is recorded and
+     * notified, never blocking the rest of the batch.
      */
     public void executeDueTransactions() {
         List<RecurringTransaction> due =
                 repository.findDueTransactions(LocalDate.now());
 
         for (RecurringTransaction recurring : due) {
-            if (recurring.getType() == RecurringType.EXPENSE) {
-                createExpense(recurring);
-            } else {
-                createIncome(recurring);
+            UUID id = recurring.getId();
+            try {
+                executor.executeSingle(id);
+            } catch (Exception e) {
+                log.error("Failed to execute recurring transaction {}: {}",
+                        id, e.getMessage());
+                notifyFailure(id, e);
             }
+        }
+    }
 
-            updateNextExecution(recurring);
+    /**
+     * Records the failure and sends a notification email, isolating
+     * each step so an email/SES issue never affects data integrity.
+     *
+     * @param id the recurring transaction ID
+     * @param error the exception that caused the failure
+     */
+    private void notifyFailure(final UUID id, final Exception error) {
+        RecurringTransactionExecutor.FailureNotification notification;
+        try {
+            notification = executor.recordFailure(id, error);
+        } catch (Exception recordError) {
+            log.error("Failed to record failure for recurring {}: {}",
+                    id, recordError.getMessage());
+            return;
+        }
+
+        if (notification == null) {
+            return;
+        }
+
+        try {
+            emailTemplateService.sendRecurringFailedEmail(
+                    notification.email(),
+                    notification.userName(),
+                    notification.transactionTitle(),
+                    notification.amount(),
+                    notification.attempts(),
+                    notification.deactivated(),
+                    notification.reason()
+            );
+        } catch (Exception mailError) {
+            log.error("Failed to send recurring-failure email for {}: {}",
+                    id, mailError.getMessage());
         }
     }
 
@@ -184,52 +227,6 @@ public class RecurringExecutionService {
     }
 
     /**
-     * Create an expense from a recurring transaction.
-     *
-     * @param recurring the recurring transaction
-     */
-    private void createExpense(final RecurringTransaction recurring) {
-        ExpenseRequest request = new ExpenseRequest();
-
-        request.setTitle(recurring.getTitle());
-        request.setDescription(recurring.getDescription());
-        request.setAmount(recurring.getAmount());
-        request.setDate(LocalDate.now());
-        request.setWalletId(recurring.getWallet().getId());
-        request.setCategoryId(recurring.getCategory().getId());
-        request.setSource("recurring");
-        request.setRecurring(true);
-
-        serviceExpense.newExpense(
-                request,
-                recurring.getUser().getId()
-        );
-    }
-
-    /**
-     * Create an income from a recurring transaction.
-     *
-     * @param recurring the recurring transaction
-     */
-    private void createIncome(final RecurringTransaction recurring) {
-        IncomeRequest request = new IncomeRequest();
-
-        request.setTitle(recurring.getTitle());
-        request.setDescription(recurring.getDescription());
-        request.setAmount(recurring.getAmount());
-        request.setDate(LocalDate.now());
-        request.setWalletId(recurring.getWallet().getId());
-        request.setCategoryId(recurring.getCategory().getId());
-        request.setSource("recurring");
-        request.setRecurring(true);
-
-        serviceIncome.newIncome(
-                request,
-                recurring.getUser().getId()
-        );
-    }
-
-    /**
      * Toggle the active status of a recurring transaction.
      *
      * @param id the recurring transaction ID
@@ -251,34 +248,6 @@ public class RecurringExecutionService {
         }
 
         recurring.setActive(active);
-    }
-
-    /**
-     * Update the next execution date for a recurring transaction.
-     *
-     * @param recurring the recurring transaction
-     */
-    private void updateNextExecution(
-            final RecurringTransaction recurring
-    ) {
-        LocalDate next = recurring.getNextExecutionDate();
-        LocalDate nextDate = next;
-
-        switch (recurring.getFrequency()) {
-            case DAILY:
-                nextDate = next.plusDays(recurring.getIntervalValue());
-                break;
-            case WEEKLY:
-                nextDate = next.plusWeeks(recurring.getIntervalValue());
-                break;
-            case MONTHLY:
-                nextDate = next.plusMonths(recurring.getIntervalValue());
-                break;
-            default:
-                break;
-        }
-
-        recurring.setNextExecutionDate(nextDate);
     }
 
     /**

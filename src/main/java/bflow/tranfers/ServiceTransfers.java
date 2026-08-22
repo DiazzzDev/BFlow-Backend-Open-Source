@@ -2,7 +2,7 @@ package bflow.tranfers;
 
 import bflow.auth.entities.User;
 import bflow.auth.repository.RepositoryUser;
-import bflow.auth.services.UserServiceImpl;
+import bflow.auth.services.UserService;
 import bflow.common.exception.ResourceNotFoundException;
 import bflow.tranfers.DTO.TransferenceRequest;
 import bflow.tranfers.DTO.TransferenceResponse;
@@ -48,7 +48,7 @@ public class ServiceTransfers {
     private final ServiceWallet serviceWallet;
 
     /** The service for user business logic. */
-    private final UserServiceImpl userService;
+    private final UserService userService;
 
     /**
      * Retrieves a transfer by its ID, validating user authorization.

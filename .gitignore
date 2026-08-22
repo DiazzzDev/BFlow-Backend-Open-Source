@@ -48,4 +48,5 @@ build/
 ### VS Code ###
 .vscode/
 
+outputs.env
 github-policy.json
