@@ -3,7 +3,11 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")" && pwd)"
 
-echo "Starting infrastructure bootstrap..."
+source "$ROOT/config.env"
+
+DB_PROVIDER="${DB_PROVIDER:-rds}"
+
+echo "Starting infrastructure bootstrap (DB_PROVIDER=${DB_PROVIDER})..."
 
 for script in \
     "$ROOT/bootstrap/01-vpc.sh" \
@@ -20,9 +24,19 @@ for script in \
     "$ROOT/bootstrap/12-github-oidc.sh" \
     "$ROOT/bootstrap/13-budget.sh"
 do
+    SCRIPT_NAME="$(basename "$script")"
+
+    if [[ "$SCRIPT_NAME" == "07-rds.sh" && "$DB_PROVIDER" != "rds" ]]; then
+        echo
+        echo "=================================================="
+        echo "Skipping $SCRIPT_NAME (DB_PROVIDER=$DB_PROVIDER, not 'rds')"
+        echo "=================================================="
+        continue
+    fi
+
     echo
     echo "=================================================="
-    echo "Running $(basename "$script")"
+    echo "Running $SCRIPT_NAME"
     echo "=================================================="
 
     bash "$script"
