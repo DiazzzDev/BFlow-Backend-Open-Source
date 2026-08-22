@@ -21,11 +21,6 @@ DB_PROVIDER="${DB_PROVIDER:-rds}"
 
 SECRET_NAME="${PROJECT_NAME}/database"
 
-# Resolve the active PostgreSQL connection values from the provider selected
-# in config.env. This is the single point where "supabase" vs "rds" branches;
-# everything downstream (Secrets Manager, IAM, ECS task definition) stays
-# provider-agnostic because it only ever sees DB_HOST/DB_PORT/DB_NAME/
-# DB_USER/DB_PASSWORD.
 resolve_connection_values() {
 
     if [[ "$DB_PROVIDER" == "supabase" ]]; then
@@ -137,12 +132,6 @@ create_or_update_secret() {
 
     fi
 
-    # Kept as RDS_SECRET_ARN on purpose: this is the existing output/GitHub
-    # secret name already wired through 09-iam.sh, the ECS task definition
-    # template, and the deploy workflow. Renaming it would require also
-    # renaming the GitHub environment secret for zero functional benefit —
-    # the value itself is always the ARN of the generic "${PROJECT_NAME}/database"
-    # secret, regardless of which provider is active.
     append_output "RDS_SECRET_ARN" "$SECRET_ARN"
 
 }
@@ -156,10 +145,92 @@ remove_password_from_outputs() {
 
 }
 
+# --- Wompi payment credentials -------------------------------------------
+WOMPI_SECRET_NAME="${PROJECT_NAME}/wompi"
+
+create_or_update_wompi_secret() {
+
+    if [[ ! -f "$SCRIPT_DIR/../wompi.env" ]]; then
+        echo "infra/wompi.env not found - skipping Wompi secret."
+        echo "Copy infra/wompi.env.example to infra/wompi.env and fill it in to enable this."
+        return
+    fi
+
+    source "$SCRIPT_DIR/../wompi.env"
+
+    for VAR in WOMPI_CLIENT_ID WOMPI_CLIENT_SECRET WOMPI_APP_ID WOMPI_API_SECRET; do
+        if [[ -z "${!VAR:-}" ]]; then
+            echo "Missing $VAR in infra/wompi.env."
+            exit 1
+        fi
+    done
+
+    local SECRET_ARN
+
+    if aws secretsmanager describe-secret \
+        --region "$AWS_REGION" \
+        --secret-id "$WOMPI_SECRET_NAME" >/dev/null 2>&1; then
+
+        SECRET_ARN=$(aws secretsmanager describe-secret \
+            --region "$AWS_REGION" \
+            --secret-id "$WOMPI_SECRET_NAME" \
+            --query ARN \
+            --output text)
+
+    else
+        SECRET_ARN=""
+    fi
+
+    SECRET_VALUE=$(jq -n \
+        --arg clientId "$WOMPI_CLIENT_ID" \
+        --arg clientSecret "$WOMPI_CLIENT_SECRET" \
+        --arg appId "$WOMPI_APP_ID" \
+        --arg apiSecret "$WOMPI_API_SECRET" \
+    '{
+        "WOMPI_CLIENT_ID": $clientId,
+        "WOMPI_CLIENT_SECRET": $clientSecret,
+        "WOMPI_APP_ID": $appId,
+        "WOMPI_API_SECRET": $apiSecret
+    }')
+
+    if [[ -z "$SECRET_ARN" || "$SECRET_ARN" == "None" ]]; then
+
+        echo "Creating Wompi secret..."
+
+        SECRET_ARN=$(aws secretsmanager create-secret \
+            --region "$AWS_REGION" \
+            --name "$WOMPI_SECRET_NAME" \
+            --description "Wompi payment gateway credentials for ${PROJECT_NAME}" \
+            --secret-string "$SECRET_VALUE" \
+            --tags \
+                Key=Project,Value="$PROJECT_NAME" \
+                Key=Environment,Value="$ENVIRONMENT" \
+                Key=ManagedBy,Value="$MANAGED_BY" \
+            --query "ARN" \
+            --output text)
+
+    else
+
+        echo "Wompi secret already exists. Updating value..."
+
+        aws secretsmanager put-secret-value \
+            --region "$AWS_REGION" \
+            --secret-id "$WOMPI_SECRET_NAME" \
+            --secret-string "$SECRET_VALUE" \
+            >/dev/null
+
+    fi
+
+    append_output "WOMPI_SECRET_ARN" "$SECRET_ARN"
+
+}
+
 resolve_connection_values
 
 create_or_update_secret
 
 remove_password_from_outputs
+
+create_or_update_wompi_secret
 
 echo "Secret ready (provider: ${DB_PROVIDER})."

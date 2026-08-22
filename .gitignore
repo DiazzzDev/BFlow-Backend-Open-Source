@@ -50,3 +50,8 @@ build/
 
 outputs.env
 github-policy.json
+# Local infra credentials - never commit real values, only *.example templates
+infra/config.env
+infra/secrets.env
+infra/supabase.env
+infra/wompi.env
