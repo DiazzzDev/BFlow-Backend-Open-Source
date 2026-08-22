@@ -160,6 +160,12 @@ It should never be edited manually.
 
 ---
 
+# PostgreSQL Provider (Supabase / RDS)
+
+The database backend is selected by a single variable in `config.env`:
+
+---
+
 # GitHub Actions
 
 Deployment uses GitHub OpenID Connect (OIDC).

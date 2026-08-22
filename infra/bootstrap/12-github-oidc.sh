@@ -111,16 +111,34 @@ create_inline_policy() {
 
     ECS_TASK_ROLE_ARN=$(require_output ECS_TASK_ROLE_ARN)
 
+    SECRET_ARN=$(require_output RDS_SECRET_ARN)
+
     ACCOUNT_ID=$(aws sts get-caller-identity \
         --query Account \
         --output text)
 
+    # This policy must cover every AWS call .github/workflows/deploy.yml makes,
+    # across both the "validate-environment" job (read-only checks) and the
+    # "deploy" job (build/push/register/update-service/DNS). Kept scoped to
+    # what the workflow actually calls; secretsmanager:GetSecretValue is
+    # intentionally NOT here — only the ECS execution role needs it, to
+    # resolve the container definition's "secrets" block at task launch.
     POLICY=$(cat <<EOF
 {
     "Version": "2012-10-17",
     "Statement": [
 
         {
+            "Sid": "SecretsManagerValidate",
+            "Effect": "Allow",
+            "Action": [
+                "secretsmanager:DescribeSecret"
+            ],
+            "Resource": "${SECRET_ARN}"
+        },
+
+        {
+            "Sid": "ECRAuth",
             "Effect": "Allow",
             "Action": [
                 "ecr:GetAuthorizationToken"
@@ -129,10 +147,12 @@ create_inline_policy() {
         },
 
         {
+            "Sid": "ECRPushAndValidate",
             "Effect": "Allow",
             "Action": [
                 "ecr:BatchCheckLayerAvailability",
                 "ecr:CompleteLayerUpload",
+                "ecr:DescribeRepositories",
                 "ecr:GetDownloadUrlForLayer",
                 "ecr:InitiateLayerUpload",
                 "ecr:PutImage",
@@ -142,19 +162,47 @@ create_inline_policy() {
         },
 
         {
+            "Sid": "ECSDeploy",
             "Effect": "Allow",
             "Action": [
                 "ecs:RegisterTaskDefinition",
                 "ecs:DescribeTaskDefinition",
+                "ecs:DescribeClusters",
                 "ecs:DescribeServices",
-                "ecs:UpdateService"
+                "ecs:CreateService",
+                "ecs:UpdateService",
+                "ecs:ListTasks",
+                "ecs:DescribeTasks",
+                "ecs:TagResource"
             ],
             "Resource": "*"
         },
 
         {
+            "Sid": "EC2NetworkingValidate",
             "Effect": "Allow",
             "Action": [
+                "ec2:DescribeSubnets",
+                "ec2:DescribeSecurityGroups",
+                "ec2:DescribeNetworkInterfaces"
+            ],
+            "Resource": "*"
+        },
+
+        {
+            "Sid": "CloudWatchValidate",
+            "Effect": "Allow",
+            "Action": [
+                "logs:DescribeLogGroups"
+            ],
+            "Resource": "*"
+        },
+
+        {
+            "Sid": "IAMValidateAndPass",
+            "Effect": "Allow",
+            "Action": [
+                "iam:GetRole",
                 "iam:PassRole"
             ],
             "Resource": [
