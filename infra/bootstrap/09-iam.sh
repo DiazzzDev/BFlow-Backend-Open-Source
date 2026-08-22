@@ -120,8 +120,12 @@ echo "Creating inline task permissions..."
 
 SECRET_ARN=$(require_output RDS_SECRET_ARN)
 
+# ECS resolves the "secrets" block in the container definition using the
+# EXECUTION role (executionRoleArn), not the task role. This must live here,
+# not on ECS_TASK_ROLE_NAME, or the task fails at launch with
+# "ResourceInitializationError: unable to pull secrets".
 aws iam put-role-policy \
-    --role-name "$ECS_TASK_ROLE_NAME" \
+    --role-name "$ECS_TASK_EXECUTION_ROLE_NAME" \
     --policy-name "${PROJECT_NAME}-secrets-access" \
     --policy-document "{
         \"Version\": \"2012-10-17\",
