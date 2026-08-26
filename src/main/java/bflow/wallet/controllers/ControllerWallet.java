@@ -318,39 +318,4 @@ public final class ControllerWallet {
 
         return ResponseEntity.noContent().build();
     }
-
-    @PostMapping("/{id}/archive")
-    public ApiResponse<Void> archiveWallet(
-            @PathVariable final UUID id,
-            final Authentication authentication,
-            final HttpServletRequest request
-    ) {
-        UUID userId = currentUserService.getCurrentUserId(authentication);
-
-        serviceWallet.archiveWallet(id, userId);
-
-        return ApiResponse.success(
-                "Wallet archived successfully",
-                null,
-                request.getRequestURI()
-        );
-    }
-
-    @PostMapping("/{id}/restore")
-    public ApiResponse<Void> restoreWallet(
-            @PathVariable final UUID id,
-            final Authentication authentication,
-            final HttpServletRequest request
-    ) {
-        UUID userId = currentUserService.getCurrentUserId(authentication);
-
-        serviceWallet.restoreWallet(id, userId);
-
-        return ApiResponse.success(
-                "Wallet restored successfully",
-                null,
-                request.getRequestURI()
-        );
-    }
-
 }

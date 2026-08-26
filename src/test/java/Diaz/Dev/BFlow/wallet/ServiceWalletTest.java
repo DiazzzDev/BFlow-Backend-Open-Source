@@ -4,6 +4,9 @@ import bflow.auth.entities.User;
 import bflow.auth.enums.UserStatus;
 import bflow.auth.repository.RepositoryUser;
 import bflow.auth.services.UserService;
+import bflow.expenses.RepositoryExpense;
+import bflow.income.RepositoryIncome;
+import bflow.tranfers.RepositoryTransfers;
 import bflow.wallet.DTO.UpdateWalletRequest;
 import bflow.wallet.DTO.WalletResponse;
 import bflow.wallet.repository.RepositoryWallet;
@@ -29,7 +32,9 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -50,6 +55,15 @@ class ServiceWalletTest {
 
     @Mock
     private UserService userService;
+
+    @Mock
+    private RepositoryExpense repositoryExpense;
+
+    @Mock
+    private RepositoryIncome repositoryIncome;
+
+    @Mock
+    private RepositoryTransfers repositoryTransfers;
 
     @InjectMocks
     private ServiceWallet serviceWallet;
@@ -315,5 +329,33 @@ class ServiceWalletTest {
         assertThrows(IllegalArgumentException.class,
                 () -> serviceWallet.reverseTransactionImpact(
                         wallet, BigDecimal.valueOf(-5)));
+    }
+
+    @Test
+    void deleteWallet_notOwner_throwsAccessDeniedAndTouchesNothing() {
+        WalletUser memberUser = new WalletUser();
+        memberUser.setUser(user);
+        memberUser.setWallet(wallet);
+        memberUser.setRole(WalletRole.MEMBER);
+
+        doNothing().when(userService).validateUserActive(userId);
+        when(repositoryWalletUser.findByWalletIdAndUserId(walletId, userId))
+                .thenReturn(Optional.of(memberUser));
+
+        assertThrows(AccessDeniedException.class,
+                () -> serviceWallet.deleteWallet(walletId, userId));
+
+        verify(repositoryWallet, never()).delete(any(Wallet.class));
+        verify(repositoryExpense, never()).countByWalletId(any(UUID.class));
+    }
+
+    @Test
+    void deleteWallet_noAccess_throwsAccessDenied() {
+        doNothing().when(userService).validateUserActive(userId);
+        when(repositoryWalletUser.findByWalletIdAndUserId(walletId, userId))
+                .thenReturn(Optional.empty());
+
+        assertThrows(AccessDeniedException.class,
+                () -> serviceWallet.deleteWallet(walletId, userId));
     }
 }

@@ -37,20 +37,6 @@ public interface RepositoryWalletInvitation
     );
 
     /**
-     * Finds a pending invitation for the same wallet and email.
-     *
-     * @param walletId wallet identifier
-     * @param invitedEmail invited email
-     * @param status invitation status
-     * @return optional invitation
-     */
-    Optional<WalletInvitation> findByWalletIdAndInvitedEmailAndStatus(
-            UUID walletId,
-            String invitedEmail,
-            WalletInvitationStatus status
-    );
-
-    /**
      * Returns pending invitations for an email.
      *
      * @param invitedEmail invited email
@@ -76,5 +62,17 @@ public interface RepositoryWalletInvitation
             UUID walletId,
             String invitedEmail,
             WalletInvitationStatus status
+    );
+
+    /**
+     * Returns every invitation sent by a given user, across all of
+     * their wallets and regardless of status, newest first.
+     *
+     * @param invitedByUserId identifier of the user who sent the
+     *         invitations
+     * @return the sender's full invitation history
+     */
+    List<WalletInvitation> findByInvitedByUserIdOrderByCreatedAtDesc(
+            UUID invitedByUserId
     );
 }

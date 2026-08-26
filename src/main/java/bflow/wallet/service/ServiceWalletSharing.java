@@ -9,6 +9,7 @@ import bflow.common.exception.PlanLimitExceededException;
 import bflow.subscription.FeatureCodes;
 import bflow.subscription.services.PlanLimitService;
 import bflow.wallet.DTO.WalletInvitationResponse;
+import bflow.wallet.DTO.WalletInvitationSentResponse;
 import bflow.wallet.DTO.WalletResponse;
 import bflow.wallet.entities.WalletInvitation;
 import bflow.wallet.entities.WalletUser;
@@ -75,9 +76,9 @@ public class ServiceWalletSharing {
      * @return the created invitation
      */
     public WalletInvitationResponse inviteMember(
-        final UUID walletId,
-        final UUID inviterUserId,
-        final String invitedEmail
+            final UUID walletId,
+            final UUID inviterUserId,
+            final String invitedEmail
     ) {
 
         WalletUser owner = validateOwner(walletId, inviterUserId);
@@ -107,7 +108,7 @@ public class ServiceWalletSharing {
                 .findByWalletIdAndUserId(walletId, userId)
                 .orElseThrow(() ->
                         new AccessDeniedException(
-                           "You don't have access to this wallet."
+                                "You don't have access to this wallet."
                         ));
 
         if (walletUser.getRole() != WalletRole.OWNER) {
@@ -487,5 +488,45 @@ public class ServiceWalletSharing {
                 .filter(invitation -> !invitation.isExpired())
                 .map(this::toResponse)
                 .toList();
+    }
+
+    /**
+     * Retrieves every invitation the specified user has sent, across
+     * all of their wallets, regardless of status — so pending ones
+     * still awaiting a response are included alongside accepted,
+     * rejected, expired, and canceled ones.
+     *
+     * @param userId the sending user's identifier
+     * @return the user's full sent-invitation history, newest first
+     */
+    public List<WalletInvitationSentResponse> getSentInvitations(
+            final UUID userId
+    ) {
+
+        return repositoryWalletInvitation
+                .findByInvitedByUserIdOrderByCreatedAtDesc(userId)
+                .stream()
+                .map(this::toSentResponse)
+                .toList();
+    }
+
+    private WalletInvitationSentResponse toSentResponse(
+            final WalletInvitation invitation
+    ) {
+
+        User invitedUser = invitation.getInvitedUser();
+
+        return new WalletInvitationSentResponse(
+                invitation.getId(),
+                invitation.getWallet().getId(),
+                invitation.getWallet().getName(),
+                invitation.getInvitedEmail(),
+                invitedUser != null ? invitedUser.getId() : null,
+                invitedUser != null ? invitedUser.getName() : null,
+                invitation.getStatus(),
+                invitation.getCreatedAt(),
+                invitation.getExpiresAt(),
+                invitation.getRespondedAt()
+        );
     }
 }

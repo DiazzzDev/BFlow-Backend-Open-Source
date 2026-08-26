@@ -81,7 +81,7 @@ public class ReceiptOcrResultProcessor {
 
         if (STATUS_FAILED.equals(status)) {
             statusTransitionService.markFailed(
-                    receipt.getId(), "Textract could not process this document");
+                receipt.getId(), "Textract could not process this document");
             return;
         }
 

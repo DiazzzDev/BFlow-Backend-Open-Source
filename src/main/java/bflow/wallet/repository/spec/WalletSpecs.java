@@ -3,7 +3,6 @@ package bflow.wallet.repository.spec;
 import bflow.wallet.entities.WalletUser;
 import bflow.wallet.enums.WalletRole;
 import bflow.wallet.enums.WalletScope;
-import bflow.wallet.enums.WalletStatus;
 import jakarta.persistence.criteria.Subquery;
 import org.springframework.data.jpa.domain.Specification;
 
@@ -95,25 +94,4 @@ public final class WalletSpecs {
         };
     }
 
-    /**
-     * Creates a specification that filters wallet memberships
-     * by the wallet lifecycle status.
-     *
-     * @param status wallet status filter.
-     * @return specification matching the requested wallet status.
-     */
-    public static Specification<WalletUser> byStatus(
-            final WalletStatus status
-    ) {
-        return (root, query, cb) -> {
-            if (status == null) {
-                return cb.conjunction();
-            }
-
-            return cb.equal(
-                    root.get("wallet").get("status"),
-                    status
-            );
-        };
-    }
 }

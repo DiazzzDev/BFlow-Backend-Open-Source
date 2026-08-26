@@ -4,6 +4,7 @@ import bflow.auth.services.CurrentUserService;
 import bflow.common.response.ApiResponse;
 import bflow.wallet.DTO.WalletInvitationRequest;
 import bflow.wallet.DTO.WalletInvitationResponse;
+import bflow.wallet.DTO.WalletInvitationSentResponse;
 import bflow.wallet.DTO.WalletResponse;
 import bflow.wallet.service.ServiceWalletSharing;
 import jakarta.servlet.http.HttpServletRequest;
@@ -47,24 +48,24 @@ public class ControllerWalletInvitation {
      */
     @PostMapping("/{walletId}/invitations")
     public ApiResponse<WalletInvitationResponse> inviteMember(
-        @PathVariable final UUID walletId,
-        @Valid @RequestBody final WalletInvitationRequest request,
-        final Authentication authentication,
-        final HttpServletRequest httpRequest
+            @PathVariable final UUID walletId,
+            @Valid @RequestBody final WalletInvitationRequest request,
+            final Authentication authentication,
+            final HttpServletRequest httpRequest
     ) {
         UUID userId = currentUserService.getCurrentUserId(authentication);
 
         WalletInvitationResponse response =
-            serviceWalletSharing.inviteMember(
-                    walletId,
-                    userId,
-                    request.getInvitedEmail()
-            );
+                serviceWalletSharing.inviteMember(
+                        walletId,
+                        userId,
+                        request.getInvitedEmail()
+                );
 
         return ApiResponse.success(
-            "Invitation sent successfully.",
-            response,
-            httpRequest.getRequestURI()
+                "Invitation sent successfully.",
+                response,
+                httpRequest.getRequestURI()
         );
     }
 
@@ -208,6 +209,33 @@ public class ControllerWalletInvitation {
 
         return ApiResponse.success(
                 "Pending invitations retrieved successfully.",
+                response,
+                httpRequest.getRequestURI()
+        );
+    }
+
+    /**
+     * Retrieves every invitation sent by the authenticated user,
+     * across all of their wallets — including invitations still
+     * pending a response, not only accepted ones.
+     *
+     * @param authentication the authenticated user
+     * @param httpRequest the current HTTP request
+     * @return the list of invitations the user has sent
+     */
+    @GetMapping("/invitations/sent")
+    public ApiResponse<List<WalletInvitationSentResponse>> getSentInvitations(
+            final Authentication authentication,
+            final HttpServletRequest httpRequest
+    ) {
+
+        UUID userId = currentUserService.getCurrentUserId(authentication);
+
+        List<WalletInvitationSentResponse> response =
+                serviceWalletSharing.getSentInvitations(userId);
+
+        return ApiResponse.success(
+                "Sent invitations retrieved successfully.",
                 response,
                 httpRequest.getRequestURI()
         );

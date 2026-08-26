@@ -104,10 +104,15 @@ public class TextractExpenseMapper {
         );
     }
 
-    private Map<String, ExpenseField> indexByType(final ExpenseDocument document) {
+    private Map<String, ExpenseField> indexByType(
+        final ExpenseDocument document
+    ) {
         Map<String, ExpenseField> byType = new LinkedHashMap<>();
         for (ExpenseField field : document.summaryFields()) {
-            if (field.type() == null || !StringUtils.hasText(field.type().text())) {
+            if (
+                field.type() == null
+                || !StringUtils.hasText(field.type().text())
+            ) {
                 continue;
             }
             String type = field.type().text();
@@ -117,7 +122,10 @@ public class TextractExpenseMapper {
             // (e.g. two INVOICE_RECEIPT_DATE guesses on the same
             // receipt) — the worse guess is not reliably the second
             // one, so pick by confidence, not by order.
-            if (current == null || confidenceOf(field) > confidenceOf(current)) {
+            if (
+                current == null
+                || confidenceOf(field) > confidenceOf(current)
+            ) {
                 byType.put(type, field);
             }
         }
@@ -170,7 +178,9 @@ public class TextractExpenseMapper {
                 // try the next format
             }
         }
-        log.debug("Could not parse Textract date '{}' with any known format", raw);
+        log.debug(
+            "Could not parse Textract date '{}' with any known format", raw
+        );
         return null;
     }
 
