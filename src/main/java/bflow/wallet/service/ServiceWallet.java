@@ -25,6 +25,7 @@ import bflow.wallet.enums.WalletRole;
 import bflow.auth.repository.RepositoryUser;
 import bflow.auth.entities.User;
 import bflow.wallet.enums.WalletScope;
+import bflow.wallet.enums.WalletStatus;
 import bflow.wallet.repository.RepositoryWallet;
 import bflow.wallet.repository.RepositoryWalletUser;
 import jakarta.validation.Valid;
@@ -113,6 +114,7 @@ public class ServiceWallet {
 
         Specification<WalletUser> spec = Specification
                 .where(WalletSpecs.byUser(userId))
+                .and(WalletSpecs.byStatus(WalletStatus.ACTIVE))
                 .and(WalletSpecs.nameContains(query))
                 .and(WalletSpecs.byRole(role))
                 .and(WalletSpecs.byScope(scope));
@@ -348,6 +350,7 @@ public class ServiceWallet {
         wallet.setName(request.getName().trim());
         wallet.setDescription(request.getDescription());
         wallet.setCurrency(request.getCurrency());
+        wallet.setStatus(WalletStatus.ACTIVE);
 
         // Set balance = initialValue with proper scale and rounding
         BigDecimal initialValue = request.getInitialValue()
@@ -609,6 +612,7 @@ public class ServiceWallet {
         wallet.setCurrency(Currency.USD);
         wallet.setBalance(BigDecimal.ZERO);
         wallet.setInitialValue(BigDecimal.ZERO);
+        wallet.setStatus(WalletStatus.ACTIVE);
 
         repositoryWallet.save(wallet);
 
@@ -621,6 +625,120 @@ public class ServiceWallet {
         repositoryWalletUser.save(walletUser);
 
         return wallet;
+    }
+
+    /**
+     * Archives a wallet while preserving its financial history.
+     *
+     * @param walletId wallet identifier.
+     * @param userId authenticated user identifier.
+     */
+    public void archiveWallet(
+            final UUID walletId,
+            final UUID userId
+    ) {
+        userService.validateUserActive(userId);
+
+        WalletUser walletUser = repositoryWalletUser
+                .findByWalletIdAndUserId(walletId, userId)
+                .orElseThrow(() -> new AccessDeniedException(
+                        "User does not have access to this wallet"
+                ));
+
+        if (walletUser.getRole() != WalletRole.OWNER) {
+            throw new AccessDeniedException(
+                    "Only owners can archive the wallet"
+            );
+        }
+
+        Wallet wallet = walletUser.getWallet();
+
+        if (wallet.getStatus() == WalletStatus.ARCHIVED) {
+            throw new IllegalStateException(
+                    "Wallet is already archived"
+            );
+        }
+
+        wallet.setStatus(WalletStatus.ARCHIVED);
+    }
+
+    /**
+     * Restores an archived wallet.
+     *
+     * @param walletId wallet identifier.
+     * @param userId authenticated user identifier.
+     */
+    public void restoreWallet(
+            final UUID walletId,
+            final UUID userId
+    ) {
+        userService.validateUserActive(userId);
+
+        WalletUser walletUser = repositoryWalletUser
+                .findByWalletIdAndUserId(walletId, userId)
+                .orElseThrow(() -> new AccessDeniedException(
+                        "User does not have access to this wallet"
+                ));
+
+        if (walletUser.getRole() != WalletRole.OWNER) {
+            throw new AccessDeniedException(
+                    "Only owners can restore the wallet"
+            );
+        }
+
+        Wallet wallet = walletUser.getWallet();
+
+        if (wallet.getStatus() != WalletStatus.ARCHIVED) {
+            throw new IllegalStateException(
+                    "Wallet is not archived"
+            );
+        }
+
+        wallet.setStatus(WalletStatus.ACTIVE);
+    }
+
+    /**
+     * Permanently deletes a wallet only when it has no financial history.
+     *
+     * @param walletId wallet identifier.
+     * @param userId authenticated user identifier.
+     */
+    public void deleteWallet(
+            final UUID walletId,
+            final UUID userId
+    ) {
+        userService.validateUserActive(userId);
+
+        WalletUser walletUser = repositoryWalletUser
+                .findByWalletIdAndUserId(walletId, userId)
+                .orElseThrow(() -> new AccessDeniedException(
+                        "User does not have access to this wallet"
+                ));
+
+        if (walletUser.getRole() != WalletRole.OWNER) {
+            throw new AccessDeniedException(
+                    "Only owners can delete the wallet"
+            );
+        }
+
+        Wallet wallet = walletUser.getWallet();
+
+        if (hasFinancialHistory(walletId)) {
+            throw new IllegalStateException(
+                    "Wallet cannot be permanently deleted because it has financial history. "
+                            + "Archive the wallet instead."
+            );
+        }
+
+        repositoryWalletUser.delete(walletUser);
+        repositoryWallet.delete(wallet);
+    }
+
+    private boolean hasFinancialHistory(final UUID walletId) {
+        // TODO: Check also recurring and other dependencies
+        return repositoryExpense.countByWalletId(walletId) > 0
+                || repositoryIncome.countByWalletId(walletId) > 0
+                || repositoryTransfers.countByWallet(walletId) > 0;
     }
 
     /**

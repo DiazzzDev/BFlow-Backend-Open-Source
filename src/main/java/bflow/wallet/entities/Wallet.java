@@ -1,5 +1,6 @@
 package bflow.wallet.entities;
 
+import bflow.wallet.enums.WalletStatus;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -58,6 +59,15 @@ public class Wallet {
     /** The balance the wallet started with. */
     @Column(nullable = false, updatable = false)
     private BigDecimal initialValue;
+
+    /**
+     * Current lifecycle status of the wallet.
+     * Archived wallets are preserved for historical purposes
+     * but cannot be used for new financial operations.
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private WalletStatus status;
 
     /** The timestamp when the wallet was created. */
     @CreationTimestamp

@@ -1,6 +1,7 @@
 package bflow.wallet.repository;
 
 import bflow.wallet.entities.Wallet;
+import bflow.wallet.enums.WalletStatus;
 import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
@@ -35,4 +36,13 @@ public interface RepositoryWallet extends JpaRepository<Wallet, UUID> {
     "SELECT COALESCE(SUM(w.balance), 0) FROM Wallet w WHERE w.id IN :walletIds"
     )
     BigDecimal sumBalanceByWalletIds(List<UUID> walletIds);
+
+    /**
+     * Checks whether a wallet has the given status.
+     *
+     * @param id wallet identifier.
+     * @param status wallet status.
+     * @return true when the wallet exists with that status.
+     */
+    boolean existsByIdAndStatus(UUID id, WalletStatus status);
 }
