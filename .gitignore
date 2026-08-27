@@ -12,6 +12,7 @@ replay_pid*
 jacoco.exec
 *.pid
 *.tmp
+ops/
 
 ### STS ###
 .apt_generated

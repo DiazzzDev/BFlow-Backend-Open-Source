@@ -1,4 +1,4 @@
-# BFlow Backend
+# BFlow Financial Engine
 
 ![GitHub stars](https://img.shields.io/github/stars/DiazzzDev/BFlow-Backend-Open-Source?style=social)
 ![GitHub forks](https://img.shields.io/github/forks/DiazzzDev/BFlow-Backend-Open-Source?style=social)
