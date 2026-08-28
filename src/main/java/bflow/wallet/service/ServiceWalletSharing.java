@@ -2,22 +2,27 @@ package bflow.wallet.service;
 
 import bflow.auth.entities.User;
 import bflow.auth.repository.RepositoryUser;
+import bflow.auth.repository.specs.UserSpecs;
 import bflow.common.aws.service.EmailTemplateService;
 import bflow.common.exception.ConflictException;
 import bflow.common.exception.NotFoundException;
 import bflow.common.exception.PlanLimitExceededException;
 import bflow.subscription.FeatureCodes;
 import bflow.subscription.services.PlanLimitService;
+import bflow.wallet.DTO.CollaboratorSearchResult;
 import bflow.wallet.DTO.WalletInvitationResponse;
 import bflow.wallet.DTO.WalletInvitationSentResponse;
 import bflow.wallet.DTO.WalletResponse;
 import bflow.wallet.entities.WalletInvitation;
 import bflow.wallet.entities.WalletUser;
+import bflow.wallet.enums.CollaboratorStatus;
 import bflow.wallet.enums.WalletInvitationStatus;
 import bflow.wallet.enums.WalletRole;
 import bflow.wallet.repository.RepositoryWalletInvitation;
 import bflow.wallet.repository.RepositoryWalletUser;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.security.access.AccessDeniedException;
@@ -26,6 +31,8 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
+import java.util.HashSet;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -66,6 +73,99 @@ public class ServiceWalletSharing {
      * Service responsible for wallet operations.
      */
     private final ServiceWallet serviceWallet;
+
+    /**
+     * Maximum number of matches returned by the collaborator search,
+     * mirroring a typeahead picker (GitHub's "Add people" dialog
+     * shows a similarly small, scrollable list).
+     */
+    private static final int SEARCH_RESULT_LIMIT = 8;
+
+    /**
+     * Searches for users that can be invited to a wallet, matching
+     * by name or email — the same lookup GitHub's "Add people to
+     * repository" dialog performs. Only the wallet owner can search,
+     * since only the owner can send invitations.
+     *
+     * @param walletId the wallet UUID
+     * @param requesterId the user performing the search
+     * @param query the search text (name or email fragment)
+     * @return up to {@value #SEARCH_RESULT_LIMIT} matching users,
+     *         flagged with their invitation status for this wallet
+     */
+    @Transactional(readOnly = true)
+    public List<CollaboratorSearchResult> searchCollaborators(
+            final UUID walletId,
+            final UUID requesterId,
+            final String query
+    ) {
+
+        WalletUser owner = validateOwner(walletId, requesterId);
+
+        if (query == null || query.isBlank()) {
+            return List.of();
+        }
+
+        Specification<User> spec = UserSpecs
+                .nameOrEmailContains(query)
+                .and(UserSpecs.isActive())
+                .and(UserSpecs.excludeUser(requesterId));
+
+        List<User> matches = repositoryUser.findAll(
+                spec,
+                PageRequest.of(0, SEARCH_RESULT_LIMIT)
+        ).getContent();
+
+        return toCollaboratorSearchResults(owner.getWallet().getId(), matches);
+    }
+
+    private List<CollaboratorSearchResult> toCollaboratorSearchResults(
+            final UUID walletId,
+            final List<User> matches
+    ) {
+
+        if (matches.isEmpty()) {
+            return List.of();
+        }
+
+        Set<String> memberEmails = new HashSet<>(
+                repositoryWalletUser.findMemberEmailsByWalletId(walletId)
+        );
+
+        Set<String> pendingEmails = new HashSet<>(
+                repositoryWalletInvitation.findInvitedEmailsByWalletIdAndStatus(
+                        walletId,
+                        WalletInvitationStatus.PENDING
+                )
+        );
+
+        return matches.stream()
+                .map(user -> new CollaboratorSearchResult(
+                        user.getId(),
+                        user.getName(),
+                        user.getEmail(),
+                        user.getPictureUrl(),
+                        resolveStatus(user.getEmail(), memberEmails, pendingEmails)
+                ))
+                .toList();
+    }
+
+    private CollaboratorStatus resolveStatus(
+            final String email,
+            final Set<String> memberEmails,
+            final Set<String> pendingEmails
+    ) {
+
+        if (memberEmails.contains(email)) {
+            return CollaboratorStatus.ALREADY_MEMBER;
+        }
+
+        if (pendingEmails.contains(email)) {
+            return CollaboratorStatus.INVITATION_PENDING;
+        }
+
+        return CollaboratorStatus.INVITABLE;
+    }
 
     /**
      * Creates and sends a wallet invitation to the specified email address.

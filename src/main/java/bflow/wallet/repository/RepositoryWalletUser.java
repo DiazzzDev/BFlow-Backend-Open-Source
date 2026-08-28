@@ -123,4 +123,18 @@ public interface RepositoryWalletUser extends JpaRepository<WalletUser, UUID>,
     )
     List<UUID> findWalletIdsByUserIdAndCurrency(
             UUID userId, Currency currency);
+
+    /**
+     * Retrieves the email addresses of every member of the specified
+     * wallet. Used to resolve collaborator search status in bulk
+     * instead of querying per candidate.
+     *
+     * @param walletId the wallet UUID
+     * @return the member email addresses
+     */
+    @Query(
+            "SELECT wu.user.email FROM WalletUser wu "
+                    + "WHERE wu.wallet.id = :walletId"
+    )
+    List<String> findMemberEmailsByWalletId(UUID walletId);
 }

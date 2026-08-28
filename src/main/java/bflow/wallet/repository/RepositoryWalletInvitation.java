@@ -3,6 +3,7 @@ package bflow.wallet.repository;
 import bflow.wallet.entities.WalletInvitation;
 import bflow.wallet.enums.WalletInvitationStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -74,5 +75,23 @@ public interface RepositoryWalletInvitation
      */
     List<WalletInvitation> findByInvitedByUserIdOrderByCreatedAtDesc(
             UUID invitedByUserId
+    );
+
+    /**
+     * Retrieves the email addresses with a pending invitation for
+     * the specified wallet. Used to resolve collaborator search
+     * status in bulk instead of querying per candidate.
+     *
+     * @param walletId the wallet UUID
+     * @param status the invitation status
+     * @return the invited email addresses
+     */
+    @Query(
+            "SELECT wi.invitedEmail FROM WalletInvitation wi "
+                    + "WHERE wi.wallet.id = :walletId AND wi.status = :status"
+    )
+    List<String> findInvitedEmailsByWalletIdAndStatus(
+            UUID walletId,
+            WalletInvitationStatus status
     );
 }

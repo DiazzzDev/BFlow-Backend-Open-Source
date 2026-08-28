@@ -4,6 +4,7 @@ import bflow.auth.services.CurrentUserService;
 import bflow.common.response.ApiResponse;
 import bflow.wallet.DTO.WalletInvitationRequest;
 import bflow.wallet.DTO.WalletInvitationResponse;
+import bflow.wallet.DTO.CollaboratorSearchResult;
 import bflow.wallet.DTO.WalletInvitationSentResponse;
 import bflow.wallet.DTO.WalletResponse;
 import bflow.wallet.service.ServiceWalletSharing;
@@ -18,6 +19,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.List;
 import java.util.UUID;
@@ -36,6 +38,36 @@ public class ControllerWalletInvitation {
      * Service used to retrieve the authenticated user.
      */
     private final CurrentUserService currentUserService;
+
+    /**
+     * Searches for users that can be invited to a wallet, by name or
+     * email. Only the wallet owner can perform this search.
+     *
+     * @param walletId the wallet UUID
+     * @param query the search text (name or email fragment)
+     * @param authentication the authenticated user
+     * @param httpRequest the current HTTP request
+     * @return up to 8 matching users
+     */
+    @GetMapping("/{walletId}/collaborators/search")
+    public ApiResponse<List<CollaboratorSearchResult>> searchCollaborators(
+            @PathVariable final UUID walletId,
+            @RequestParam(required = false) final String query,
+            final Authentication authentication,
+            final HttpServletRequest httpRequest
+    ) {
+
+        UUID userId = currentUserService.getCurrentUserId(authentication);
+
+        List<CollaboratorSearchResult> response =
+                serviceWalletSharing.searchCollaborators(walletId, userId, query);
+
+        return ApiResponse.success(
+                "Collaborators retrieved successfully.",
+                response,
+                httpRequest.getRequestURI()
+        );
+    }
 
     /**
      * Sends a wallet invitation to a user.

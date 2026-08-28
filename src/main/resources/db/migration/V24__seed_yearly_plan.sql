@@ -93,4 +93,7 @@ UPDATE plans
 SET
     code = 'PRO_MONTHLY',
     updated_at = NOW()
-WHERE code = 'PRO';
+WHERE code = 'PRO'
+  AND NOT EXISTS (
+      SELECT 1 FROM plans WHERE code = 'PRO_MONTHLY'
+  );
