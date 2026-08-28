@@ -38,12 +38,21 @@ public interface RepositoryWalletInvitation
     );
 
     /**
-     * Returns pending invitations for an email.
+     * Returns pending invitations for an email, eagerly fetching the
+     * wallet and inviting user so the response can be built without
+     * triggering a lazy-load query per invitation.
      *
      * @param invitedEmail invited email
      * @param status invitation status
      * @return invitation list
      */
+    @Query(
+            "SELECT wi FROM WalletInvitation wi "
+                    + "JOIN FETCH wi.wallet "
+                    + "JOIN FETCH wi.invitedByUser "
+                    + "WHERE wi.invitedEmail = :invitedEmail "
+                    + "AND wi.status = :status"
+    )
     List<WalletInvitation> findByInvitedEmailAndStatus(
             String invitedEmail,
             WalletInvitationStatus status

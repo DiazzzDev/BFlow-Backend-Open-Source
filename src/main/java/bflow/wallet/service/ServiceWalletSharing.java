@@ -388,7 +388,11 @@ public class ServiceWalletSharing {
         return new WalletInvitationResponse(
                 invitation.getId(),
                 invitation.getWallet().getId(),
+                invitation.getWallet().getName(),
                 invitation.getInvitedEmail(),
+                invitation.getInvitedByUser().getName(),
+                invitation.getInvitedByUser().getEmail(),
+                invitation.getInvitedByUser().getPictureUrl(),
                 invitation.getStatus(),
                 invitation.getExpiresAt()
         );
