@@ -57,6 +57,12 @@ jobs:
           ECS_PUBLIC_SUBNET_2: ${{ vars.ECS_PUBLIC_SUBNET_2 }}
           ECS_SECURITY_GROUP: ${{ vars.ECS_SECURITY_GROUP }}
           S3_BUCKET: ${{ vars.S3_BUCKET }}
+          COGNITO_ISSUER_URI: ${{ vars.COGNITO_ISSUER_URI }}
+
+          RECEIPT_OCR_REQUESTS_QUEUE_URL: ${{ vars.RECEIPT_OCR_REQUESTS_QUEUE_URL }}
+          RECEIPT_OCR_RESULTS_QUEUE_URL: ${{ vars.RECEIPT_OCR_RESULTS_QUEUE_URL }}
+          RECEIPT_OCR_RESULTS_TOPIC_ARN: ${{ vars.RECEIPT_OCR_RESULTS_TOPIC_ARN }}
+          TEXTRACT_SNS_ROLE_ARN: ${{ vars.TEXTRACT_SNS_ROLE_ARN }}
 
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ZONE_ID: ${{ vars.CLOUDFLARE_ZONE_ID }}
@@ -83,6 +89,11 @@ jobs:
             ECS_PUBLIC_SUBNET_2
             ECS_SECURITY_GROUP
             S3_BUCKET
+            COGNITO_ISSUER_URI
+            RECEIPT_OCR_REQUESTS_QUEUE_URL
+            RECEIPT_OCR_RESULTS_QUEUE_URL
+            RECEIPT_OCR_RESULTS_TOPIC_ARN
+            TEXTRACT_SNS_ROLE_ARN
             CLOUDFLARE_API_TOKEN
             CLOUDFLARE_ZONE_ID
             CLOUDFLARE_DNS_RECORD_ID
@@ -95,6 +106,53 @@ jobs:
               exit 1
             fi
           done
+
+      - name: Validate Cognito issuer URI format
+        env:
+          COGNITO_ISSUER_URI: ${{ vars.COGNITO_ISSUER_URI }}
+        run: |
+          set -euo pipefail
+
+          if [[ ! "$COGNITO_ISSUER_URI" =~ ^https://cognito-idp\.[a-z0-9-]+\.amazonaws\.com/[a-zA-Z0-9_-]+$ ]]; then
+            echo "::error::COGNITO_ISSUER_URI does not look like a valid Cognito issuer URI: $COGNITO_ISSUER_URI"
+            exit 1
+          fi
+
+      - name: Validate S3 bucket
+        run: |
+          aws s3api head-bucket \
+            --bucket "${{ vars.S3_BUCKET }}"
+
+      - name: Validate receipt OCR pipeline (SQS + SNS + Textract role)
+        env:
+          RECEIPT_OCR_REQUESTS_QUEUE_URL: ${{ vars.RECEIPT_OCR_REQUESTS_QUEUE_URL }}
+          RECEIPT_OCR_RESULTS_QUEUE_URL: ${{ vars.RECEIPT_OCR_RESULTS_QUEUE_URL }}
+          RECEIPT_OCR_RESULTS_TOPIC_ARN: ${{ vars.RECEIPT_OCR_RESULTS_TOPIC_ARN }}
+          TEXTRACT_SNS_ROLE_ARN: ${{ vars.TEXTRACT_SNS_ROLE_ARN }}
+        run: |
+          set -euo pipefail
+
+          echo "Checking requests queue..."
+          aws sqs get-queue-attributes \
+            --queue-url "$RECEIPT_OCR_REQUESTS_QUEUE_URL" \
+            --attribute-names QueueArn \
+            >/dev/null
+
+          echo "Checking results queue..."
+          aws sqs get-queue-attributes \
+            --queue-url "$RECEIPT_OCR_RESULTS_QUEUE_URL" \
+            --attribute-names QueueArn \
+            >/dev/null
+
+          echo "Checking results SNS topic..."
+          aws sns get-topic-attributes \
+            --topic-arn "$RECEIPT_OCR_RESULTS_TOPIC_ARN" \
+            >/dev/null
+
+          echo "Checking Textract SNS publish role..."
+          aws iam get-role \
+            --role-name "$(basename "$TEXTRACT_SNS_ROLE_ARN")" \
+            >/dev/null
 
       - name: Validate Secrets Manager secret
         run: |
@@ -292,6 +350,10 @@ jobs:
           WOMPI_SECRET_ARN: ${{ secrets.WOMPI_SECRET_ARN }}
           COGNITO_ISSUER_URI: ${{ vars.COGNITO_ISSUER_URI }}
           S3_BUCKET: ${{ vars.S3_BUCKET }}
+          RECEIPT_OCR_REQUESTS_QUEUE_URL: ${{ vars.RECEIPT_OCR_REQUESTS_QUEUE_URL }}
+          RECEIPT_OCR_RESULTS_QUEUE_URL: ${{ vars.RECEIPT_OCR_RESULTS_QUEUE_URL }}
+          RECEIPT_OCR_RESULTS_TOPIC_ARN: ${{ vars.RECEIPT_OCR_RESULTS_TOPIC_ARN }}
+          TEXTRACT_SNS_ROLE_ARN: ${{ vars.TEXTRACT_SNS_ROLE_ARN }}
         run: |
           envsubst < ecs/task-definition.template.json > ecs/task-definition.json
 

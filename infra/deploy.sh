@@ -22,7 +22,8 @@ for script in \
     "$ROOT/bootstrap/10-cloudwatch.sh" \
     "$ROOT/bootstrap/11-ecs.sh" \
     "$ROOT/bootstrap/12-github-oidc.sh" \
-    "$ROOT/bootstrap/13-budget.sh"
+    "$ROOT/bootstrap/13-budget.sh" \
+    "$ROOT/bootstrap/14-ocr-pipeline.sh"
 do
     SCRIPT_NAME="$(basename "$script")"
 
