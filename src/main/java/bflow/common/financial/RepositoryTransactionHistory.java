@@ -289,8 +289,12 @@ public class RepositoryTransactionHistory {
                     // Only worth showing who made it when someone else could
                     // have — on a solo wallet it's always you.
                     if (rs.getInt("member_count") > 1) {
-                        dto.setContributorName(rs.getString("contributor_name"));
-                        dto.setContributorEmail(rs.getString("contributor_email"));
+                        dto.setContributorName(
+                            rs.getString("contributor_name")
+                        );
+                        dto.setContributorEmail(
+                            rs.getString("contributor_email")
+                        );
                         dto.setContributorPictureUrl(
                                 rs.getString("contributor_picture_url")
                         );
