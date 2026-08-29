@@ -18,7 +18,8 @@ import software.amazon.awssdk.services.sqs.model.Message;
  */
 @Slf4j
 @Component
-public class ReceiptOcrResultListener extends AbstractSqsPollingWorker {
+public final class ReceiptOcrResultListener
+        extends AbstractSqsPollingWorker {
 
     /** Service that fetches and maps the completed job's result. */
     private final ReceiptOcrResultProcessor receiptOcrResultProcessor;
@@ -30,9 +31,8 @@ public class ReceiptOcrResultListener extends AbstractSqsPollingWorker {
      * Creates the listener and wires it to the results queue.
      *
      * @param sqsClient the SQS client to poll with
-     * @param receiptOcrResultProcessor service that processes a
-     *         completed job
-     * @param objectMapper used to parse the SNS/Textract JSON
+     * @param resultProcessor service that processes a completed job
+     * @param mapper used to parse the SNS/Textract JSON
      * @param queueUrl URL of the OCR results queue
      * @param waitTimeSeconds long-poll wait time, in seconds
      * @param maxMessages maximum messages per receive call
@@ -41,8 +41,8 @@ public class ReceiptOcrResultListener extends AbstractSqsPollingWorker {
      */
     public ReceiptOcrResultListener(
             final SqsClient sqsClient,
-            final ReceiptOcrResultProcessor receiptOcrResultProcessor,
-            final ObjectMapper objectMapper,
+            final ReceiptOcrResultProcessor resultProcessor,
+            final ObjectMapper mapper,
             @Value("${aws.sqs.receipt-ocr-results-queue-url}")
             final String queueUrl,
             @Value("${app.ocr.result-poll-wait-seconds}")
@@ -54,8 +54,8 @@ public class ReceiptOcrResultListener extends AbstractSqsPollingWorker {
     ) {
         super(sqsClient, queueUrl, waitTimeSeconds, maxMessages,
                 errorBackoffSeconds);
-        this.receiptOcrResultProcessor = receiptOcrResultProcessor;
-        this.objectMapper = objectMapper;
+        this.receiptOcrResultProcessor = resultProcessor;
+        this.objectMapper = mapper;
     }
 
     @Override

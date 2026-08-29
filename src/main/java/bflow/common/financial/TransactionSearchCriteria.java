@@ -1,5 +1,6 @@
 package bflow.common.financial;
 
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -13,11 +14,16 @@ import java.util.UUID;
  *                 {@code null} for global history.
  * @param type optional transaction type filter;
  *             {@code null} includes all transaction types.
+ * @param contributorIds optional set of user ids to restrict results
+ *                        to transactions made by those specific wallet
+ *                        members; {@code null}/empty includes all
+ *                        contributors.
  */
 public record TransactionSearchCriteria(
         String query,
         UUID walletId,
-        TransactionType type
+        TransactionType type,
+        List<UUID> contributorIds
 ) {
 
     /**
@@ -25,13 +31,17 @@ public record TransactionSearchCriteria(
      *
      * @param query optional search text.
      * @param type optional transaction type filter.
+     * @param contributorIds optional contributor id filter.
      * @return transaction search criteria.
      */
     public static TransactionSearchCriteria global(
             final String query,
-            final TransactionType type
+            final TransactionType type,
+            final List<UUID> contributorIds
     ) {
-        return new TransactionSearchCriteria(query, null, type);
+        return new TransactionSearchCriteria(
+                query, null, type, contributorIds
+        );
     }
 
     /**
@@ -40,13 +50,17 @@ public record TransactionSearchCriteria(
      * @param query optional search text.
      * @param walletId wallet identifier.
      * @param type optional transaction type filter.
+     * @param contributorIds optional contributor id filter.
      * @return transaction search criteria.
      */
     public static TransactionSearchCriteria forWallet(
             final String query,
             final UUID walletId,
-            final TransactionType type
+            final TransactionType type,
+            final List<UUID> contributorIds
     ) {
-        return new TransactionSearchCriteria(query, walletId, type);
+        return new TransactionSearchCriteria(
+                query, walletId, type, contributorIds
+        );
     }
 }

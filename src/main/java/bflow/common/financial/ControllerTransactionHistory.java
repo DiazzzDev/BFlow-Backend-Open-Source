@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -37,6 +38,8 @@ public class ControllerTransactionHistory {
      * @param authentication current authenticated user.
      * @param query optional search term used to filter transactions.
      * @param type optional transaction type filter.
+     * @param contributorIds optional list of contributor user ids to
+     *         restrict results to (e.g. one or more wallet members).
      * @param pageable pagination information.
      * @param request current HTTP request.
      * @return paginated transaction history.
@@ -46,12 +49,15 @@ public class ControllerTransactionHistory {
             final Authentication authentication,
             @RequestParam(required = false) final String query,
             @RequestParam(required = false) final TransactionType type,
+            @RequestParam(required = false) final List<UUID> contributorIds,
             final Pageable pageable,
             final HttpServletRequest request
     ) {
         UUID userId = currentUserService.getCurrentUserId(authentication);
         Page<TransactionResponse> history = serviceTransactionHistory
-                .getGlobalHistory(userId, query, type, pageable);
+                .getGlobalHistory(
+                        userId, query, type, contributorIds, pageable
+                );
 
         return ApiResponse.success(
                 "Transaction history retrieved successfully",
@@ -67,6 +73,8 @@ public class ControllerTransactionHistory {
      * @param authentication current authenticated user.
      * @param query optional search term used to filter transactions.
      * @param type optional transaction type filter.
+     * @param contributorIds optional list of contributor user ids to
+     *         restrict results to (e.g. one or more wallet members).
      * @param pageable pagination information.
      * @param request current HTTP request.
      * @return paginated wallet transaction history.
@@ -77,12 +85,16 @@ public class ControllerTransactionHistory {
             final Authentication authentication,
             @RequestParam(required = false) final String query,
             @RequestParam(required = false) final TransactionType type,
+            @RequestParam(required = false) final List<UUID> contributorIds,
             final Pageable pageable,
             final HttpServletRequest request
     ) {
         UUID userId = currentUserService.getCurrentUserId(authentication);
         Page<TransactionResponse> history = serviceTransactionHistory
-                .getWalletHistory(walletId, userId, query, type, pageable);
+                .getWalletHistory(
+                        walletId, userId, query, type,
+                        contributorIds, pageable
+                );
 
         return ApiResponse.success(
                 "Wallet transaction history retrieved successfully",

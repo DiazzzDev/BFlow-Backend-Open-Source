@@ -60,7 +60,7 @@ public class ControllerWalletInvitation {
         UUID userId = currentUserService.getCurrentUserId(authentication);
 
         List<CollaboratorSearchResult> response =
-                serviceWalletSharing.searchCollaborators(walletId, userId, query);
+            serviceWalletSharing.searchCollaborators(walletId, userId, query);
 
         return ApiResponse.success(
                 "Collaborators retrieved successfully.",

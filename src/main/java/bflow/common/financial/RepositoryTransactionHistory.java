@@ -79,15 +79,25 @@ public class RepositoryTransactionHistory {
             NULL::text AS counterpart_wallet_name,
             e.category_id::text AS category_id, c1.name AS category_name,
             c1.icon AS category_icon, c1.color AS category_color,
-            e.user_id::text AS contributor_id, u1.email AS contributor_name,
+            e.user_id::text AS contributor_id, u1.name AS contributor_name,
+            u1.email AS contributor_email,
+            u1.picture_url AS contributor_picture_url,
+            wm1.member_count AS member_count,
             NULL::text AS status, e.source AS source
         FROM expenses e
         JOIN wallets w1 ON w1.id = e.wallet_id
         LEFT JOIN categories c1 ON c1.id = e.category_id
         JOIN users u1 ON u1.id = e.user_id
+        JOIN (
+            SELECT wallet_id, COUNT(*) AS member_count
+            FROM wallet_users
+            GROUP BY wallet_id
+        ) wm1 ON wm1.wallet_id = e.wallet_id
         WHERE e.wallet_id IN (:walletIds)
           AND (:hasQuery = false OR UPPER(e.title) LIKE :queryPattern
                OR UPPER(e.description) LIKE :queryPattern)
+          AND (:hasContributorFilter = false
+               OR e.user_id IN (:contributorIds))
         """;
 
     /**
@@ -110,16 +120,26 @@ public class RepositoryTransactionHistory {
         c2.icon AS category_icon,
         c2.color AS category_color,
         i.user_id::text AS contributor_id,
-        u2.email AS contributor_name,
+        u2.name AS contributor_name,
+        u2.email AS contributor_email,
+        u2.picture_url AS contributor_picture_url,
+        wm2.member_count AS member_count,
         NULL::text AS status,
         i.source AS source
     FROM incomes i
     JOIN wallets w2 ON w2.id = i.wallet_id
     LEFT JOIN categories c2 ON c2.id = i.category_id
     JOIN users u2 ON u2.id = i.user_id
+    JOIN (
+        SELECT wallet_id, COUNT(*) AS member_count
+        FROM wallet_users
+        GROUP BY wallet_id
+    ) wm2 ON wm2.wallet_id = i.wallet_id
     WHERE i.wallet_id IN (:walletIds)
       AND (:hasQuery = false OR UPPER(i.title) LIKE :queryPattern
            OR UPPER(i.description) LIKE :queryPattern)
+      AND (:hasContributorFilter = false
+           OR i.user_id IN (:contributorIds))
     """;
 
     /**
@@ -146,15 +166,25 @@ public class RepositoryTransactionHistory {
         NULL::text AS category_icon,
         NULL::text AS category_color,
         t.user_id::text AS contributor_id,
-        u3.email AS contributor_name,
+        u3.name AS contributor_name,
+        u3.email AS contributor_email,
+        u3.picture_url AS contributor_picture_url,
+        wm3.member_count AS member_count,
         t.status::text AS status,
         NULL::text AS source
     FROM transfer t
     JOIN wallets w3f ON w3f.id = t.from_wallet_id
     JOIN wallets w3t ON w3t.id = t.to_wallet_id
     JOIN users u3 ON u3.id = t.user_id
+    JOIN (
+        SELECT wallet_id, COUNT(*) AS member_count
+        FROM wallet_users
+        GROUP BY wallet_id
+    ) wm3 ON wm3.wallet_id = t.from_wallet_id
     WHERE (t.from_wallet_id IN (:walletIds) OR t.to_wallet_id IN (:walletIds))
       AND (:hasQuery = false OR UPPER(t.description) LIKE :queryPattern)
+      AND (:hasContributorFilter = false
+           OR t.user_id IN (:contributorIds))
     """;
 
     /**
@@ -174,7 +204,7 @@ public class RepositoryTransactionHistory {
      *
      * @param walletIds the set of wallet IDs the user is authorized to see.
      * @param criteria dynamic filters
-     * (search text, type, primary wallet for sign).
+     * (search text, type, contributor ids, primary wallet for sign).
      * @param pageable pagination + sort
      * (only "date"/"amount" honored; defaults to date desc).
      * @return a page of unified transaction entries.
@@ -198,17 +228,30 @@ public class RepositoryTransactionHistory {
         );
 
         boolean hasQuery = criteria.query() != null
-            && !criteria.query().isBlank();
+                && !criteria.query().isBlank();
 
         String queryPattern = hasQuery
                 ? "%" + criteria.query().trim().toUpperCase() + "%"
                 : null;
 
+        boolean hasContributorFilter = criteria.contributorIds() != null
+                && !criteria.contributorIds().isEmpty();
+
+        // NamedParameterJdbcTemplate expands "IN (:x)" before the SQL
+        // engine ever sees the short-circuiting AND/OR, so :x must
+        // always be non-empty — a sentinel UUID that can never match
+        // a real row stands in when the filter isn't active.
+        List<UUID> contributorIds = hasContributorFilter
+                ? criteria.contributorIds()
+                : List.of(new UUID(0L, 0L));
+
         MapSqlParameterSource params = new MapSqlParameterSource()
                 .addValue("walletIds", walletIds)
                 .addValue("hasQuery", hasQuery)
                 .addValue("queryPattern", queryPattern)
-                .addValue("primaryWalletId", criteria.walletId());
+                .addValue("primaryWalletId", criteria.walletId())
+                .addValue("hasContributorFilter", hasContributorFilter)
+                .addValue("contributorIds", contributorIds);
 
         String orderByClause = resolveOrderBy(pageable.getSort());
 
@@ -218,38 +261,48 @@ public class RepositoryTransactionHistory {
         params.addValue("offset", pageable.getOffset());
 
         List<TransactionResponse> content =
-        jdbc.query(dataSql, params, (rs, rowNum) -> {
-            TransactionResponse dto = new TransactionResponse();
-            dto.setId(rs.getString("id"));
-            dto.setType(TransactionType.valueOf(rs.getString("type")));
-            dto.setTitle(rs.getString("title"));
-            dto.setDescription(rs.getString("description"));
-            dto.setAmount(rs.getBigDecimal("amount"));
-            Timestamp ts = rs.getTimestamp("txn_date");
-            dto.setDate(ts != null ? ts.toInstant() : null);
-            dto.setWalletId(rs.getString("wallet_id"));
-            dto.setWalletName(rs.getString("wallet_name"));
-            dto.setCounterpartWalletId(
-                rs.getString("counterpart_wallet_id")
-            );
+                jdbc.query(dataSql, params, (rs, rowNum) -> {
+                    TransactionResponse dto = new TransactionResponse();
+                    dto.setId(rs.getString("id"));
+                    dto.setType(TransactionType.valueOf(rs.getString("type")));
+                    dto.setTitle(rs.getString("title"));
+                    dto.setDescription(rs.getString("description"));
+                    dto.setAmount(rs.getBigDecimal("amount"));
+                    Timestamp ts = rs.getTimestamp("txn_date");
+                    dto.setDate(ts != null ? ts.toInstant() : null);
+                    dto.setWalletId(rs.getString("wallet_id"));
+                    dto.setWalletName(rs.getString("wallet_name"));
+                    dto.setCounterpartWalletId(
+                            rs.getString("counterpart_wallet_id")
+                    );
 
-            dto.setCounterpartWalletName(
-                rs.getString("counterpart_wallet_name")
-            );
+                    dto.setCounterpartWalletName(
+                            rs.getString("counterpart_wallet_name")
+                    );
 
-            dto.setCategoryId(rs.getString("category_id"));
-            dto.setCategoryName(rs.getString("category_name"));
-            dto.setCategoryIcon(rs.getString("category_icon"));
-            dto.setCategoryColor(rs.getString("category_color"));
-            dto.setContributorId(rs.getString("contributor_id"));
-            dto.setContributorName(rs.getString("contributor_name"));
-            dto.setStatus(rs.getString("status"));
-            dto.setSource(rs.getString("source"));
-            return dto;
-        });
+                    dto.setCategoryId(rs.getString("category_id"));
+                    dto.setCategoryName(rs.getString("category_name"));
+                    dto.setCategoryIcon(rs.getString("category_icon"));
+                    dto.setCategoryColor(rs.getString("category_color"));
+                    dto.setContributorId(rs.getString("contributor_id"));
+
+                    // Only worth showing who made it when someone else could
+                    // have — on a solo wallet it's always you.
+                    if (rs.getInt("member_count") > 1) {
+                        dto.setContributorName(rs.getString("contributor_name"));
+                        dto.setContributorEmail(rs.getString("contributor_email"));
+                        dto.setContributorPictureUrl(
+                                rs.getString("contributor_picture_url")
+                        );
+                    }
+
+                    dto.setStatus(rs.getString("status"));
+                    dto.setSource(rs.getString("source"));
+                    return dto;
+                });
 
         String countSql =
-        "SELECT COUNT(*) FROM (" + unifiedSelect + ") unified";
+                "SELECT COUNT(*) FROM (" + unifiedSelect + ") unified";
         Long total = jdbc.queryForObject(countSql, params, Long.class);
 
         return new PageImpl<>(content, pageable, total != null ? total : 0L);

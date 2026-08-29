@@ -60,11 +60,26 @@ public class TransactionResponse {
     /** Category color. */
     private String categoryColor;
 
-    /** Contributor/user id. */
+    /** Contributor id. */
     private String contributorId;
 
-    /** Contributor display name (email). */
+    /**
+     * Contributor's display name, only populated when the wallet has
+     * more than one member — pointless noise on a solo wallet.
+     */
     private String contributorName;
+
+    /**
+     * Contributor's email, same visibility rule as
+     * {@link #contributorName}.
+     */
+    private String contributorEmail;
+
+    /**
+     * Contributor's profile picture URL, same visibility rule as
+     * {@link #contributorName}.
+     */
+    private String contributorPictureUrl;
 
     /** Transfer status (transfers only, null otherwise). */
     private String status;

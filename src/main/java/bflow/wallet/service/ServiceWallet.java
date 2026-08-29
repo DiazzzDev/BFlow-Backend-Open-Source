@@ -661,10 +661,11 @@ public class ServiceWallet {
     }
 
     private boolean hasFinancialHistory(final UUID walletId) {
-        // TODO: Check also recurring and other dependencies
         return repositoryExpense.countByWalletId(walletId) > 0
                 || repositoryIncome.countByWalletId(walletId) > 0
-                || repositoryTransfers.countByWallet(walletId) > 0;
+                || repositoryTransfers.countByWallet(walletId) > 0
+                || repositoryRecurringTransaction
+                .existsByWalletId(walletId);
     }
 
     /**

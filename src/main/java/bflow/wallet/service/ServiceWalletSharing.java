@@ -141,11 +141,11 @@ public class ServiceWalletSharing {
 
         return matches.stream()
                 .map(user -> new CollaboratorSearchResult(
-                        user.getId(),
-                        user.getName(),
-                        user.getEmail(),
-                        user.getPictureUrl(),
-                        resolveStatus(user.getEmail(), memberEmails, pendingEmails)
+                    user.getId(),
+                    user.getName(),
+                    user.getEmail(),
+                    user.getPictureUrl(),
+                    resolveStatus(user.getEmail(), memberEmails, pendingEmails)
                 ))
                 .toList();
     }

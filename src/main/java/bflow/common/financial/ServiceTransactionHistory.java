@@ -37,14 +37,16 @@ public class ServiceTransactionHistory {
      * @param userId authenticated user identifier.
      * @param query optional search text.
      * @param type optional transaction type filter.
+     * @param contributorIds optional contributor id filter.
      * @param pageable pagination information.
      * @return paginated transaction history.
      */
     public Page<TransactionResponse> getGlobalHistory(
-        final UUID userId,
-        final String query,
-        final TransactionType type,
-        final Pageable pageable
+            final UUID userId,
+            final String query,
+            final TransactionType type,
+            final List<UUID> contributorIds,
+            final Pageable pageable
     ) {
         userService.validateUserActive(userId);
 
@@ -54,7 +56,7 @@ public class ServiceTransactionHistory {
 
         return repositoryTransactionHistory.search(
                 walletIds,
-                TransactionSearchCriteria.global(query, type),
+                TransactionSearchCriteria.global(query, type, contributorIds),
                 pageable
         );
     }
@@ -66,16 +68,18 @@ public class ServiceTransactionHistory {
      * @param userId authenticated user identifier.
      * @param query optional search text.
      * @param type optional transaction type filter.
+     * @param contributorIds optional contributor id filter.
      * @param pageable pagination information.
      * @return paginated wallet transaction history.
      * @throws AccessDeniedException if the user has no access to the wallet.
      */
     public Page<TransactionResponse> getWalletHistory(
-        final UUID walletId,
-        final UUID userId,
-        final String query,
-        final TransactionType type,
-        final Pageable pageable
+            final UUID walletId,
+            final UUID userId,
+            final String query,
+            final TransactionType type,
+            final List<UUID> contributorIds,
+            final Pageable pageable
     ) {
         userService.validateUserActive(userId);
 
@@ -86,7 +90,9 @@ public class ServiceTransactionHistory {
 
         return repositoryTransactionHistory.search(
                 List.of(walletId),
-                TransactionSearchCriteria.forWallet(query, walletId, type),
+                TransactionSearchCriteria.forWallet(
+                        query, walletId, type, contributorIds
+                ),
                 pageable
         );
     }

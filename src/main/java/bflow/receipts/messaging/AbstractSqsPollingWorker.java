@@ -48,32 +48,34 @@ public abstract class AbstractSqsPollingWorker implements SmartLifecycle {
     /** The dedicated thread running {@link #pollLoop()}. */
     private Thread workerThread;
 
+    /** Milliseconds in one second, used to convert a backoff. */
+    private static final long MILLIS_PER_SECOND = 1000L;
+
     /**
      * Creates a new polling worker.
      *
-     * @param sqsClient the SQS client to poll with
-     * @param queueUrl the URL of the queue to poll
-     * @param waitTimeSeconds long-poll wait time, in seconds
-     * @param maxMessages maximum messages per receive call
-     * @param errorBackoffSeconds pause after a poll failure, in
-     *         seconds
+     * @param client the SQS client to poll with
+     * @param queue the URL of the queue to poll
+     * @param waitSeconds long-poll wait time, in seconds
+     * @param maxMsgs maximum messages per receive call
+     * @param backoffSeconds pause after a poll failure, in seconds
      */
     protected AbstractSqsPollingWorker(
-            final SqsClient sqsClient,
-            final String queueUrl,
-            final int waitTimeSeconds,
-            final int maxMessages,
-            final int errorBackoffSeconds
+            final SqsClient client,
+            final String queue,
+            final int waitSeconds,
+            final int maxMsgs,
+            final int backoffSeconds
     ) {
-        this.sqsClient = sqsClient;
-        this.queueUrl = queueUrl;
-        this.waitTimeSeconds = waitTimeSeconds;
-        this.maxMessages = maxMessages;
-        this.errorBackoffSeconds = errorBackoffSeconds;
+        this.sqsClient = client;
+        this.queueUrl = queue;
+        this.waitTimeSeconds = waitSeconds;
+        this.maxMessages = maxMsgs;
+        this.errorBackoffSeconds = backoffSeconds;
     }
 
     @Override
-    public void start() {
+    public final void start() {
         if (running.compareAndSet(false, true)) {
             workerThread = new Thread(this::pollLoop, workerName());
             workerThread.setDaemon(true);
@@ -82,7 +84,7 @@ public abstract class AbstractSqsPollingWorker implements SmartLifecycle {
     }
 
     @Override
-    public void stop() {
+    public final void stop() {
         running.set(false);
         if (workerThread != null) {
             workerThread.interrupt();
@@ -90,7 +92,7 @@ public abstract class AbstractSqsPollingWorker implements SmartLifecycle {
     }
 
     @Override
-    public boolean isRunning() {
+    public final boolean isRunning() {
         return running.get();
     }
 
@@ -156,7 +158,7 @@ public abstract class AbstractSqsPollingWorker implements SmartLifecycle {
 
     private void sleepQuietly(final int seconds) {
         try {
-            Thread.sleep(seconds * 1000L);
+            Thread.sleep(seconds * MILLIS_PER_SECOND);
         } catch (InterruptedException ex) {
             Thread.currentThread().interrupt();
         }

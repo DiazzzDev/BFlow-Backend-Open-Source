@@ -18,7 +18,8 @@ import java.util.UUID;
  */
 @Slf4j
 @Component
-public class ReceiptOcrRequestListener extends AbstractSqsPollingWorker {
+public final class ReceiptOcrRequestListener
+        extends AbstractSqsPollingWorker {
 
     /** Service that submits the actual Textract job. */
     private final ReceiptOcrJobStarter receiptOcrJobStarter;
@@ -27,8 +28,8 @@ public class ReceiptOcrRequestListener extends AbstractSqsPollingWorker {
      * Creates the listener and wires it to the request queue.
      *
      * @param sqsClient the SQS client to poll with
-     * @param receiptOcrJobStarter service that submits the Textract
-     *         job for a receipt
+     * @param jobStarter service that submits the Textract job for a
+     *         receipt
      * @param queueUrl URL of the OCR request queue
      * @param waitTimeSeconds long-poll wait time, in seconds
      * @param maxMessages maximum messages per receive call
@@ -37,7 +38,7 @@ public class ReceiptOcrRequestListener extends AbstractSqsPollingWorker {
      */
     public ReceiptOcrRequestListener(
             final SqsClient sqsClient,
-            final ReceiptOcrJobStarter receiptOcrJobStarter,
+            final ReceiptOcrJobStarter jobStarter,
             @Value("${aws.sqs.receipt-ocr-requests-queue-url}")
             final String queueUrl,
             @Value("${app.ocr.request-poll-wait-seconds}")
@@ -49,7 +50,7 @@ public class ReceiptOcrRequestListener extends AbstractSqsPollingWorker {
     ) {
         super(sqsClient, queueUrl, waitTimeSeconds, maxMessages,
                 errorBackoffSeconds);
-        this.receiptOcrJobStarter = receiptOcrJobStarter;
+        this.receiptOcrJobStarter = jobStarter;
     }
 
     @Override
