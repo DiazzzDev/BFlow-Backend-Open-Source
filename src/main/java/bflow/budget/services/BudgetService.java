@@ -125,6 +125,7 @@ public class BudgetService {
      * @param userId the user ID
      * @return the budget response
      */
+    @Transactional(readOnly = true)
     public BudgetResponse getBudgetStatus(final UUID budgetId,
                                           final UUID userId) {
 
@@ -261,6 +262,7 @@ public class BudgetService {
      * @param userId the user ID
      * @return list of budget responses
      */
+    @Transactional(readOnly = true)
     public List<BudgetResponse> getBudgetsByWallet(final UUID walletId,
                                                    final UUID userId) {
 
@@ -283,6 +285,7 @@ public class BudgetService {
      * @param userId the user ID
      * @return the budget summary response
      */
+    @Transactional(readOnly = true)
     public BudgetSummaryResponse getBudgetSummary(
             final UUID walletId,
             final UUID userId
@@ -530,6 +533,7 @@ public class BudgetService {
      * @param userId the user ID
      * @return the aggregated budget detail response
      */
+    @Transactional(readOnly = true)
     public BudgetDetailResponse getBudgetDetail(
             final UUID budgetId,
             final UUID userId
