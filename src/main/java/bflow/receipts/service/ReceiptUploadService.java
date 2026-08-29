@@ -14,6 +14,7 @@ import bflow.receipts.DTO.ReceiptUploadResponse;
 import bflow.receipts.entity.ReceiptUpload;
 import bflow.receipts.enums.ReceiptStatus;
 import bflow.receipts.enums.ReceiptTransactionType;
+import bflow.receipts.event.ReceiptRegisteredEvent;
 import bflow.receipts.repository.RepositoryReceiptUpload;
 import bflow.storage.entity.StoredFile;
 import bflow.storage.enums.FileStatus;
@@ -21,6 +22,7 @@ import bflow.storage.repository.RepositoryStoredFile;
 import bflow.wallet.entities.Wallet;
 import bflow.wallet.repository.RepositoryWalletUser;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -71,6 +73,12 @@ public class ReceiptUploadService {
     private final StorageService storageService;
 
     /**
+     * Publisher used to raise the domain event that triggers async
+     * OCR processing once this transaction commits.
+     */
+    private final ApplicationEventPublisher applicationEventPublisher;
+
+    /**
      * Registers an already-uploaded file as a receipt pending OCR
      * processing. This is the endpoint the "camera-first" flow hits
      * right after the user picks a wallet for the photo they just
@@ -119,11 +127,14 @@ public class ReceiptUploadService {
         receipt.setWallet(wallet);
         receipt.setStatus(ReceiptStatus.RECEIVED);
 
-        // TODO(OCR-04): trigger async Textract processing here
-        // (publish a domain event / enqueue a job) once that epic
-        // starts. Status stays RECEIVED until then.
-
         ReceiptUpload saved = repositoryReceiptUpload.save(receipt);
+
+        // Actual OCR processing (SQS publish) only happens after
+        // this transaction commits — see
+        // ReceiptOcrRequestEventListener. Status stays RECEIVED
+        // until the request listener picks it up.
+        applicationEventPublisher.publishEvent(
+                new ReceiptRegisteredEvent(saved.getId()));
 
         return toResponse(saved);
     }
@@ -257,6 +268,13 @@ public class ReceiptUploadService {
                 receipt.getStoredFile().getId(),
                 receipt.getWallet().getId(),
                 receipt.getStatus(),
+                receipt.getSuggestedType(),
+                receipt.getSuggestedTitle(),
+                receipt.getSuggestedAmount(),
+                receipt.getSuggestedCategoryId(),
+                receipt.getSuggestedDate(),
+                receipt.getConfidenceScore(),
+                receipt.getFailureReason(),
                 receipt.getResultingTransactionId(),
                 receipt.getCreatedAt()
         );

@@ -60,4 +60,13 @@ public interface RepositoryRecurringTransaction
     findByWalletIdAndActiveTrueOrderByNextExecutionDateAsc(
             UUID walletId, Pageable pageable
     );
+
+    /**
+     * Checks whether a wallet has any recurring transaction defined,
+     * active or not.
+     *
+     * @param walletId the wallet UUID
+     * @return true if at least one recurring transaction exists
+     */
+    boolean existsByWalletId(UUID walletId);
 }

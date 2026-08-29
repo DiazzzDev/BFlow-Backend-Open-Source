@@ -2,6 +2,7 @@ package bflow.receipts.controllers;
 
 import bflow.auth.services.CurrentUserService;
 import bflow.common.response.ApiResponse;
+import bflow.receipts.DTO.ReceiptConfirmRequest;
 import bflow.receipts.DTO.ReceiptUploadRequest;
 import bflow.receipts.DTO.ReceiptUploadResponse;
 import bflow.receipts.service.ReceiptUploadService;
@@ -11,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -79,6 +81,56 @@ public final class ControllerReceiptUpload {
 
         return ResponseEntity.ok(ApiResponse.success(
                 "Receipt status retrieved", response,
+                request.getRequestURI()));
+    }
+
+    /**
+     * Confirms a receipt's suggested data — as edited by the user —
+     * into a new Expense or Income.
+     *
+     * @param id identifier of the receipt being confirmed
+     * @param body the confirmed transaction data
+     * @param authentication authentication information of the current user
+     * @param request HTTP request used to obtain the request URI
+     * @return response containing the confirmed receipt, now
+     *         CONFIRMED and linked to the resulting Expense/Income
+     */
+    @PostMapping("/{id}/confirm")
+    public ResponseEntity<ApiResponse<ReceiptUploadResponse>> confirm(
+            @PathVariable final UUID id,
+            @Valid @RequestBody final ReceiptConfirmRequest body,
+            final Authentication authentication,
+            final HttpServletRequest request
+    ) {
+        UUID userId = currentUserService.getCurrentUserId(authentication);
+        ReceiptUploadResponse response =
+                receiptUploadService.confirm(userId, id, body);
+
+        return ResponseEntity.ok(ApiResponse.success(
+                "Receipt confirmed", response,
+                request.getRequestURI()));
+    }
+
+    /**
+     * Discards a receipt the user doesn't want to keep, deleting
+     * its underlying file immediately.
+     *
+     * @param id identifier of the receipt being discarded
+     * @param authentication authentication information of the current user
+     * @param request HTTP request used to obtain the request URI
+     * @return an empty response confirming the receipt was discarded
+     */
+    @DeleteMapping("/{id}")
+    public ResponseEntity<ApiResponse<Void>> discard(
+            @PathVariable final UUID id,
+            final Authentication authentication,
+            final HttpServletRequest request
+    ) {
+        UUID userId = currentUserService.getCurrentUserId(authentication);
+        receiptUploadService.discard(userId, id);
+
+        return ResponseEntity.ok(ApiResponse.success(
+                "Receipt discarded", null,
                 request.getRequestURI()));
     }
 }

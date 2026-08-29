@@ -3,6 +3,7 @@ package bflow.wallet.repository;
 import bflow.wallet.entities.WalletInvitation;
 import bflow.wallet.enums.WalletInvitationStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -37,26 +38,21 @@ public interface RepositoryWalletInvitation
     );
 
     /**
-     * Finds a pending invitation for the same wallet and email.
-     *
-     * @param walletId wallet identifier
-     * @param invitedEmail invited email
-     * @param status invitation status
-     * @return optional invitation
-     */
-    Optional<WalletInvitation> findByWalletIdAndInvitedEmailAndStatus(
-            UUID walletId,
-            String invitedEmail,
-            WalletInvitationStatus status
-    );
-
-    /**
-     * Returns pending invitations for an email.
+     * Returns pending invitations for an email, eagerly fetching the
+     * wallet and inviting user so the response can be built without
+     * triggering a lazy-load query per invitation.
      *
      * @param invitedEmail invited email
      * @param status invitation status
      * @return invitation list
      */
+    @Query(
+            "SELECT wi FROM WalletInvitation wi "
+                    + "JOIN FETCH wi.wallet "
+                    + "JOIN FETCH wi.invitedByUser "
+                    + "WHERE wi.invitedEmail = :invitedEmail "
+                    + "AND wi.status = :status"
+    )
     List<WalletInvitation> findByInvitedEmailAndStatus(
             String invitedEmail,
             WalletInvitationStatus status
@@ -75,6 +71,36 @@ public interface RepositoryWalletInvitation
     boolean existsByWalletIdAndInvitedEmailAndStatus(
             UUID walletId,
             String invitedEmail,
+            WalletInvitationStatus status
+    );
+
+    /**
+     * Returns every invitation sent by a given user, across all of
+     * their wallets and regardless of status, newest first.
+     *
+     * @param invitedByUserId identifier of the user who sent the
+     *         invitations
+     * @return the sender's full invitation history
+     */
+    List<WalletInvitation> findByInvitedByUserIdOrderByCreatedAtDesc(
+            UUID invitedByUserId
+    );
+
+    /**
+     * Retrieves the email addresses with a pending invitation for
+     * the specified wallet. Used to resolve collaborator search
+     * status in bulk instead of querying per candidate.
+     *
+     * @param walletId the wallet UUID
+     * @param status the invitation status
+     * @return the invited email addresses
+     */
+    @Query(
+            "SELECT wi.invitedEmail FROM WalletInvitation wi "
+                    + "WHERE wi.wallet.id = :walletId AND wi.status = :status"
+    )
+    List<String> findInvitedEmailsByWalletIdAndStatus(
+            UUID walletId,
             WalletInvitationStatus status
     );
 }

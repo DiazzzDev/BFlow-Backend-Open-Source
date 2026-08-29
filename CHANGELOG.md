@@ -2,6 +2,37 @@
 
 All notable changes to BFlow are documented here.
 
+## v0.6.0
+
+This release focuses on collaboration, data integrity, and platform foundations: shared wallets get a richer, more informative experience, receipt handling moves to automated OCR processing, and the first building blocks of an event-driven architecture are in place.
+
+### Added
+
+* **Receipt OCR via Amazon Textract** — Camera-first receipt upload now runs through an asynchronous OCR pipeline (S3 + Textract + SQS/SNS) to extract line items automatically, instead of manual entry.
+* **User Search for Collaborators** — Wallet owners can search for users by name or email when inviting collaborators, with matching results showing name, email, and profile picture, and their current status (invitable, already a member, or invitation pending).
+* **Contributor Identity on Transactions** — Transaction history now surfaces the name, email, and profile picture of the member who made each transaction, shown only on wallets with more than one member. Transactions can also be filtered by one or more specific contributors.
+* **Richer Wallet Invitations** — Pending invitation responses now include the wallet's name and the inviting user's name, email, and profile picture, so invitees see who invited them and to what wallet without an extra lookup.
+* **Profile Picture Upload** — Users can upload and update their own profile picture; the image is stored privately and served back through the application, keeping the same `pictureUrl` contract regardless of whether the picture originated from Google Sign-In or a direct upload.
+* **Event-Driven Foundations (SQS + SNS)** — Introduced a reusable polling-worker abstraction for SQS consumers, currently powering invoice/receipt detection through the OCR pipeline. This lays the groundwork for a broader event-driven architecture planned for future automation ("autopilot") features.
+
+### Fixed
+
+* **Safe Wallet Deletion** — Deleting a wallet now checks for existing financial history — including recurring transactions — before allowing a permanent delete, preventing orphaned or corrupted financial data.
+* **Pro Plan Seeding Conflicts** — Resolved a startup failure caused by duplicate/legacy `plans` rows conflicting with the Pro plan migration, and made the underlying migration idempotent so it can safely run across environments.
+* **Category Seeding on Startup** — Replaced the in-code category seeder with a Flyway migration, removing an unnecessary synchronous JPA initialization cost from every application boot.
+
+### Changed
+
+* **Spring Boot 4.1.0 → 4.1.1** — Upgraded for upstream performance and stability improvements.
+* Reduced unnecessary Hibernate dirty-checking overhead on read-only budget queries.
+* Enabled JDBC batching for bulk inserts/updates, reducing database round-trips for operations like recurring transaction processing.
+
+### Security
+
+* Disabled Swagger UI and OpenAPI documentation endpoints in the production profile.
+
+---
+
 ## v0.5.0
 
 **First production release of BFlow Studio.**
@@ -41,4 +72,4 @@ BFlow is continuously evolving, and user feedback will help guide future develop
 
 ## Version
 
-**BFlow v0.5.0**
+**BFlow v0.6.0**

@@ -35,4 +35,5 @@ public interface RepositoryWallet extends JpaRepository<Wallet, UUID> {
     "SELECT COALESCE(SUM(w.balance), 0) FROM Wallet w WHERE w.id IN :walletIds"
     )
     BigDecimal sumBalanceByWalletIds(List<UUID> walletIds);
+
 }

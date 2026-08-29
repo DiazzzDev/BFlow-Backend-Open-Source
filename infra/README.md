@@ -88,6 +88,7 @@ The infrastructure is provisioned sequentially.
 | 11-ecs.sh | ECS Cluster, Task Definition and Service | Everything above |
 | 12-github-oidc.sh | GitHub Deployment Role | IAM |
 | 13-budget.sh | AWS Budget | - |
+| 14-ocr-pipeline.sh | Receipt-OCR SQS queues, SNS topic, Textract IAM role, ECS task role grant | IAM (09) |
 
 ---
 
@@ -109,6 +110,7 @@ Run the scripts in the following order:
 ./bootstrap/11-ecs.sh
 ./bootstrap/12-github-oidc.sh
 ./bootstrap/13-budget.sh
+./bootstrap/14-ocr-pipeline.sh
 ```
 
 Each script stores its outputs into:
@@ -193,19 +195,49 @@ This is the AWS recommended authentication mechanism.
 
 # Required GitHub Variables
 
-Repository Variables:
+`deploy.yml` validates all of these at the start of every run (job
+`validate-environment`) and fails fast with a clear message if any is
+missing or points at something that doesn't exist in AWS. Set them under
+**Settings > Environments > production**.
 
-| Variable | Example |
-|----------|---------|
-| AWS_REGION | us-east-1 |
-| AWS_ROLE_ARN | arn:aws:iam::123456789012:role/bflow-github-actions-role |
-| ECR_REPOSITORY | bflow-backend |
-| ECS_CLUSTER_NAME | bflow-cluster |
-| ECS_SERVICE_NAME | bflow-service |
-| ECS_TASK_FAMILY | bflow-backend |
-| ECS_CONTAINER_NAME | bflow-backend |
+Repository/Environment Variables (`vars.*`, not secret):
 
-No AWS secrets are required.
+| Variable | Example | Produced by |
+|----------|---------|-------------|
+| AWS_REGION | us-east-1 | config.env |
+| ECR_REPOSITORY | 123456789012.dkr.ecr.us-east-1.amazonaws.com/bflow-backend | bootstrap/06-ecr.sh |
+| ECS_CLUSTER_NAME | bflow-cluster | bootstrap/11-ecs.sh |
+| ECS_SERVICE_NAME | bflow-service | config.env |
+| ECS_TASK_FAMILY | bflow-backend | config.env |
+| ECS_CONTAINER_NAME | bflow-backend | config.env |
+| ECS_EXECUTION_ROLE_ARN | arn:aws:iam::...:role/bflow-execution-role | bootstrap/09-iam.sh |
+| ECS_TASK_ROLE_ARN | arn:aws:iam::...:role/bflow-task-role | bootstrap/09-iam.sh |
+| CLOUDWATCH_LOG_GROUP | /ecs/bflow-backend | bootstrap/10-cloudwatch.sh |
+| ECS_PUBLIC_SUBNET_1 / _2 | subnet-0abc... | bootstrap/02-subnets.sh |
+| ECS_SECURITY_GROUP | sg-0abc... | bootstrap/05-security-groups.sh |
+| S3_BUCKET | bflow-prod-receipts | infra/s3/01-create-bucket.sh |
+| COGNITO_ISSUER_URI | https://cognito-idp.us-east-1.amazonaws.com/us-east-1_xxxxxxx | Cognito user pool console |
+| RECEIPT_OCR_REQUESTS_QUEUE_URL | https://sqs.us-east-1.amazonaws.com/.../bflow-receipt-ocr-requests | bootstrap/14-ocr-pipeline.sh |
+| RECEIPT_OCR_RESULTS_QUEUE_URL | https://sqs.us-east-1.amazonaws.com/.../bflow-receipt-ocr-results | bootstrap/14-ocr-pipeline.sh |
+| RECEIPT_OCR_RESULTS_TOPIC_ARN | arn:aws:sns:us-east-1:...:bflow-receipt-ocr-results | bootstrap/14-ocr-pipeline.sh |
+| TEXTRACT_SNS_ROLE_ARN | arn:aws:iam::...:role/bflow-textract-sns-role | bootstrap/14-ocr-pipeline.sh |
+| CLOUDFLARE_ZONE_ID | (Cloudflare zone id) | Cloudflare dashboard |
+| CLOUDFLARE_DNS_RECORD_ID | (Cloudflare DNS record id) | Cloudflare dashboard |
+| CLOUDFLARE_DNS_RECORD_NAME | api.bflow-studio.com | Cloudflare dashboard |
+
+Repository/Environment Secrets (`secrets.*`):
+
+| Secret | Produced by |
+|--------|-------------|
+| AWS_ROLE_ARN | bootstrap/12-github-oidc.sh |
+| RDS_SECRET_ARN | bootstrap/08-secrets.sh |
+| WOMPI_SECRET_ARN | bootstrap/08-secrets.sh (requires `infra/wompi.env`, see `infra/wompi.env.example`) |
+| CLOUDFLARE_API_TOKEN | Cloudflare dashboard (scoped API token) |
+
+`RECEIPT_OCR_*` and `TEXTRACT_SNS_ROLE_ARN` are wired into the ECS task
+definition, but the async Textract trigger in `ReceiptUploadService` is
+still a TODO in the codebase (`OCR-04`) — the pipeline is provisioned
+ahead of the feature so the deploy stays reproducible once it ships.
 
 ---
 

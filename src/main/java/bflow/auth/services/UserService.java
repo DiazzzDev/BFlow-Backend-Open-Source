@@ -54,6 +54,10 @@ public class UserService {
             user.setEmail(request.getEmail().trim());
         }
 
+        if (request.getName() != null) {
+            user.setName(request.getName().trim());
+        }
+
         userRepository.save(user);
 
         return getProfile(userId);
@@ -104,6 +108,8 @@ public class UserService {
         return UserProfileResponse.builder()
                 .id(user.getId())
                 .email(user.getEmail())
+                .name(user.getName())
+                .pictureUrl(user.getPictureUrl())
                 .roles(user.getRoles())
                 .status(user.getStatus())
                 .build();

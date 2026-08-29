@@ -23,5 +23,5 @@ jobs:
       - name: Run code quality
         run: mvn -B checkstyle:check
 
-      - name: Run tests with coverage JaCoCo - 25s% required
+      - name: Run tests with coverage JaCoCo - 25% required
         run: mvn -B clean verify

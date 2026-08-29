@@ -2,6 +2,7 @@ package bflow.auth.repository;
 
 import bflow.auth.entities.User;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
@@ -12,7 +13,7 @@ import java.util.UUID;
  */
 @Repository
 public interface RepositoryUser
-        extends JpaRepository<User, UUID> {
+        extends JpaRepository<User, UUID>, JpaSpecificationExecutor<User> {
 
     /**
      * Finds a user by ID.

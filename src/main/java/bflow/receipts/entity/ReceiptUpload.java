@@ -19,7 +19,9 @@ import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.UpdateTimestamp;
+import org.hibernate.type.SqlTypes;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -116,8 +118,18 @@ public final class ReceiptUpload {
     /**
      * The raw OCR payload returned by Textract, stored as JSON.
      */
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "raw_ocr_payload", columnDefinition = "jsonb")
     private String rawOcrPayload;
+
+    /**
+     * The Textract {@code JobId} returned by {@code
+     * StartExpenseAnalysis}. Populated as soon as the async job is
+     * submitted; used to correlate the SNS completion notification
+     * (which only carries the JobId) back to this receipt.
+     */
+    @Column(name = "textract_job_id")
+    private String textractJobId;
 
     /**
      * The type of transaction (Expense or Income) that this receipt

@@ -8,6 +8,7 @@ import bflow.rate_limit.filter.RateLimitFilter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
+import org.springframework.http.HttpMethod;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -87,12 +88,17 @@ public class SecurityConfig {
                                 "/swagger-ui/**",
                                 "/actuator/health",
                                 "/v3/api-docs/**",
-                                "/actuator/info"
+                                "/actuator/info",
+                                "/actuator/startup"
                         ).permitAll()
                         .requestMatchers("/api/v1/legal/**").permitAll()
                         .requestMatchers("/api/v1/webhooks/wompi").permitAll()
                         .requestMatchers(
                                 "/api/auth/verify-email"
+                        ).permitAll()
+                        .requestMatchers(
+                                HttpMethod.GET,
+                                "/api/v1/users/*/picture"
                         ).permitAll()
                         .requestMatchers("/api/test")
                         .authenticated()

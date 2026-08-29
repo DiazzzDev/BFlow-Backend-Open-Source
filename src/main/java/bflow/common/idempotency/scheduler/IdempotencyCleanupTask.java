@@ -23,7 +23,7 @@ public class IdempotencyCleanupTask {
     * Removes expired idempotency records from the persistence store.
     * Runs automatically every hour according to the configured cron expression.
     */
-    @Scheduled(cron = "0 0 * * * *")
+    @Scheduled(cron = "0 0 */4 * * *")
     @Transactional
     public void purgeExpiredKeys() {
         int deleted = repositoryIdempotency.deleteExpired(Instant.now());

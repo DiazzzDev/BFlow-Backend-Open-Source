@@ -2,6 +2,7 @@ package bflow.receipts.repository;
 
 import bflow.receipts.entity.ReceiptUpload;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
@@ -30,4 +31,29 @@ public interface RepositoryReceiptUpload
      * @return true if a receipt upload exists for the stored file
      */
     boolean existsByStoredFileId(UUID storedFileId);
+
+    /**
+     * Finds a receipt upload by the Textract job that was submitted
+     * for it. Used by the OCR result listener to correlate an SNS
+     * completion notification (which only carries the JobId) back
+     * to the receipt that requested it.
+     *
+     * @param textractJobId the Textract {@code JobId}
+     * @return an optional containing the receipt upload if found
+     */
+    Optional<ReceiptUpload> findByTextractJobId(String textractJobId);
+
+    /**
+     * Finds a receipt upload by id with its {@code storedFile}
+     * eagerly fetched, so the OCR request listener can read {@code
+     * storedFile.objectKey} without needing an open Hibernate
+     * session beyond this call — the listener's own transaction
+     * only wraps the status transition, not the S3/Textract calls.
+     *
+     * @param id the receipt upload identifier
+     * @return an optional containing the receipt upload if found
+     */
+    @Query("select r from ReceiptUpload r "
+            + "join fetch r.storedFile where r.id = :id")
+    Optional<ReceiptUpload> findByIdWithStoredFile(UUID id);
 }

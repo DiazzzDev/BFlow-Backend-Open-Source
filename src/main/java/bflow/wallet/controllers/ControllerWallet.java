@@ -19,14 +19,15 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import java.net.URI;
 import java.util.List;
@@ -139,14 +140,14 @@ public final class ControllerWallet {
     }
 
     /**
-    * Retrieves all expenses associated with a wallet.
-    *
-    * @param id the wallet identifier.
-    * @param pageable pagination configuration.
-    * @param authentication the authenticated user.
-    * @param request the HTTP request context.
-    * @return a paginated list of wallet expenses.
-    */
+     * Retrieves all expenses associated with a wallet.
+     *
+     * @param id the wallet identifier.
+     * @param pageable pagination configuration.
+     * @param authentication the authenticated user.
+     * @param request the HTTP request context.
+     * @return a paginated list of wallet expenses.
+     */
     @GetMapping("/{id}/expenses")
     public ApiResponse<Page<ExpenseResponse>> getWalletExpenses(
             @PathVariable final UUID id,
@@ -171,14 +172,14 @@ public final class ControllerWallet {
     }
 
     /**
-    * Retrieves all incomes associated with a wallet.
-    *
-    * @param id the wallet identifier.
-    * @param pageable pagination configuration.
-    * @param authentication the authenticated user.
-    * @param request the HTTP request context.
-    * @return a paginated list of wallet incomes.
-    */
+     * Retrieves all incomes associated with a wallet.
+     *
+     * @param id the wallet identifier.
+     * @param pageable pagination configuration.
+     * @param authentication the authenticated user.
+     * @param request the HTTP request context.
+     * @return a paginated list of wallet incomes.
+     */
     @GetMapping("/{id}/incomes")
     public ApiResponse<Page<IncomeResponse>> getWalletIncomes(
             @PathVariable final UUID id,
@@ -314,4 +315,22 @@ public final class ControllerWallet {
                 .body(response);
     }
 
+    /**
+     * Permanently deletes a wallet the authenticated user owns.
+     *
+     * @param id the wallet's identifier.
+     * @param authentication the current user's authentication object.
+     * @return an empty 204 response confirming the deletion.
+     */
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteWallet(
+            @PathVariable final UUID id,
+            final Authentication authentication
+    ) {
+        UUID userId = currentUserService.getCurrentUserId(authentication);
+
+        serviceWallet.deleteWallet(id, userId);
+
+        return ResponseEntity.noContent().build();
+    }
 }

@@ -624,6 +624,51 @@ public class ServiceWallet {
     }
 
     /**
+     * Permanently deletes a wallet only when it has no financial history.
+     *
+     * @param walletId wallet identifier.
+     * @param userId authenticated user identifier.
+     */
+    public void deleteWallet(
+            final UUID walletId,
+            final UUID userId
+    ) {
+        userService.validateUserActive(userId);
+
+        WalletUser walletUser = repositoryWalletUser
+                .findByWalletIdAndUserId(walletId, userId)
+                .orElseThrow(() -> new AccessDeniedException(
+                        "User does not have access to this wallet"
+                ));
+
+        if (walletUser.getRole() != WalletRole.OWNER) {
+            throw new AccessDeniedException(
+                    "Only owners can delete the wallet"
+            );
+        }
+
+        Wallet wallet = walletUser.getWallet();
+
+        if (hasFinancialHistory(walletId)) {
+            throw new IllegalStateException(
+       "Wallet cannot be permanently deleted because it has financial history. "
+                        + "Archive the wallet instead."
+            );
+        }
+
+        repositoryWalletUser.delete(walletUser);
+        repositoryWallet.delete(wallet);
+    }
+
+    private boolean hasFinancialHistory(final UUID walletId) {
+        return repositoryExpense.countByWalletId(walletId) > 0
+                || repositoryIncome.countByWalletId(walletId) > 0
+                || repositoryTransfers.countByWallet(walletId) > 0
+                || repositoryRecurringTransaction
+                .existsByWalletId(walletId);
+    }
+
+    /**
      * Converts an Expense entity into an ExpenseResponse DTO.
      *
      * @param expense the expense entity to convert.

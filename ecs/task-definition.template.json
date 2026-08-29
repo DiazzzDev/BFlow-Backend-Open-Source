@@ -4,7 +4,7 @@
   "requiresCompatibilities": [
     "FARGATE"
   ],
-  "cpu": "512",
+  "cpu": "256",
   "memory": "1024",
 
   "executionRoleArn": "${ECS_EXECUTION_ROLE_ARN}",
@@ -57,6 +57,22 @@
         {
           "name": "S3_BUCKET",
           "value": "${S3_BUCKET}"
+        },
+        {
+          "name": "RECEIPT_OCR_REQUESTS_QUEUE_URL",
+          "value": "${RECEIPT_OCR_REQUESTS_QUEUE_URL}"
+        },
+        {
+          "name": "RECEIPT_OCR_RESULTS_QUEUE_URL",
+          "value": "${RECEIPT_OCR_RESULTS_QUEUE_URL}"
+        },
+        {
+          "name": "RECEIPT_OCR_RESULTS_TOPIC_ARN",
+          "value": "${RECEIPT_OCR_RESULTS_TOPIC_ARN}"
+        },
+        {
+          "name": "TEXTRACT_SNS_ROLE_ARN",
+          "value": "${TEXTRACT_SNS_ROLE_ARN}"
         }
       ],
 
