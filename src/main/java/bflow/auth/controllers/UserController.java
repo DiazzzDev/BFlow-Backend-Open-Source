@@ -7,6 +7,9 @@ import bflow.auth.services.ProfilePictureService;
 import bflow.auth.services.UserService;
 import bflow.common.aws.service.StorageObject;
 import bflow.common.response.ApiResponse;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -32,6 +35,7 @@ import java.util.concurrent.TimeUnit;
  * REST controller for managing user profile operations.
  * Provides endpoints for retrieving, updating, and deleting user profiles.
  */
+@Tag(name = "Users", description = "Profile, profile picture, and account deletion for the authenticated user")
 @RestController
 @RequestMapping("/api/v1/users")
 @RequiredArgsConstructor
@@ -56,6 +60,16 @@ public final class UserController {
      * @param request the HTTP request for path information.
      * @return a ResponseEntity containing the updated user's profile.
      */
+    @Operation(
+            summary = "Updates the authenticated user's profile",
+            description = "Modifies the editable profile fields (name, preferences, etc.) "
+                    + "of the currently authenticated user."
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Profile updated"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Invalid request data"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "User not authenticated")
+    })
     @PatchMapping("/me")
     public ApiResponse<UserProfileResponse> updateProfile(
             final Authentication authentication,
@@ -82,6 +96,15 @@ public final class UserController {
      * @param request the HTTP request for path information.
      * @return a response containing the new picture URL.
      */
+    @Operation(
+            summary = "Replaces the user's profile picture",
+            description = "Uploads a new image (multipart/form-data) and sets it as the "
+                    + "authenticated user's profile picture, returning the resulting public URL."
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Profile picture updated"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Invalid file or unsupported format")
+    })
     @PatchMapping(
             value = "/me/picture",
             consumes = MediaType.MULTIPART_FORM_DATA_VALUE
@@ -112,6 +135,13 @@ public final class UserController {
      * @param userId the picture owner's identifier.
      * @return the raw image bytes with their original content type.
      */
+    @Operation(
+            summary = "Gets a user's profile picture",
+            description = "Public endpoint (no authentication) that serves the image bytes "
+                    + "for the given user's profile picture, cached for 1 hour. It is public "
+                    + "because a plain <img> tag cannot send an Authorization header."
+    )
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Image served successfully")
     @GetMapping("/{userId}/picture")
     public ResponseEntity<InputStreamResource> getPicture(
             @PathVariable final UUID userId
@@ -137,6 +167,12 @@ public final class UserController {
      * @param request the HTTP request for path information.
      * @return a ResponseEntity containing a success response.
      */
+    @Operation(
+            summary = "Deletes (soft delete) the authenticated user's account",
+            description = "Marks the current user's account as deleted without physically "
+                    + "removing their data from the database."
+    )
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Account deleted")
     @DeleteMapping("/me")
     public ApiResponse<Void> deleteAccount(
             final Authentication authentication,

@@ -14,10 +14,13 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 import java.util.UUID;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
 /**
  * REST controller that exposes transaction history endpoints.
  */
+@Tag(name = "Financial History", description = "Query the combined history of financial movements")
 @RestController
 @RequiredArgsConstructor
 public class ControllerTransactionHistory {
@@ -44,6 +47,10 @@ public class ControllerTransactionHistory {
      * @param request current HTTP request.
      * @return paginated transaction history.
      */
+    @Operation(
+            summary = "Retrieves the unified transaction history for the authenticated user.",
+            description = "Retrieves the unified transaction history for the authenticated user."
+    )
     @GetMapping("/api/v1/transactions")
     public ApiResponse<Page<TransactionResponse>> getGlobalHistory(
             final Authentication authentication,
@@ -79,6 +86,10 @@ public class ControllerTransactionHistory {
      * @param request current HTTP request.
      * @return paginated wallet transaction history.
      */
+    @Operation(
+            summary = "Retrieves the transaction history for a specific wallet.",
+            description = "Retrieves the transaction history for a specific wallet."
+    )
     @GetMapping("/api/v1/wallets/{walletId}/transactions")
     public ApiResponse<Page<TransactionResponse>> getWalletHistory(
             @PathVariable final UUID walletId,

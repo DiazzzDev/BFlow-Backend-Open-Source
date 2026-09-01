@@ -18,12 +18,15 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.UUID;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
 /**
  * REST controller for managing income operations.
  * Provides endpoints for creating and retrieving income entries.
  * This class is designed for extension through inheritance.
  */
+@Tag(name = "Income", description = "Management of income recorded by the user")
 @RestController
 @RequestMapping("/api/v1/incomes")
 @RequiredArgsConstructor
@@ -45,6 +48,10 @@ public class ControllerIncome {
      * @return a ResponseEntity containing the created income response with
      *         HTTP 201 Created status
      */
+    @Operation(
+            summary = "Creates a new income entry for the authenticated user's wallet.",
+            description = "Creates a new income entry for the authenticated user's wallet."
+    )
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public ApiResponse<IncomeResponse> createIncome(
@@ -71,6 +78,10 @@ public class ControllerIncome {
      * @return a ResponseEntity containing the updated income response with
      *         HTTP 200 OK status
      */
+    @Operation(
+            summary = "Updates an existing income entry for the authenticated user.",
+            description = "Updates an existing income entry for the authenticated user."
+    )
     @PutMapping("/{id}")
     public ApiResponse<IncomeResponse> updateIncome(
             @PathVariable final String id,
@@ -101,6 +112,10 @@ public class ControllerIncome {
      * @param authentication the authentication object containing the
      *        authenticated user's principal (UUID)
      */
+    @Operation(
+            summary = "Deletes an existing income entry for the authenticated user.",
+            description = "Deletes an existing income entry for the authenticated user."
+    )
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteIncome(

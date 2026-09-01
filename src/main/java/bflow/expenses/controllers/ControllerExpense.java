@@ -19,7 +19,10 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.UUID;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
+@Tag(name = "Expenses", description = "Management of expenses recorded by the user")
 @RestController
 @RequestMapping("/api/v1/expenses")
 @RequiredArgsConstructor
@@ -41,6 +44,10 @@ public final class ControllerExpense {
      * @return a ResponseEntity containing the created expense response with
      *         HTTP 201 Created status
      */
+    @Operation(
+            summary = "Creates a new expense entry for the authenticated user's wallet.",
+            description = "Creates a new expense entry for the authenticated user's wallet."
+    )
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public ApiResponse<ExpenseResponse> createExpense(
@@ -67,6 +74,10 @@ public final class ControllerExpense {
      * @return a ResponseEntity containing the updated expense response with
      *         HTTP 200 OK status
      */
+    @Operation(
+            summary = "Updates an existing expense entry for the authenticated user.",
+            description = "Updates an existing expense entry for the authenticated user."
+    )
     @PutMapping("/{id}")
     public ApiResponse<ExpenseResponse> updateExpense(
             @PathVariable final String id,
@@ -97,6 +108,10 @@ public final class ControllerExpense {
      * @param authentication the authentication object containing the
      *        authenticated user's principal (UUID)
      */
+    @Operation(
+            summary = "Deletes an existing expense entry for the authenticated user.",
+            description = "Deletes an existing expense entry for the authenticated user."
+    )
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteExpense(

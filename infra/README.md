@@ -89,6 +89,7 @@ The infrastructure is provisioned sequentially.
 | 12-github-oidc.sh | GitHub Deployment Role | IAM |
 | 13-budget.sh | AWS Budget | - |
 | 14-ocr-pipeline.sh | Receipt-OCR SQS queues, SNS topic, Textract IAM role, ECS task role grant | IAM (09) |
+| 15-dns-sync.sh | Cloudflare secret, Lambda, EventBridge rule that keeps the DNS A record in sync with the ECS task's public IP | ECS (11) |
 
 ---
 
@@ -162,6 +163,15 @@ It should never be edited manually.
 
 ---
 
+## cloudflare.env
+
+Copy `infra/cloudflare.env.example` to `infra/cloudflare.env` and fill it
+in to enable `bootstrap/15-dns-sync.sh`. These credentials are stored in
+Secrets Manager and read by the dns-sync Lambda — not GitHub Actions.
+Without this file, `15-dns-sync.sh` is a no-op.
+
+---
+
 # PostgreSQL Provider (Supabase / RDS)
 
 The database backend is selected by a single variable in `config.env`:
@@ -221,9 +231,6 @@ Repository/Environment Variables (`vars.*`, not secret):
 | RECEIPT_OCR_RESULTS_QUEUE_URL | https://sqs.us-east-1.amazonaws.com/.../bflow-receipt-ocr-results | bootstrap/14-ocr-pipeline.sh |
 | RECEIPT_OCR_RESULTS_TOPIC_ARN | arn:aws:sns:us-east-1:...:bflow-receipt-ocr-results | bootstrap/14-ocr-pipeline.sh |
 | TEXTRACT_SNS_ROLE_ARN | arn:aws:iam::...:role/bflow-textract-sns-role | bootstrap/14-ocr-pipeline.sh |
-| CLOUDFLARE_ZONE_ID | (Cloudflare zone id) | Cloudflare dashboard |
-| CLOUDFLARE_DNS_RECORD_ID | (Cloudflare DNS record id) | Cloudflare dashboard |
-| CLOUDFLARE_DNS_RECORD_NAME | api.bflow-studio.com | Cloudflare dashboard |
 
 Repository/Environment Secrets (`secrets.*`):
 
@@ -232,7 +239,12 @@ Repository/Environment Secrets (`secrets.*`):
 | AWS_ROLE_ARN | bootstrap/12-github-oidc.sh |
 | RDS_SECRET_ARN | bootstrap/08-secrets.sh |
 | WOMPI_SECRET_ARN | bootstrap/08-secrets.sh (requires `infra/wompi.env`, see `infra/wompi.env.example`) |
-| CLOUDFLARE_API_TOKEN | Cloudflare dashboard (scoped API token) |
+
+> Cloudflare credentials (`CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ZONE_ID`,
+> `CLOUDFLARE_DNS_RECORD_ID`, `CLOUDFLARE_DNS_RECORD_NAME`) are **not**
+> GitHub variables/secrets anymore. They live in Secrets Manager, set up
+> once via `infra/cloudflare.env` + `bootstrap/15-dns-sync.sh` — see
+> "DNS Sync" below. `deploy.yml` no longer touches Cloudflare at all.
 
 `RECEIPT_OCR_*` and `TEXTRACT_SNS_ROLE_ARN` are wired into the ECS task
 definition, but the async Textract trigger in `ReceiptUploadService` is
@@ -272,6 +284,53 @@ Update ECS Service
       ▼
 Rolling Deployment
 ```
+
+---
+
+# DNS Sync (Cloudflare)
+
+There is no ALB, so the `api.bflow-studio.com` DNS record points
+directly at the ECS task's public IP. That IP changes on **any** task
+replacement, not just deploys — a crash, an OOM kill, a Fargate host
+retirement, or a Spot interruption all launch a new task with a new
+IP. `deploy.yml` updating DNS after its own deploys was not enough to
+cover those cases, so DNS sync was moved out of GitHub Actions
+entirely:
+
+```
+ECS Task State Change (RUNNING)
+            │
+            ▼
+      EventBridge Rule
+            │
+            ▼
+      Lambda (dns-sync)
+            │
+   ┌────────┴────────┐
+   ▼                 ▼
+EC2 DescribeNetworkInterfaces   Secrets Manager (Cloudflare creds)
+   │                 │
+   └────────┬────────┘
+            ▼
+   Cloudflare API (update A record)
+```
+
+Provisioned by `bootstrap/15-dns-sync.sh` (requires
+`infra/cloudflare.env`, see `infra/cloudflare.env.example`, and a local
+Go toolchain to compile the Lambda):
+
+- A Secrets Manager secret holding the Cloudflare API token and record
+  identifiers.
+- A Lambda written in Go (`infra/dns-sync/main.go`), compiled as a
+  `provided.al2023` / `arm64` custom runtime binary (`bootstrap`), that
+  resolves the new task's public IP and updates the Cloudflare A
+  record only if it changed. Go was chosen over an interpreted runtime
+  for lower cold starts and lower cost per invocation on arm64.
+- An EventBridge rule matching `ECS Task State Change` events for the
+  cluster where `lastStatus == RUNNING`, targeting that Lambda.
+
+This fires on every task replacement, deploy or not, so the DNS record
+never goes stale. `deploy.yml` no longer has a Cloudflare step.
 
 ---
 

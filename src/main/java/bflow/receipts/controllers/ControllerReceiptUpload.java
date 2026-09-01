@@ -21,7 +21,10 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 
 import java.util.UUID;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
+@Tag(name = "Receipts", description = "Upload and processing of receipts")
 @RestController
 @RequestMapping("/api/v1/receipts")
 @RequiredArgsConstructor
@@ -44,6 +47,10 @@ public final class ControllerReceiptUpload {
      * @param request HTTP request used to obtain the request URI
      * @return response containing the registered receipt information
      */
+    @Operation(
+            summary = "Registers an uploaded photo as a receipt for a wallet.",
+            description = "Registers an uploaded photo as a receipt for a wallet. Camera-first flow: file already uploaded via the existing presigned-upload endpoints; this is the only extra input the user provides — everything else comes from OCR later."
+    )
     @PostMapping
     public ResponseEntity<ApiResponse<ReceiptUploadResponse>> register(
             @Valid @RequestBody final ReceiptUploadRequest body,
@@ -69,6 +76,10 @@ public final class ControllerReceiptUpload {
      * @param request HTTP request used to obtain the request URI
      * @return response containing the current receipt processing status
      */
+    @Operation(
+            summary = "Retrieves the current processing status of a receipt.",
+            description = "Retrieves the current processing status of a receipt. Lets the frontend poll while OCR processes the receipt."
+    )
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<ReceiptUploadResponse>> getStatus(
             @PathVariable final UUID id,
@@ -95,6 +106,10 @@ public final class ControllerReceiptUpload {
      * @return response containing the confirmed receipt, now
      *         CONFIRMED and linked to the resulting Expense/Income
      */
+    @Operation(
+            summary = "Confirms a receipt's suggested data — as edited by the user — into a new Expense or Income.",
+            description = "Confirms a receipt's suggested data — as edited by the user — into a new Expense or Income."
+    )
     @PostMapping("/{id}/confirm")
     public ResponseEntity<ApiResponse<ReceiptUploadResponse>> confirm(
             @PathVariable final UUID id,
@@ -120,6 +135,10 @@ public final class ControllerReceiptUpload {
      * @param request HTTP request used to obtain the request URI
      * @return an empty response confirming the receipt was discarded
      */
+    @Operation(
+            summary = "Discards a receipt the user doesn't want to keep, deleting its underlying file immediately.",
+            description = "Discards a receipt the user doesn't want to keep, deleting its underlying file immediately."
+    )
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<Void>> discard(
             @PathVariable final UUID id,

@@ -23,7 +23,10 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 import java.util.UUID;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
+@Tag(name = "Subscriptions", description = "Management of the user's plans and subscriptions")
 @RestController
 @RequestMapping("/api/v1/subscriptions")
 @RequiredArgsConstructor
@@ -51,6 +54,10 @@ public final class SubscriptionController {
      * @param request the incoming HTTP request
      * @return a standard API response with the subscriptions list
      */
+    @Operation(
+            summary = "Retrieve the subscriptions owned by the currently authenticated user.",
+            description = "Retrieve the subscriptions owned by the currently authenticated user."
+    )
     @GetMapping
     public ApiResponse<List<SubscriptionResponse>> mySubscriptions(
             final Authentication authentication,
@@ -74,6 +81,10 @@ public final class SubscriptionController {
      * @param request the incoming HTTP request
      * @return a standard API response with the current subscription details
      */
+    @Operation(
+            summary = "Retrieves information about the current subscription for the authenticated user.",
+            description = "Retrieves information about the current subscription for the authenticated user."
+    )
     @GetMapping("/current")
     public ApiResponse<CurrentSubscriptionResponse> current(
             final Authentication authentication,
@@ -95,6 +106,10 @@ public final class SubscriptionController {
      * @param request the incoming HTTP request
      * @return a standard API response with the checkout result
      */
+    @Operation(
+            summary = "Create a checkout session for a plan purchase.",
+            description = "Create a checkout session for a plan purchase."
+    )
     @PostMapping("/checkout")
     public ApiResponse<CheckoutResponse> createCheckout(
             @Valid @RequestBody final CheckoutRequest checkoutRequest,
@@ -121,6 +136,10 @@ public final class SubscriptionController {
      * @param request the incoming HTTP request
      * @return a standard API response with no body
      */
+    @Operation(
+            summary = "Cancel an existing subscription for the current user.",
+            description = "Cancel an existing subscription for the current user."
+    )
     @PatchMapping("/{id}/cancel")
     public ApiResponse<Void> cancel(
             @PathVariable final UUID id,

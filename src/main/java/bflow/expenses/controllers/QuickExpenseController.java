@@ -13,7 +13,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.UUID;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
+@Tag(name = "Quick Expenses", description = "Fast expense logging with minimal data")
 @RestController
 @RequestMapping("/api/v1/expenses")
 @RequiredArgsConstructor
@@ -34,6 +37,10 @@ public final class QuickExpenseController {
      * @param authentication the authentication object
      * @return the created expense response
      */
+    @Operation(
+            summary = "Create a quick expense.",
+            description = "Create a quick expense."
+    )
     @PostMapping("/quick")
     public ExpenseResponse createQuickExpense(
             @Valid @RequestBody final QuickExpenseRequest request,

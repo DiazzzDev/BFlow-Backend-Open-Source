@@ -87,6 +87,20 @@ public interface RepositoryWalletInvitation
     );
 
     /**
+     * Returns every invitation sent by a given user for a specific
+     * wallet, regardless of status, newest first.
+     *
+     * @param invitedByUserId identifier of the user who sent the
+     *         invitations
+     * @param walletId the wallet UUID to filter by
+     * @return the sender's invitation history for that wallet
+     */
+    List<WalletInvitation> findByInvitedByUserIdAndWalletIdOrderByCreatedAtDesc(
+            UUID invitedByUserId,
+            UUID walletId
+    );
+
+    /**
      * Retrieves the email addresses with a pending invitation for
      * the specified wallet. Used to resolve collaborator search
      * status in bulk instead of querying per candidate.

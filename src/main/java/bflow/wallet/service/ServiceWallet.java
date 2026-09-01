@@ -725,6 +725,8 @@ public class ServiceWallet {
         return new WalletMemberResponse(
                 walletUser.getUser().getId(),
                 walletUser.getUser().getEmail(),
+                walletUser.getUser().getName(),
+                walletUser.getUser().getPictureUrl(),
                 walletUser.getRole(),
                 walletUser.getCreatedAt()
         );

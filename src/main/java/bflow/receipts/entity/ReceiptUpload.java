@@ -41,7 +41,7 @@ import java.util.UUID;
 @Table(name = "receipt_uploads")
 @Getter
 @Setter
-public final class ReceiptUpload {
+public class ReceiptUpload {
 
     /**
      * The unique identifier for this receipt upload.

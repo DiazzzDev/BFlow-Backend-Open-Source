@@ -4,5 +4,10 @@
 	"service": "app",
 	"workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
 	"forwardPorts": [5432, 6379, 8080],
-	"postCreateCommand": "mvn clean install"
+	"postCreateCommand": "mvn clean install",
+	"customizations": {
+		"vscode": {
+			"extensions": ["golang.Go"]
+		}
+	}
 }

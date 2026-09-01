@@ -9,8 +9,11 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
 @Slf4j
+@Tag(name = "Wompi Webhooks", description = "Receiving payment events sent by Wompi")
 @RestController
 @RequestMapping("/api/v1/webhooks/wompi")
 @RequiredArgsConstructor
@@ -26,6 +29,10 @@ public final class WompiWebhookController {
      * @param signature the request signature header
      * @return an OK response when the webhook was accepted
      */
+    @Operation(
+            summary = "Receive and process a Wompi webhook event.",
+            description = "Receive and process a Wompi webhook event."
+    )
     @PostMapping
     public ResponseEntity<Void> receive(
             @RequestBody final String rawBody,

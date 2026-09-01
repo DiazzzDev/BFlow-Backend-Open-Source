@@ -595,20 +595,28 @@ public class ServiceWalletSharing {
     }
 
     /**
-     * Retrieves every invitation the specified user has sent, across
-     * all of their wallets, regardless of status — so pending ones
-     * still awaiting a response are included alongside accepted,
-     * rejected, expired, and canceled ones.
+     * Retrieves every invitation the specified user has sent for a
+     * specific wallet, regardless of status — so pending ones still
+     * awaiting a response are included alongside accepted, rejected,
+     * expired, and canceled ones.
      *
+     * @param walletId the wallet identifier to filter invitations by
      * @param userId the sending user's identifier
-     * @return the user's full sent-invitation history, newest first
+     * @return the user's sent-invitation history for that wallet,
+     *         newest first
      */
     public List<WalletInvitationSentResponse> getSentInvitations(
+            final UUID walletId,
             final UUID userId
     ) {
 
+        validateOwner(walletId, userId);
+
         return repositoryWalletInvitation
-                .findByInvitedByUserIdOrderByCreatedAtDesc(userId)
+                .findByInvitedByUserIdAndWalletIdOrderByCreatedAtDesc(
+                        userId,
+                        walletId
+                )
                 .stream()
                 .map(this::toSentResponse)
                 .toList();

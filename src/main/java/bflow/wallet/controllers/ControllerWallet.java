@@ -32,11 +32,14 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import java.net.URI;
 import java.util.List;
 import java.util.UUID;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
 /**
  * Controller for managing wallet-related operations.
  * Provides REST endpoints for wallet CRUD operations and access control.
  */
+@Tag(name = "Wallets", description = "Management of the user's wallets")
 @RestController
 @RequestMapping("/api/v1/wallets")
 @RequiredArgsConstructor
@@ -59,6 +62,10 @@ public final class ControllerWallet {
      * @param request current HTTP request.
      * @return paginated wallet list.
      */
+    @Operation(
+            summary = "Retrieves the wallets accessible to the authenticated user.",
+            description = "Retrieves the wallets accessible to the authenticated user."
+    )
     @GetMapping
     public ApiResponse<Page<WalletResponse>> getUserWallets(
             final Authentication authentication,
@@ -88,6 +95,10 @@ public final class ControllerWallet {
      * @param request the HTTP request for path information.
      * @return a standard API response containing the wallet info.
      */
+    @Operation(
+            summary = "Retrieves the wallet 'Information' panel: last activity, highest expense, transaction count, initial value, and upcoming recurring transactions.",
+            description = "Retrieves the wallet 'Information' panel: last activity, highest expense, transaction count, initial value, and upcoming recurring transactions."
+    )
     @GetMapping("/{id}/info")
     public ApiResponse<WalletInfoResponse> getWalletInfo(
             @PathVariable final UUID id,
@@ -117,6 +128,10 @@ public final class ControllerWallet {
      * @throws bflow.common.exception.NotFoundException
      *         if the wallet does not exist.
      */
+    @Operation(
+            summary = "Retrieves a wallet by its UUID.",
+            description = "Retrieves a wallet by its UUID. Validates that the authenticated user has access to the wallet."
+    )
     @GetMapping("/{id}")
     public ApiResponse<WalletResponse> getWalletById(
             @PathVariable final UUID id,
@@ -148,6 +163,10 @@ public final class ControllerWallet {
      * @param request the HTTP request context.
      * @return a paginated list of wallet expenses.
      */
+    @Operation(
+            summary = "Retrieves all expenses associated with a wallet.",
+            description = "Retrieves all expenses associated with a wallet."
+    )
     @GetMapping("/{id}/expenses")
     public ApiResponse<Page<ExpenseResponse>> getWalletExpenses(
             @PathVariable final UUID id,
@@ -180,6 +199,10 @@ public final class ControllerWallet {
      * @param request the HTTP request context.
      * @return a paginated list of wallet incomes.
      */
+    @Operation(
+            summary = "Retrieves all incomes associated with a wallet.",
+            description = "Retrieves all incomes associated with a wallet."
+    )
     @GetMapping("/{id}/incomes")
     public ApiResponse<Page<IncomeResponse>> getWalletIncomes(
             @PathVariable final UUID id,
@@ -214,6 +237,10 @@ public final class ControllerWallet {
      * @param request the incoming HTTP request
      * @return a standard API response containing the wallet members
      */
+    @Operation(
+            summary = "Retrieves all members associated with the specified wallet.",
+            description = "Retrieves all members associated with the specified wallet. The authenticated user must have access to the wallet in order to retrieve its members."
+    )
     @GetMapping("/{id}/members")
     public ApiResponse<List<WalletMemberResponse>> getWalletMembers(
             @PathVariable final UUID id,
@@ -244,6 +271,10 @@ public final class ControllerWallet {
      * @param httpRequest the HTTP request for location header.
      * @return a ResponseEntity with 201 CREATED status and Location header.
      */
+    @Operation(
+            summary = "Creates a new wallet for the authenticated user.",
+            description = "Creates a new wallet for the authenticated user. The user becomes the owner of the wallet."
+    )
     @PostMapping
     public ResponseEntity<ApiResponse<WalletResponse>> createWallet(
             @Valid @RequestBody final WalletRequest request,
@@ -283,6 +314,10 @@ public final class ControllerWallet {
      * @param httpRequest the HTTP request for path information.
      * @return a ResponseEntity containing the updated wallet response.
      */
+    @Operation(
+            summary = "Updates an existing wallet for the authenticated user.",
+            description = "Updates an existing wallet for the authenticated user."
+    )
     @PatchMapping("/{id}")
     public ResponseEntity<ApiResponse<WalletResponse>> patchWallet(
             @PathVariable final UUID id,
@@ -322,6 +357,10 @@ public final class ControllerWallet {
      * @param authentication the current user's authentication object.
      * @return an empty 204 response confirming the deletion.
      */
+    @Operation(
+            summary = "Permanently deletes a wallet the authenticated user owns.",
+            description = "Permanently deletes a wallet the authenticated user owns."
+    )
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteWallet(
             @PathVariable final UUID id,

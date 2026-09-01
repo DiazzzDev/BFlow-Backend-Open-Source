@@ -16,6 +16,7 @@
 	<description>Personal budget manager</description>
 	<properties>
 		<java.version>21</java.version>
+		<maven-checkstyle-plugin.version>3.6.0</maven-checkstyle-plugin.version>
 	</properties>
 	<dependencyManagement>
 		<dependencies>
@@ -198,6 +199,22 @@
 					</annotationProcessorPaths>
 				</configuration>
 			</plugin>
+
+			<!-- Checkstyle is intentionally executed only in CI.
+                 Rules are defined in config/checkstyle/checkstyle.xml. -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-checkstyle-plugin</artifactId>
+				<version>${maven-checkstyle-plugin.version}</version>
+				<configuration>
+					<configLocation>
+						${project.basedir}/config/checkstyle/checkstyle.xml
+					</configLocation>
+					<consoleOutput>true</consoleOutput>
+					<failOnViolation>true</failOnViolation>
+				</configuration>
+			</plugin>
+
 			<plugin>
     			<groupId>org.springframework.boot</groupId>
     			<artifactId>spring-boot-maven-plugin</artifactId>

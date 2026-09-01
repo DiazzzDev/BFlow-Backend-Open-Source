@@ -20,10 +20,13 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 import java.util.UUID;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
 /**
  * Controller exposing per-widget endpoints for the main dashboard.
  */
+@Tag(name = "Dashboard", description = "Aggregated data and summaries for the main dashboard")
 @RestController
 @RequestMapping("/api/v1/dashboard")
 @RequiredArgsConstructor
@@ -42,6 +45,10 @@ public final class ControllerDashboard {
      * @param request current HTTP request.
      * @return the balance summary.
      */
+    @Operation(
+            summary = "Retrieves the 'Balance total' widget data.",
+            description = "Retrieves the 'Balance total' widget data."
+    )
     @GetMapping("/balance")
     public ApiResponse<BalanceSummaryResponse> getBalance(
             final Authentication authentication,
@@ -66,6 +73,10 @@ public final class ControllerDashboard {
      * @param request current HTTP request.
      * @return the monthly statistics series.
      */
+    @Operation(
+            summary = "Retrieves the 'Statistics' widget data (income vs expenses, Jan-Dec).",
+            description = "Retrieves the 'Statistics' widget data (income vs expenses, Jan-Dec)."
+    )
     @GetMapping("/statistics")
     public ApiResponse<StatisticsResponse> getStatistics(
             @RequestParam(required = false) final Integer year,
@@ -90,6 +101,10 @@ public final class ControllerDashboard {
      * @param request current HTTP request.
      * @return the average's response.
      */
+    @Operation(
+            summary = "Retrieves the 'Average income' / 'Average expenses' widget data.",
+            description = "Retrieves the 'Average income' / 'Average expenses' widget data."
+    )
     @GetMapping("/averages")
     public ApiResponse<AveragesResponse> getAverages(
             final Authentication authentication,
@@ -112,6 +127,10 @@ public final class ControllerDashboard {
      * @param request current HTTP request.
      * @return up to 5 recent activity items.
      */
+    @Operation(
+            summary = "Retrieves the 'Recent activity' widget data (top 5 transactions).",
+            description = "Retrieves the 'Recent activity' widget data (top 5 transactions)."
+    )
     @GetMapping("/recent-activity")
     public ApiResponse<List<RecentActivityItem>> getRecentActivity(
             final Authentication authentication,
@@ -135,6 +154,10 @@ public final class ControllerDashboard {
      * @param request current HTTP request.
      * @return the spending summary.
      */
+    @Operation(
+            summary = "Retrieves the 'Spending this month' widget data.",
+            description = "Retrieves the 'Spending this month' widget data."
+    )
     @GetMapping("/spending")
     public ApiResponse<SpendingSummaryResponse> getSpending(
             final Authentication authentication,
@@ -158,6 +181,10 @@ public final class ControllerDashboard {
      * @param request current HTTP request.
      * @return up to 3 budget health items.
      */
+    @Operation(
+            summary = "Retrieves the 'Budgets health' widget data (top 3 budgets).",
+            description = "Retrieves the 'Budgets health' widget data (top 3 budgets)."
+    )
     @GetMapping("/budgets-health")
     public ApiResponse<List<BudgetHealthItem>> getBudgetsHealth(
             final Authentication authentication,
@@ -182,6 +209,10 @@ public final class ControllerDashboard {
      * @param request current HTTP request.
      * @return the activity breakdown.
      */
+    @Operation(
+            summary = "Retrieves the 'Activity breakdown' widget data (income/expense/transfer share this month, plus activity change vs last month).",
+            description = "Retrieves the 'Activity breakdown' widget data (income/expense/transfer share this month, plus activity change vs last month)."
+    )
     @GetMapping("/activity-breakdown")
     public ApiResponse<ActivityBreakdownResponse> getActivityBreakdown(
             final Authentication authentication,
