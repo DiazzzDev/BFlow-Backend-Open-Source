@@ -253,7 +253,7 @@ deploy_lambda() {
             --region "$AWS_REGION" \
             --function-name "$LAMBDA_FUNCTION_NAME" \
             --role "$ROLE_ARN" \
-            --timeout 30 \
+            --timeout 60 \
             --environment "$ENV_JSON" \
             >/dev/null
 
@@ -272,7 +272,7 @@ deploy_lambda() {
             --architectures arm64 \
             --handler bootstrap \
             --role "$ROLE_ARN" \
-            --timeout 30 \
+            --timeout 60 \
             --memory-size 128 \
             --zip-file "fileb://$LAMBDA_ZIP" \
             --environment "$ENV_JSON" \

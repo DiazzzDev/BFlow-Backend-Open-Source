@@ -332,7 +332,8 @@ public class ServiceWalletSharing {
     }
 
     /**
-     * Accepts a pending wallet invitation.
+     * Accepts a pending wallet invitation, identified by the token
+     * sent in the invitation email. Used by the email deep-link flow.
      *
      * @param token the invitation token
      * @param acceptingUserId the user accepting the invitation
@@ -347,6 +348,36 @@ public class ServiceWalletSharing {
                 .findByToken(token)
                 .orElseThrow(() ->
                         new NotFoundException("Invitation not found."));
+
+        return doAcceptInvitation(invitation, acceptingUserId);
+    }
+
+    /**
+     * Accepts a pending wallet invitation, identified by its id.
+     * Used by the in-app "pending invitations" list, where the token
+     * (only ever delivered by email) isn't available.
+     *
+     * @param invitationId the invitation UUID
+     * @param acceptingUserId the user accepting the invitation
+     * @return the updated wallet information
+     */
+    public WalletResponse acceptInvitationById(
+            final UUID invitationId,
+            final UUID acceptingUserId
+    ) {
+
+        WalletInvitation invitation = repositoryWalletInvitation
+                .findById(invitationId)
+                .orElseThrow(() ->
+                        new NotFoundException("Invitation not found."));
+
+        return doAcceptInvitation(invitation, acceptingUserId);
+    }
+
+    private WalletResponse doAcceptInvitation(
+            final WalletInvitation invitation,
+            final UUID acceptingUserId
+    ) {
 
         validatePendingInvitation(invitation);
 
@@ -475,7 +506,8 @@ public class ServiceWalletSharing {
     }
 
     /**
-     * Rejects a pending wallet invitation.
+     * Rejects a pending wallet invitation, identified by the token
+     * sent in the invitation email. Used by the email deep-link flow.
      *
      * @param token the invitation token
      * @param rejectingUserId the user rejecting the invitation
@@ -489,6 +521,35 @@ public class ServiceWalletSharing {
                 .findByToken(token)
                 .orElseThrow(() ->
                         new NotFoundException("Invitation not found."));
+
+        doRejectInvitation(invitation, rejectingUserId);
+    }
+
+    /**
+     * Rejects a pending wallet invitation, identified by its id.
+     * Used by the in-app "pending invitations" list, where the token
+     * (only ever delivered by email) isn't available.
+     *
+     * @param invitationId the invitation UUID
+     * @param rejectingUserId the user rejecting the invitation
+     */
+    public void rejectInvitationById(
+            final UUID invitationId,
+            final UUID rejectingUserId
+    ) {
+
+        WalletInvitation invitation = repositoryWalletInvitation
+                .findById(invitationId)
+                .orElseThrow(() ->
+                        new NotFoundException("Invitation not found."));
+
+        doRejectInvitation(invitation, rejectingUserId);
+    }
+
+    private void doRejectInvitation(
+            final WalletInvitation invitation,
+            final UUID rejectingUserId
+    ) {
 
         validatePendingInvitation(invitation);
 

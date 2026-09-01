@@ -22,6 +22,8 @@ import (
 const (
 	publicIPMaxAttempts   = 5
 	publicIPRetryInterval = 3 * time.Second
+	taskLookupMaxAttempts = 5
+	taskLookupRetryDelay  = 2 * time.Second
 	cloudflareAPIBase     = "https://api.cloudflare.com/client/v4"
 )
 
@@ -145,8 +147,39 @@ func (d *handlerDeps) handle(ctx context.Context, event events.CloudWatchEvent) 
 	return syncResult{Status: "updated", PublicIP: publicIP, PreviousIP: currentIP}, nil
 }
 
-// currentTaskENI queries ECS directly for the RUNNING tasks of the
-// service and returns the ENI of the most recently started one.
+// currentTaskENI resolves the ENI of the most recently started RUNNING
+// task for the service, retrying on empty results.
+//
+// The retry here is defensive, not a fix for a confirmed issue: an
+// EventBridge invocation could in principle land inside a brief
+// control-plane propagation gap right after the task flips to
+// RUNNING. In practice, the actual bug that caused this to fail
+// consistently was downstream, in lookupNewestTaskENI's attachment
+// matching — see the comment there.
+func (d *handlerDeps) currentTaskENI(ctx context.Context) (string, error) {
+	for attempt := 1; attempt <= taskLookupMaxAttempts; attempt++ {
+		eniID, err := d.lookupNewestTaskENI(ctx)
+		if err != nil {
+			return "", err
+		}
+		if eniID != "" {
+			return eniID, nil
+		}
+
+		fmt.Printf(
+			"No RUNNING task found yet for %s (attempt %d/%d).\n",
+			d.ecsServiceName, attempt, taskLookupMaxAttempts,
+		)
+		if attempt < taskLookupMaxAttempts {
+			time.Sleep(taskLookupRetryDelay)
+		}
+	}
+
+	return "", nil
+}
+
+// lookupNewestTaskENI queries ECS directly for the RUNNING tasks of
+// the service and returns the ENI of the most recently started one.
 //
 // This deliberately ignores the ENI carried in the triggering event.
 // During a rolling deployment (maximumPercent > 100), the old task
@@ -156,7 +189,7 @@ func (d *handlerDeps) handle(ctx context.Context, event events.CloudWatchEvent) 
 // the DNS record to a task that's about to be stopped. Querying live
 // state and picking the newest by StartedAt makes this convergent
 // regardless of event ordering.
-func (d *handlerDeps) currentTaskENI(ctx context.Context) (string, error) {
+func (d *handlerDeps) lookupNewestTaskENI(ctx context.Context) (string, error) {
 	listOutput, err := d.ecsClient.ListTasks(ctx, &ecs.ListTasksInput{
 		Cluster:       &d.ecsClusterName,
 		ServiceName:   &d.ecsServiceName,
@@ -188,10 +221,14 @@ func (d *handlerDeps) currentTaskENI(ctx context.Context) (string, error) {
 		return "", nil
 	}
 
+	// Don't filter by attachment.Type here: the string ECS uses for an
+	// ENI attachment differs between the raw EventBridge event payload
+	// ("eni") and this DescribeTasks API response
+	// ("ElasticNetworkInterface"). Matching on the wrong one silently
+	// skips every attachment with no error — which is exactly what
+	// happened before this comment existed. The "networkInterfaceId"
+	// detail key is stable across both, so key off that instead.
 	for _, attachment := range newest.Attachments {
-		if attachment.Type == nil || *attachment.Type != "eni" {
-			continue
-		}
 		for _, item := range attachment.Details {
 			if item.Name != nil && *item.Name == "networkInterfaceId" && item.Value != nil {
 				return *item.Value, nil

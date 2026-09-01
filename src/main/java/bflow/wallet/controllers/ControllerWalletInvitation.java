@@ -147,6 +147,43 @@ public class ControllerWalletInvitation {
     }
 
     /**
+     * Accepts a wallet invitation by its id, for the in-app "pending
+     * invitations" list, where the token (only delivered by email)
+     * isn't available.
+     *
+     * @param invitationId the invitation UUID
+     * @param authentication the authenticated user
+     * @param httpRequest the current HTTP request
+     * @return the updated wallet information
+     */
+    @Operation(
+            summary = "Accepts a wallet invitation by its id.",
+            description = "Accepts a wallet invitation by its id, for use from the in-app "
+                    + "pending-invitations list, where the email token isn't available."
+    )
+    @PostMapping("/invitations/id/{invitationId}/accept")
+    public ApiResponse<WalletResponse> acceptInvitationById(
+            @PathVariable final UUID invitationId,
+            final Authentication authentication,
+            final HttpServletRequest httpRequest
+    ) {
+
+        UUID userId = currentUserService.getCurrentUserId(authentication);
+
+        WalletResponse response =
+                serviceWalletSharing.acceptInvitationById(
+                        invitationId,
+                        userId
+                );
+
+        return ApiResponse.success(
+                "Invitation accepted successfully.",
+                response,
+                httpRequest.getRequestURI()
+        );
+    }
+
+    /**
      * Rejects a wallet invitation.
      *
      * @param token the invitation token
@@ -169,6 +206,42 @@ public class ControllerWalletInvitation {
 
         serviceWalletSharing.rejectInvitation(
                 token,
+                userId
+        );
+
+        return ApiResponse.success(
+                "Invitation rejected successfully.",
+                null,
+                httpRequest.getRequestURI()
+        );
+    }
+
+    /**
+     * Rejects a wallet invitation by its id, for the in-app "pending
+     * invitations" list, where the token (only delivered by email)
+     * isn't available.
+     *
+     * @param invitationId the invitation UUID
+     * @param authentication the authenticated user
+     * @param httpRequest the current HTTP request
+     * @return a successful response
+     */
+    @Operation(
+            summary = "Rejects a wallet invitation by its id.",
+            description = "Rejects a wallet invitation by its id, for use from the in-app "
+                    + "pending-invitations list, where the email token isn't available."
+    )
+    @PostMapping("/invitations/id/{invitationId}/reject")
+    public ApiResponse<Void> rejectInvitationById(
+            @PathVariable final UUID invitationId,
+            final Authentication authentication,
+            final HttpServletRequest httpRequest
+    ) {
+
+        UUID userId = currentUserService.getCurrentUserId(authentication);
+
+        serviceWalletSharing.rejectInvitationById(
+                invitationId,
                 userId
         );
 

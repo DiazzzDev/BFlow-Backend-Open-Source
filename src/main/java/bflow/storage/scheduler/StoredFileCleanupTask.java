@@ -61,7 +61,7 @@ public class StoredFileCleanupTask {
      * with their underlying S3 objects, and logs how many were
      * removed.
      */
-    @Scheduled(cron = "0 30 * * * *")
+    @Scheduled(cron = "0 0 */12 * * *")
     @Transactional
     public void purgeOrphanedFiles() {
         Instant pendingCutoff = Instant.now()
