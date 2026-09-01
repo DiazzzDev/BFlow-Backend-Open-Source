@@ -32,13 +32,10 @@ import java.util.UUID;
 public class RepositoryTransactionHistory {
 
     /**
-     * Columns the client is allowed to sort by
-     * (prevents SQL injection via ORDER BY).
+     * Column name for the transaction amount — shared between the
+     * sortable-columns whitelist and the result-set mapping below.
      */
-    private static final Map<String, String> SORTABLE_COLUMNS = Map.of(
-            "date", "txn_date",
-            "amount", "amount"
-    );
+    private static final String AMOUNT_COLUMN = "amount";
 
     /**
      * Default column used for sorting.
@@ -49,6 +46,15 @@ public class RepositoryTransactionHistory {
      * Default sort direction.
      */
     private static final String DEFAULT_SORT_DIRECTION = "DESC";
+
+    /**
+     * Columns the client is allowed to sort by
+     * (prevents SQL injection via ORDER BY).
+     */
+    private static final Map<String, String> SORTABLE_COLUMNS = Map.of(
+            "date", DEFAULT_SORT_COLUMN,
+            AMOUNT_COLUMN, AMOUNT_COLUMN
+    );
 
     /**
      * JDBC template used to execute native SQL queries.
@@ -209,6 +215,16 @@ public class RepositoryTransactionHistory {
      * (only "date"/"amount" honored; defaults to date desc).
      * @return a page of unified transaction entries.
      */
+    // SonarQube (java:S2077) flags dataSql/countSql as dynamically
+    // formatted SQL because they're built with string concatenation.
+    // This is a false positive: every concatenated piece is either a
+    // static final SQL constant (EXPENSE_BRANCH/INCOME_BRANCH/
+    // TRANSFER_BRANCH) or the output of resolveOrderBy(), which only
+    // ever returns a column name from the SORTABLE_COLUMNS whitelist
+    // plus a hardcoded "ASC"/"DESC". No request-supplied value is ever
+    // concatenated into the SQL text — all actual filter values are
+    // bound as named parameters (:walletIds, :queryPattern, etc.).
+    @SuppressWarnings("java:S2077")
     public Page<TransactionResponse> search(
             final List<UUID> walletIds,
             final TransactionSearchCriteria criteria,
@@ -267,7 +283,7 @@ public class RepositoryTransactionHistory {
                     dto.setType(TransactionType.valueOf(rs.getString("type")));
                     dto.setTitle(rs.getString("title"));
                     dto.setDescription(rs.getString("description"));
-                    dto.setAmount(rs.getBigDecimal("amount"));
+                    dto.setAmount(rs.getBigDecimal(AMOUNT_COLUMN));
                     Timestamp ts = rs.getTimestamp("txn_date");
                     dto.setDate(ts != null ? ts.toInstant() : null);
                     dto.setWalletId(rs.getString("wallet_id"));

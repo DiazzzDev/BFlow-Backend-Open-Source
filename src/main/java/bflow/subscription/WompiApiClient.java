@@ -90,7 +90,7 @@ public class WompiApiClient {
 
         cachedToken = response.accessToken();
         tokenExpiry = Instant.now().plusSeconds(
-                response.expiresIn() - TOKEN_MARGIN_SECONDS
+                (long) response.expiresIn() - TOKEN_MARGIN_SECONDS
         );
         return cachedToken;
     }
