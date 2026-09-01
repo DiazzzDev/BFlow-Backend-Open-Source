@@ -20,12 +20,15 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.GetMapping;
 import java.util.UUID;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
 /**
  * Controller for the file upload lifecycle.
  * Provides REST endpoints for requesting presigned S3 upload URLs
  * and confirming upload completion.
  */
+@Tag(name = "Storage", description = "Upload and management of generic files")
 @RestController
 @RequestMapping("/api/v1/files")
 @RequiredArgsConstructor
@@ -48,6 +51,10 @@ public final class ControllerFileUpload {
      * @return a standard API response containing the presigned
      *         upload URL and related metadata.
      */
+    @Operation(
+            summary = "Requests a presigned S3 upload URL for a new file.",
+            description = "Requests a presigned S3 upload URL for a new file. Creates the corresponding StoredFile record in PENDING status."
+    )
     @PostMapping("/presigned-upload")
     public ResponseEntity<ApiResponse<PresignedUploadResponse>>
     createPresignedUpload(
@@ -79,6 +86,10 @@ public final class ControllerFileUpload {
      * @return a standard API response containing the file's current
      *         state.
      */
+    @Operation(
+            summary = "Confirms that a previously requested upload actually reached S3, transitioning the file's status accordingly.",
+            description = "Confirms that a previously requested upload actually reached S3, transitioning the file's status accordingly."
+    )
     @PostMapping("/{id}/complete")
     public ResponseEntity<ApiResponse<FileResponse>> completeUpload(
             @PathVariable final UUID id,
@@ -107,6 +118,10 @@ public final class ControllerFileUpload {
      * @return a standard API response containing the presigned
      *         download URL and file metadata.
      */
+    @Operation(
+            summary = "Issues a presigned S3 download URL for a file the authenticated user owns.",
+            description = "Issues a presigned S3 download URL for a file the authenticated user owns."
+    )
     @GetMapping("/{id}/download")
     public ResponseEntity<ApiResponse<PresignedDownloadResponse>>
     createDownloadUrl(

@@ -25,6 +25,16 @@ public class WalletMemberResponse {
     private String email;
 
     /**
+     * Display name of the user.
+     */
+    private String name;
+
+    /**
+     * URL of the user's profile picture.
+     */
+    private String pictureUrl;
+
+    /**
      * Role assigned to the user within the wallet.
      */
     private WalletRole role;

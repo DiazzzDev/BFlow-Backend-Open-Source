@@ -21,7 +21,7 @@ import java.util.UUID;
 @Table(name = "notifications")
 @Getter
 @Setter
-public final class Notification {
+public class Notification {
 
     /**
      * The notification ID.

@@ -23,7 +23,10 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.List;
 import java.util.UUID;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
+@Tag(name = "Wallet Invitations", description = "Invite and manage collaborators on a shared wallet")
 @RestController
 @RequestMapping("/api/v1/wallets")
 @RequiredArgsConstructor
@@ -49,6 +52,10 @@ public class ControllerWalletInvitation {
      * @param httpRequest the current HTTP request
      * @return up to 8 matching users
      */
+    @Operation(
+            summary = "Searches for users that can be invited to a wallet, by name or email.",
+            description = "Searches for users that can be invited to a wallet, by name or email. Only the wallet owner can perform this search."
+    )
     @GetMapping("/{walletId}/collaborators/search")
     public ApiResponse<List<CollaboratorSearchResult>> searchCollaborators(
             @PathVariable final UUID walletId,
@@ -78,6 +85,10 @@ public class ControllerWalletInvitation {
      * @param httpRequest the current HTTP request
      * @return the created invitation
      */
+    @Operation(
+            summary = "Sends a wallet invitation to a user.",
+            description = "Sends a wallet invitation to a user."
+    )
     @PostMapping("/{walletId}/invitations")
     public ApiResponse<WalletInvitationResponse> inviteMember(
             @PathVariable final UUID walletId,
@@ -109,6 +120,10 @@ public class ControllerWalletInvitation {
      * @param httpRequest the current HTTP request
      * @return the updated wallet information
      */
+    @Operation(
+            summary = "Accepts a wallet invitation.",
+            description = "Accepts a wallet invitation."
+    )
     @PostMapping("/invitations/{token}/accept")
     public ApiResponse<WalletResponse> acceptInvitation(
             @PathVariable final String token,
@@ -139,6 +154,10 @@ public class ControllerWalletInvitation {
      * @param httpRequest the current HTTP request
      * @return a successful response
      */
+    @Operation(
+            summary = "Rejects a wallet invitation.",
+            description = "Rejects a wallet invitation."
+    )
     @PostMapping("/invitations/{token}/reject")
     public ApiResponse<Void> rejectInvitation(
             @PathVariable final String token,
@@ -168,6 +187,10 @@ public class ControllerWalletInvitation {
      * @param httpRequest the current HTTP request
      * @return a successful response
      */
+    @Operation(
+            summary = "Cancels a pending wallet invitation.",
+            description = "Cancels a pending wallet invitation."
+    )
     @DeleteMapping("/invitations/{invitationId}")
     public ApiResponse<Void> cancelInvitation(
             @PathVariable final UUID invitationId,
@@ -198,6 +221,10 @@ public class ControllerWalletInvitation {
      * @param httpRequest the current HTTP request
      * @return a successful response
      */
+    @Operation(
+            summary = "Removes a member from a shared wallet.",
+            description = "Removes a member from a shared wallet."
+    )
     @DeleteMapping("/{walletId}/members/{memberId}")
     public ApiResponse<Void> removeMember(
             @PathVariable final UUID walletId,
@@ -228,6 +255,10 @@ public class ControllerWalletInvitation {
      * @param httpRequest the current HTTP request
      * @return the list of pending invitations
      */
+    @Operation(
+            summary = "Retrieves all pending invitations for the authenticated user.",
+            description = "Retrieves all pending invitations for the authenticated user."
+    )
     @GetMapping("/invitations")
     public ApiResponse<List<WalletInvitationResponse>> getPendingInvitations(
             final Authentication authentication,
@@ -247,16 +278,22 @@ public class ControllerWalletInvitation {
     }
 
     /**
-     * Retrieves every invitation sent by the authenticated user,
-     * across all of their wallets — including invitations still
-     * pending a response, not only accepted ones.
+     * Retrieves every invitation sent by the authenticated user for
+     * the specified wallet — including invitations still pending a
+     * response, not only accepted ones.
      *
+     * @param walletId the wallet UUID to filter invitations by
      * @param authentication the authenticated user
      * @param httpRequest the current HTTP request
-     * @return the list of invitations the user has sent
+     * @return the list of invitations the user has sent for that wallet
      */
-    @GetMapping("/invitations/sent")
+    @Operation(
+            summary = "Retrieves every invitation sent by the authenticated user for a specific wallet — including invitations still pending a response, not only accepted ones.",
+            description = "Retrieves every invitation sent by the authenticated user for a specific wallet — including invitations still pending a response, not only accepted ones."
+    )
+    @GetMapping("/{walletId}/invitations/sent")
     public ApiResponse<List<WalletInvitationSentResponse>> getSentInvitations(
+            @PathVariable final UUID walletId,
             final Authentication authentication,
             final HttpServletRequest httpRequest
     ) {
@@ -264,7 +301,7 @@ public class ControllerWalletInvitation {
         UUID userId = currentUserService.getCurrentUserId(authentication);
 
         List<WalletInvitationSentResponse> response =
-                serviceWalletSharing.getSentInvitations(userId);
+                serviceWalletSharing.getSentInvitations(walletId, userId);
 
         return ApiResponse.success(
                 "Sent invitations retrieved successfully.",

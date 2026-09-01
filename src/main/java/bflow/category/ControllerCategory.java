@@ -14,11 +14,14 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.GetMapping;
 
 import java.util.List;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
 /**
  * REST controller for managing financial transaction categories.
  * Provides endpoints for creating and retrieving categories.
  */
+@Tag(name = "Categories", description = "Management of income and expense categories")
 @RestController
 @RequestMapping("/api/v1/categories")
 @RequiredArgsConstructor
@@ -35,6 +38,10 @@ public class ControllerCategory {
      * @param request the category request containing category details
      * @return a ResponseEntity containing the created category
      */
+    @Operation(
+            summary = "Creates a new category from the provided request.",
+            description = "Creates a new category from the provided request."
+    )
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public ApiResponse<CategoryResponse>  create(
@@ -49,6 +56,10 @@ public class ControllerCategory {
      *
      * @return a list of all categories
      */
+    @Operation(
+            summary = "Retrieves all categories.",
+            description = "Retrieves all categories."
+    )
     @GetMapping
     public ApiResponse<List<CategoryResponse>> getAll() {
         return ApiResponse.success("Categorías obtenidas",

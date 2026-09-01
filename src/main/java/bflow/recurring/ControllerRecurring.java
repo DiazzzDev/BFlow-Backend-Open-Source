@@ -17,10 +17,13 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 import java.util.UUID;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
 /**
  * REST controller for managing recurring transactions.
  */
+@Tag(name = "Recurring Movements", description = "Management of scheduled recurring income and expenses")
 @RestController
 @RequestMapping("/api/v1/recurring")
 @RequiredArgsConstructor
@@ -41,6 +44,10 @@ public class ControllerRecurring {
      * @param authentication the authentication object
      * @return the created recurring response
      */
+    @Operation(
+            summary = "Create a new recurring transaction.",
+            description = "Create a new recurring transaction."
+    )
     @PostMapping
     public RecurringResponse create(
             @RequestBody final RecurringRequest request,
@@ -56,6 +63,10 @@ public class ControllerRecurring {
      * @param authentication the authentication object
      * @return list of recurring responses
      */
+    @Operation(
+            summary = "Get all recurring transactions for the authenticated user.",
+            description = "Get all recurring transactions for the authenticated user."
+    )
     @GetMapping
     public List<RecurringResponse> getUserRecurring(
             final Authentication authentication
@@ -70,6 +81,10 @@ public class ControllerRecurring {
      * @param id the recurring transaction ID
      * @param authentication the authentication object
      */
+    @Operation(
+            summary = "Activate a recurring transaction.",
+            description = "Activate a recurring transaction."
+    )
     @PatchMapping("/{id}/activate")
     public void activate(
             @PathVariable final UUID id,
@@ -85,6 +100,10 @@ public class ControllerRecurring {
      * @param id the recurring transaction ID
      * @param authentication the authentication object
      */
+    @Operation(
+            summary = "Deactivate a recurring transaction.",
+            description = "Deactivate a recurring transaction."
+    )
     @PatchMapping("/{id}/deactivate")
     public void deactivate(
             @PathVariable final UUID id,
@@ -100,6 +119,10 @@ public class ControllerRecurring {
      * @param id the recurring transaction ID
      * @param authentication the authentication object
      */
+    @Operation(
+            summary = "Delete a recurring transaction.",
+            description = "Delete a recurring transaction."
+    )
     @DeleteMapping("/{id}")
     public void delete(
             @PathVariable final UUID id,

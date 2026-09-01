@@ -56,3 +56,4 @@ infra/config.env
 infra/secrets.env
 infra/supabase.env
 infra/wompi.env
+infra/dns-sync/.build/

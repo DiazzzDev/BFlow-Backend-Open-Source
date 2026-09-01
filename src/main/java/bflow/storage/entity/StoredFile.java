@@ -42,7 +42,7 @@ import java.util.UUID;
 @Table(name = "stored_files")
 @Getter
 @Setter
-public final class StoredFile {
+public class StoredFile {
 
     /**
      * Unique identifier of the stored file record.

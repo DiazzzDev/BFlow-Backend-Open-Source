@@ -21,7 +21,7 @@ import java.util.UUID;
 @Table(name = "merchant_patterns")
 @Getter
 @Setter
-public final class MerchantPattern {
+public class MerchantPattern {
 
     /**
      * The merchant pattern ID.

@@ -30,7 +30,7 @@ import java.util.UUID;
 @Table(name = "recurring_transactions")
 @Getter
 @Setter
-public final class RecurringTransaction {
+public class RecurringTransaction {
 
     /**
      * Maximum description length.

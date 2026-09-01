@@ -29,10 +29,13 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 import java.util.UUID;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
 /**
  * REST controller for managing budgets.
  */
+@Tag(name = "Budgets", description = "Creation, retrieval, update, and deletion of budgets")
 @RestController
 @RequestMapping("/api/v1/budgets")
 @RequiredArgsConstructor
@@ -58,6 +61,10 @@ public final class ControllerBudget {
      * @param pageable the pagination and sorting information
      * @return response containing a page of budgets
      */
+    @Operation(
+            summary = "Get budgets for the authenticated user, with optional dynamic filtering (case-insensitive by wallet/category name, wallet, category, scope, period, or status), pagination, and sorting.",
+            description = "Get budgets for the authenticated user, with optional dynamic filtering (case-insensitive by wallet/category name, wallet, category, scope, period, or status), pagination, and sorting. Example: GET /api/v1/budgets?name=food&page=0&size=10 &sort=amount,desc"
+    )
     @GetMapping
     public ApiResponse<Page<BudgetResponse>> getBudgets(
             final Authentication authentication,
@@ -84,6 +91,10 @@ public final class ControllerBudget {
      * @param authentication the authentication object
      * @return response containing the budget detail
      */
+    @Operation(
+            summary = "Get the full detail view (overview, trend, recent activity) for a specific budget, used by the budget dashboard UI.",
+            description = "Get the full detail view (overview, trend, recent activity) for a specific budget, used by the budget dashboard UI."
+    )
     @GetMapping("/{id}/detail")
     public ApiResponse<BudgetDetailResponse> getBudgetDetail(
             @PathVariable final UUID id,
@@ -109,6 +120,10 @@ public final class ControllerBudget {
      * @param authentication the authentication object
      * @return response containing list of budgets
      */
+    @Operation(
+            summary = "Get all budgets for a specific wallet.",
+            description = "Get all budgets for a specific wallet."
+    )
     @GetMapping("/wallet/{walletId}")
     public ApiResponse<List<BudgetResponse>> getBudgetsByWallet(
             @PathVariable final UUID walletId,
@@ -134,6 +149,10 @@ public final class ControllerBudget {
      * @param authentication the authentication object
      * @return response containing budget status
      */
+    @Operation(
+            summary = "Get the status of a specific budget.",
+            description = "Get the status of a specific budget."
+    )
     @GetMapping("/{id}/status")
     public ApiResponse<BudgetResponse> getBudgetStatus(
             @PathVariable final UUID id,
@@ -158,6 +177,10 @@ public final class ControllerBudget {
      * @param authentication the authentication object
      * @return response containing created budget
      */
+    @Operation(
+            summary = "Create a new budget.",
+            description = "Create a new budget."
+    )
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public ApiResponse<BudgetResponse> createBudget(
@@ -182,6 +205,10 @@ public final class ControllerBudget {
      * @param authentication the authentication object
      * @return response containing budget summary
      */
+    @Operation(
+            summary = "Get budget summary for a specific wallet.",
+            description = "Get budget summary for a specific wallet."
+    )
     @GetMapping("/wallet/{walletId}/summary")
     public ApiResponse<BudgetSummaryResponse> getSummary(
             @PathVariable final UUID walletId,
@@ -208,6 +235,10 @@ public final class ControllerBudget {
      * @param authentication the authentication object
      * @return response containing the updated budget
      */
+    @Operation(
+            summary = "Partially update an existing budget.",
+            description = "Partially update an existing budget."
+    )
     @PatchMapping("/{id}")
     public ApiResponse<BudgetResponse> patchBudget(
             @PathVariable final UUID id,
@@ -234,6 +265,10 @@ public final class ControllerBudget {
      * @param authentication the authentication object
      * @return response indicating successful deletion
      */
+    @Operation(
+            summary = "Delete a budget.",
+            description = "Delete a budget."
+    )
     @DeleteMapping("/{id}")
     public ApiResponse<Void> deleteBudget(
             @PathVariable final UUID id,

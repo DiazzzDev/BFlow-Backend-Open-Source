@@ -6,6 +6,7 @@ ROOT="$(cd "$(dirname "$0")" && pwd)"
 echo "Destroying infrastructure..."
 
 for script in \
+    "$ROOT/destroy/15-dns-sync.sh" \
     "$ROOT/destroy/14-ocr-pipeline.sh" \
     "$ROOT/destroy/13-budget.sh" \
     "$ROOT/destroy/12-github-oidc.sh" \
