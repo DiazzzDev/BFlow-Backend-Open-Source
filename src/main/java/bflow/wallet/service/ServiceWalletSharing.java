@@ -628,6 +628,40 @@ public class ServiceWalletSharing {
     }
 
     /**
+     * Leaves a shared wallet — the self-service counterpart to
+     * {@link #removeMember}, which only the owner can invoke on
+     * someone else.
+     *
+     * The owner cannot leave through this method: a wallet with no
+     * owner would leave every remaining member without anyone able
+     * to invite, remove members, or otherwise administer it.
+     *
+     * @param walletId the wallet UUID
+     * @param userId the user leaving the wallet
+     */
+    public void leaveWallet(
+            final UUID walletId,
+            final UUID userId
+    ) {
+
+        WalletUser member = repositoryWalletUser
+                .findByWalletIdAndUserId(walletId, userId)
+                .orElseThrow(() ->
+                        new NotFoundException(
+                                "You are not a member of this wallet."
+                        ));
+
+        if (member.getRole() == WalletRole.OWNER) {
+            throw new ConflictException(
+                    "The wallet owner cannot leave. Transfer ownership "
+                            + "or delete the wallet instead."
+            );
+        }
+
+        repositoryWalletUser.delete(member);
+    }
+
+    /**
      * Retrieves all pending wallet invitations for the specified user.
      *
      * Only invitations that have not expired are returned.

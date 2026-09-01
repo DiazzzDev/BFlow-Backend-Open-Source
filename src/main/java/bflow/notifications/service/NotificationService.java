@@ -1,7 +1,9 @@
 package bflow.notifications.service;
 
+import bflow.auth.entities.User;
 import bflow.auth.repository.RepositoryUser;
 import bflow.budget.DTO.BudgetResponse;
+import bflow.common.aws.service.EmailTemplateService;
 import bflow.common.aws.service.SesEmailService;
 import bflow.notifications.DTO.NotificationResponse;
 import bflow.notifications.entity.Notification;
@@ -30,6 +32,11 @@ public final class NotificationService {
      * Repository for user operations.
      */
     private final RepositoryUser repositoryUser;
+
+    /**
+     * Service for sending Thymeleaf-templated emails.
+     */
+    private final EmailTemplateService emailTemplateService;
 
     /**
      * Send a warning notification about budget usage.
@@ -189,6 +196,40 @@ public final class NotificationService {
         );
 
         sendEmail(userId, "Budget Completed", message);
+    }
+
+    /**
+     * Send a group celebration notification to every member of a
+     * shared wallet when the wallet stays within budget as a team
+     * for the completed period. Each member gets both an in-app
+     * notification and a Thymeleaf-templated email addressed to
+     * them personally.
+     *
+     * @param members every member of the wallet (including the
+     *         budget's owner)
+     * @param walletName the shared wallet's display name
+     * @param budget the final budget figures for the period
+     */
+    public void sendBudgetGroupSuccess(
+            final List<User> members,
+            final String walletName,
+            final BudgetResponse budget
+    ) {
+        for (User member : members) {
+            create(
+                    member.getId(),
+                    NotificationType.BUDGET_GROUP_SUCCESS,
+                    "Team budget completed!",
+                    walletName + " stayed within budget this period \uD83C\uDF89"
+            );
+
+            emailTemplateService.sendBudgetGroupSuccessEmail(
+                    member.getEmail(),
+                    member.getName(),
+                    walletName,
+                    budget
+            );
+        }
     }
 
     /**

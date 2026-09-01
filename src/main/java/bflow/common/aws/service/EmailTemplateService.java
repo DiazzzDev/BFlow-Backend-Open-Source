@@ -1,5 +1,6 @@
 package bflow.common.aws.service;
 
+import bflow.budget.DTO.BudgetResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -250,5 +251,42 @@ public final class EmailTemplateService {
                 : "We couldn't process \"" + transactionTitle + "\"";
 
         sesEmailService.sendEmail(toEmail, subject, html);
+    }
+
+    /**
+     * Sends a celebratory email to one member of a shared wallet when
+     * that wallet stays within budget as a team for the period.
+     *
+     * @param toEmail recipient email address
+     * @param userName recipient display name
+     * @param walletName the shared wallet's name
+     * @param budget the final budget figures for the completed period
+     */
+    public void sendBudgetGroupSuccessEmail(
+            final String toEmail,
+            final String userName,
+            final String walletName,
+            final BudgetResponse budget
+    ) {
+        Context context = new Context();
+        context.setVariable("userName", userName);
+        context.setVariable("walletName", walletName);
+        context.setVariable("budgetLimit", budget.getBudgetLimit());
+        context.setVariable("spent", budget.getSpent());
+        context.setVariable("percentage", budget.getPercentage());
+        context.setVariable("manageUrl",
+                frontendUrl.replaceAll("/+$", "") + "/budgets");
+        context.setVariable("year", Year.now().getValue());
+        context.setVariable("supportEmail", supportEmail);
+        context.setVariable("logoUrl", logoUrl);
+
+        String html = templateEngine.process(
+                "budget-group-success", context);
+
+        sesEmailService.sendEmail(
+                toEmail,
+                walletName + " stayed within budget \uD83C\uDF89",
+                html
+        );
     }
 }

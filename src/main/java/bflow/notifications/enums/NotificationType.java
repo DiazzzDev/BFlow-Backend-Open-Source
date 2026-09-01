@@ -9,6 +9,11 @@ public enum NotificationType {
      */
     BUDGET_SUCCESS,
     /**
+     * Group budget success notification, sent to every member of a
+     * shared wallet when the wallet stays within budget as a team.
+     */
+    BUDGET_GROUP_SUCCESS,
+    /**
      * Budget warning notification.
      */
     BUDGET_WARNING,
