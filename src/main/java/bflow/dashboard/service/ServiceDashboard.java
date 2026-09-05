@@ -408,7 +408,8 @@ public class ServiceDashboard {
                         budget.getId(),
                         resolveDisplayName(budget),
                         budget.getUpdatedAt(),
-                        budget.getLastAlertStatus()
+                        budget.getLastAlertStatus(),
+                        budget.getCurrency()
                 ))
                 .toList();
     }

@@ -106,6 +106,16 @@ public interface RepositoryWalletUser extends JpaRepository<WalletUser, UUID>,
     List<UUID> findWalletIdsByUserId(UUID userId);
 
     /**
+     * Finds every wallet-user relationship for a given user, across
+     * all wallets they belong to. Used to build the "my wallets"
+     * list on login/session sync.
+     *
+     * @param userId the user UUID
+     * @return the user's wallet memberships
+     */
+    List<WalletUser> findByUserId(UUID userId);
+
+    /**
      * Retrieves the identifiers of all wallets associated with a
      * user, filtered to a specific currency. Used by CATEGORY_GLOBAL
      * budgets so spend is only summed across wallets denominated in

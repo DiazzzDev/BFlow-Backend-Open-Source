@@ -1,0 +1,426 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>New contact message</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+
+    <!-- Poppins -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+    </style>
+
+    <!-- Preheader -->
+    <div style="display:none;max-height:0;overflow:hidden;opacity:0;">
+        New contact message from [[${senderName}]]: [[${subject}]]
+    </div>
+</head>
+
+<body style="
+    margin:0;
+    padding:0;
+    background-color:#0F1217;
+    background-image:linear-gradient(180deg,#0F1217 0%,#1A1F26 100%);
+    -webkit-text-size-adjust:100%;
+    -ms-text-size-adjust:100%;
+">
+
+<table
+        role="presentation"
+        width="100%"
+        style="
+            width:100%;
+            background-color:#0F1217;
+            background-image:linear-gradient(180deg,#0F1217 0%,#1A1F26 100%);
+        "
+>
+    <tr>
+        <td align="center" style="padding:40px 16px;">
+
+            <!-- Main Container -->
+            <table
+                    role="presentation"
+                    width="600"
+                    style="
+                        width:100%;
+                        max-width:600px;
+                        border-radius:24px;
+                        overflow:hidden;
+                        border:3px solid #262A31;
+                        background-color:#1A1F26;
+                    "
+            >
+                <tr>
+                    <td style="padding:40px;">
+
+                        <!-- Header -->
+                        <table role="presentation" width="100%">
+                            <tr>
+
+                                <td align="left" valign="middle">
+
+                                    <h1 style="
+                                        margin:0;
+                                        font-family:'Poppins',Arial,sans-serif;
+                                        font-size:30px;
+                                        line-height:40px;
+                                        color:#FFFFFF;
+                                        font-weight:600;
+                                        letter-spacing:-0.5px;
+                                    ">
+                                        New contact message
+                                    </h1>
+
+                                    <table role="presentation" style="margin-top:12px;">
+                                        <tr>
+                                            <td
+                                                    width="48"
+                                                    height="4"
+                                                    bgcolor="#F46A12"
+                                                    style="
+                                                        border-radius:999px;
+                                                        font-size:1px;
+                                                        line-height:1px;
+                                                    "
+                                            >
+                                                &nbsp;
+                                            </td>
+                                        </tr>
+                                    </table>
+
+                                </td>
+
+                                <td align="right" valign="middle" width="90">
+
+                                    <img
+                                            th:src="${logoUrl}"
+                                            alt="BFlow"
+                                            width="78"
+                                            style="
+                                                display:block;
+                                                border:0;
+                                                outline:none;
+                                                text-decoration:none;
+                                            "
+                                    />
+
+                                </td>
+
+                            </tr>
+                        </table>
+
+                        <!-- Introduction -->
+                        <table role="presentation" width="100%" style="margin-top:36px;">
+                            <tr>
+                                <td>
+
+                                    <p style="
+                                        margin:0;
+                                        font-family:'Poppins',Arial,sans-serif;
+                                        font-size:15px;
+                                        line-height:24px;
+                                        color:#A4A9B3;
+                                    ">
+                                        A new message has been submitted through the
+                                        <strong style="color:#FFFFFF;font-weight:600;">
+                                            BFlow
+                                        </strong>
+                                        contact form.
+                                    </p>
+
+                                </td>
+                            </tr>
+                        </table>
+
+                        <!-- Sender Information -->
+                        <table
+                                role="presentation"
+                                width="100%"
+                                style="
+                                    margin-top:28px;
+                                    background-color:#13161C;
+                                    border:1px solid #262A31;
+                                    border-radius:14px;
+                                "
+                        >
+                            <tr>
+                                <td style="padding:20px;">
+
+                                    <p style="
+                                        margin:0;
+                                        font-family:'Poppins',Arial,sans-serif;
+                                        font-size:14px;
+                                        line-height:20px;
+                                        color:#FFFFFF;
+                                        font-weight:600;
+                                    ">
+                                        Contact details
+                                    </p>
+
+                                    <table
+                                            role="presentation"
+                                            width="100%"
+                                            style="margin-top:12px;"
+                                    >
+                                        <tr>
+                                            <td style="
+                                                font-family:'Poppins',Arial,sans-serif;
+                                                font-size:13px;
+                                                line-height:22px;
+                                                color:#737883;
+                                            ">
+                                                Name
+                                            </td>
+
+                                            <td
+                                                    align="right"
+                                                    style="
+                                                        font-family:'Poppins',Arial,sans-serif;
+                                                        font-size:13px;
+                                                        line-height:22px;
+                                                        color:#FFFFFF;
+                                                        font-weight:600;
+                                                    "
+                                            >
+                                                [[${senderName}]]
+                                            </td>
+                                        </tr>
+
+                                        <tr>
+                                            <td style="
+                                                font-family:'Poppins',Arial,sans-serif;
+                                                font-size:13px;
+                                                line-height:22px;
+                                                color:#737883;
+                                            ">
+                                                Email
+                                            </td>
+
+                                            <td
+                                                    align="right"
+                                                    style="
+                                                        font-family:'Poppins',Arial,sans-serif;
+                                                        font-size:13px;
+                                                        line-height:22px;
+                                                        color:#FFFFFF;
+                                                        font-weight:600;
+                                                    "
+                                            >
+                                                <a
+                                                        th:href="'mailto:' + ${senderEmail}"
+                                                        style="
+                                                            color:#F38533;
+                                                            text-decoration:none;
+                                                        "
+                                                >
+                                                    [[${senderEmail}]]
+                                                </a>
+                                            </td>
+                                        </tr>
+
+                                        <tr>
+                                            <td style="
+                                                font-family:'Poppins',Arial,sans-serif;
+                                                font-size:13px;
+                                                line-height:22px;
+                                                color:#737883;
+                                            ">
+                                                Subject
+                                            </td>
+
+                                            <td
+                                                    align="right"
+                                                    style="
+                                                        font-family:'Poppins',Arial,sans-serif;
+                                                        font-size:13px;
+                                                        line-height:22px;
+                                                        color:#FFFFFF;
+                                                        font-weight:600;
+                                                    "
+                                            >
+                                                [[${subject}]]
+                                            </td>
+                                        </tr>
+                                    </table>
+
+                                </td>
+                            </tr>
+                        </table>
+
+                        <!-- Message -->
+                        <table
+                                role="presentation"
+                                width="100%"
+                                style="
+                                    margin-top:28px;
+                                    background-color:#13161C;
+                                    border:1px solid #262A31;
+                                    border-radius:14px;
+                                "
+                        >
+                            <tr>
+                                <td style="padding:20px;">
+
+                                    <p style="
+                                        margin:0;
+                                        font-family:'Poppins',Arial,sans-serif;
+                                        font-size:14px;
+                                        line-height:20px;
+                                        color:#FFFFFF;
+                                        font-weight:600;
+                                    ">
+                                        Message
+                                    </p>
+
+                                    <table
+                                            role="presentation"
+                                            width="100%"
+                                            style="
+                                                margin-top:16px;
+                                                background-color:#1A1F26;
+                                                border-left:3px solid #F46A12;
+                                            "
+                                    >
+                                        <tr>
+                                            <td style="padding:16px 18px;">
+
+                                                <p
+                                                        th:text="${message}"
+                                                        style="
+                                                            margin:0;
+                                                            font-family:'Poppins',Arial,sans-serif;
+                                                            font-size:14px;
+                                                            line-height:24px;
+                                                            color:#A4A9B3;
+                                                            white-space:pre-line;
+                                                        "
+                                                >
+                                                    Message content
+                                                </p>
+
+                                            </td>
+                                        </tr>
+                                    </table>
+
+                                </td>
+                            </tr>
+                        </table>
+
+                        <!-- Reply CTA -->
+                        <table
+                                role="presentation"
+                                width="100%"
+                                style="margin-top:32px;"
+                        >
+                            <tr>
+                                <td align="center">
+
+                                    <a
+                                            th:href="'mailto:' + ${senderEmail}"
+                                            target="_blank"
+                                            style="
+                                                display:block;
+                                                width:100%;
+                                                box-sizing:border-box;
+                                                background-color:#F46A12;
+                                                color:#FFFFFF;
+                                                text-decoration:none;
+                                                font-family:'Poppins',Arial,sans-serif;
+                                                font-size:16px;
+                                                font-weight:600;
+                                                text-align:center;
+                                                padding:16px 24px;
+                                                border-radius:12px;
+                                                box-shadow:0 4px 14px rgba(244,106,18,0.20);
+                                            "
+                                    >
+                                        Reply to [[${senderName}]]
+                                    </a>
+
+                                </td>
+                            </tr>
+                        </table>
+
+                        <!-- Reply Information -->
+                        <table
+                                role="presentation"
+                                width="100%"
+                                style="margin-top:28px;"
+                        >
+                            <tr>
+                                <td>
+
+                                    <p style="
+                                        margin:0;
+                                        font-family:'Poppins',Arial,sans-serif;
+                                        font-size:13px;
+                                        line-height:20px;
+                                        color:#636873;
+                                    ">
+                                        You can reply directly to this email to contact
+                                        <strong style="color:#A4A9B3;font-weight:500;">
+                                            [[${senderName}]]
+                                        </strong>
+                                        at
+                                        <a
+                                                th:href="'mailto:' + ${senderEmail}"
+                                                style="
+                                                    color:#F38533;
+                                                    text-decoration:none;
+                                                "
+                                        >
+                                            [[${senderEmail}]]
+                                        </a>.
+                                    </p>
+
+                                </td>
+                            </tr>
+                        </table>
+
+                        <!-- Divider -->
+                        <table role="presentation" width="100%" style="margin-top:32px;">
+                            <tr>
+                                <td style="border-top:1px solid #262A31;"></td>
+                            </tr>
+                        </table>
+
+                        <!-- Footer -->
+                        <table role="presentation" width="100%" style="margin-top:24px;">
+                            <tr>
+                                <td>
+
+                                    <p style="
+                                        margin:0;
+                                        font-family:'Poppins',Arial,sans-serif;
+                                        font-size:12px;
+                                        line-height:20px;
+                                        color:#636873;
+                                    ">
+                                        © [[${year}]] BFlow Studio.
+                                        Financial clarity starts with visibility.
+                                    </p>
+
+                                    <p style="
+                                        margin:8px 0 0 0;
+                                        font-family:'Poppins',Arial,sans-serif;
+                                        font-size:12px;
+                                        line-height:20px;
+                                        color:#636873;
+                                    ">
+                                        This message was generated from the BFlow contact form.
+                                    </p>
+
+                                </td>
+                            </tr>
+                        </table>
+
+                    </td>
+                </tr>
+            </table>
+
+        </td>
+    </tr>
+</table>
+
+</body>
+</html>

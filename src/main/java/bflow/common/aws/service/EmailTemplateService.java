@@ -289,4 +289,40 @@ public final class EmailTemplateService {
                 html
         );
     }
+
+    /**
+     * Sends a contact form message to the configured support email.
+     *
+     * @param senderName name of the person submitting the form
+     * @param senderEmail email address of the person submitting the form
+     * @param subject subject provided by the sender
+     * @param message message provided by the sender
+     */
+    public void sendContactMessage(
+            final String senderName,
+            final String senderEmail,
+            final String subject,
+            final String message
+    ) {
+        Context context = new Context();
+
+        context.setVariable("senderName", senderName);
+        context.setVariable("senderEmail", senderEmail);
+        context.setVariable("subject", subject);
+        context.setVariable("message", message);
+        context.setVariable("year", Year.now().getValue());
+        context.setVariable("supportEmail", supportEmail);
+        context.setVariable("logoUrl", logoUrl);
+
+        String html = templateEngine.process(
+                "contact-message",
+                context
+        );
+
+        sesEmailService.sendEmail(
+                supportEmail,
+                "[BFlow Contact] " + subject,
+                html
+        );
+    }
 }
