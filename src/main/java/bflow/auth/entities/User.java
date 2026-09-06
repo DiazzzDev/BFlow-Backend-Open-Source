@@ -1,5 +1,6 @@
 package bflow.auth.entities;
 
+import bflow.auth.enums.NameSource;
 import bflow.auth.enums.PictureSource;
 import bflow.auth.enums.UserStatus;
 import jakarta.persistence.CollectionTable;
@@ -49,6 +50,12 @@ public class User {
     /** Display name of the user, captured from the Cognito ID token. */
     @Column
     private String name;
+
+    /** Origin of the current display name. */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "name_source", nullable = false)
+    @Builder.Default
+    private NameSource nameSource = NameSource.GOOGLE;
 
     /** URL of the user's profile picture. */
     @Column(name = "picture_url")

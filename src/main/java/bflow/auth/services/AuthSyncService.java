@@ -4,6 +4,7 @@ import bflow.auth.DTO.Record.SyncUserRequest;
 import bflow.auth.DTO.Record.SyncUserResponse;
 import bflow.auth.DTO.UserMeResponse;
 import bflow.auth.entities.User;
+import bflow.auth.enums.NameSource;
 import bflow.auth.enums.PictureSource;
 import bflow.auth.enums.UserStatus;
 import bflow.auth.mapper.UserMapper;
@@ -209,7 +210,10 @@ public class AuthSyncService {
             final String name,
             final String picture
     ) {
-        if (name != null && !name.isBlank()) {
+        boolean canOverwriteName =
+                user.getNameSource() != NameSource.USER;
+
+        if (name != null && !name.isBlank() && canOverwriteName) {
             user.setName(name);
         }
 
