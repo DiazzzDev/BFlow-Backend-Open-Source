@@ -9,9 +9,6 @@
 # place, so re-running this script with the same inputs always produces
 # the same policy document.
 #
-###################################
-# Not tested yet
-###################################
 
 set -euo pipefail
 

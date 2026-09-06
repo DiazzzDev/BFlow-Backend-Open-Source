@@ -1,7 +1,9 @@
 package bflow.expenses.services;
 
+import bflow.auth.services.UserService;
 import bflow.budget.services.BudgetService;
 import bflow.category.entity.Category;
+import bflow.common.exception.ResourceNotFoundException;
 import bflow.expenses.DTO.QuickExpenseRequest;
 import bflow.expenses.DTO.ExpenseResponse;
 import bflow.expenses.RepositoryExpense;
@@ -10,10 +12,14 @@ import bflow.merchant.MerchantDetectionService;
 import bflow.wallet.entities.Wallet;
 import bflow.wallet.entities.WalletUser;
 import bflow.wallet.enums.WalletRole;
+import bflow.wallet.repository.RepositoryWallet;
 import bflow.wallet.repository.RepositoryWalletUser;
+import bflow.wallet.service.ServiceWallet;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.UUID;
 
@@ -39,6 +45,22 @@ public class QuickExpenseService {
      * Repository for expense operations.
      */
     private final RepositoryExpense repositoryExpense;
+
+    /**
+     * Repository for wallet operations, used to acquire a pessimistic
+     * lock on the target wallet before mutating its balance.
+     */
+    private final RepositoryWallet repositoryWallet;
+
+    /**
+     * Service encapsulating wallet balance mutations.
+     */
+    private final ServiceWallet serviceWallet;
+
+    /**
+     * Service for user business logic operations.
+     */
+    private final UserService userService;
 
     /**
      * Service for merchant category detection.
@@ -67,13 +89,25 @@ public class QuickExpenseService {
             final UUID userId,
             final QuickExpenseRequest request
     ) {
+        userService.validateUserActive(userId);
+
         WalletUser walletUser = walletUserRepository
             .findFirstByUserIdAndRole(userId, WalletRole.OWNER)
             .orElseThrow(() ->
                 new RuntimeException("No wallet found")
         );
 
-        Wallet wallet = walletUser.getWallet();
+        // Lock the wallet row for the duration of this transaction so
+        // the balance read-modify-write below can't race with a
+        // concurrent expense/income/transfer touching the same wallet.
+        Wallet wallet = repositoryWallet
+                .findByIdForUpdate(walletUser.getWallet().getId())
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Wallet not found"
+                ));
+
+        BigDecimal amount =
+                request.getAmount().setScale(2, RoundingMode.HALF_EVEN);
 
         String normalized = normalize(request.getDescription());
 
@@ -81,7 +115,7 @@ public class QuickExpenseService {
 
         Expense expense = new Expense();
 
-        expense.setAmount(request.getAmount());
+        expense.setAmount(amount);
         expense.setDescription(request.getDescription());
         expense.setTitle(generateTitle(request.getDescription()));
         expense.setDate(LocalDate.now());
@@ -99,6 +133,13 @@ public class QuickExpenseService {
         expense.setRecurring(false);
         expense.setTaxDeductible(false);
         expense.setReimbursable(false);
+
+        // Fix for both balance-duplication exploits: without this
+        // line the wallet balance was never debited on creation, so a
+        // later PUT/DELETE on this same expense via ControllerExpense
+        // would credit the balance for an amount that was never
+        // subtracted in the first place.
+        serviceWallet.subtractBalance(wallet, amount);
 
         Expense saved = repositoryExpense.save(expense);
 

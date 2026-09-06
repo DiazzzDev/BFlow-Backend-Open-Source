@@ -10,6 +10,7 @@ import bflow.subscription.repository.RepositorySubscription;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -131,23 +132,33 @@ public class SubscriptionService {
      */
     @Transactional
     public void createFreeSubscription(final User user) {
-
-        repositorySubscription
+        boolean hasActiveSubscription = repositorySubscription
                 .findByUserIdAndStatus(user.getId(), SubscriptionStatus.ACTIVE)
-                .filter(s -> s.getPlan().getCode().equals("FREE"))
-                .orElseGet(() -> {
-                    Plan freePlan = planService.getFreePlan();
+                .isPresent();
 
-                    Subscription subscription = new Subscription();
-                    subscription.setUser(user);
-                    subscription.setPlan(freePlan);
-                    subscription.setStatus(SubscriptionStatus.ACTIVE);
-                    subscription.setBillingAmount(freePlan.getPrice());
-                    subscription.setStartsAt(Instant.now());
-                    subscription.setAutoRenew(false);
+        if (hasActiveSubscription) {
+            return;
+        }
 
-                    return repositorySubscription.save(subscription);
-                });
+        Plan freePlan = planService.getFreePlan();
+
+        Subscription subscription = new Subscription();
+        subscription.setUser(user);
+        subscription.setPlan(freePlan);
+        subscription.setStatus(SubscriptionStatus.ACTIVE);
+        subscription.setBillingAmount(freePlan.getPrice());
+        subscription.setStartsAt(Instant.now());
+        subscription.setAutoRenew(false);
+
+        try {
+            repositorySubscription.save(subscription);
+        } catch (DataIntegrityViolationException ex) {
+            log.debug(
+                    "Concurrent bootstrap detected for user {}, "
+                            + "FREE plan creation will be omitted.",
+                    user.getId()
+            );
+        }
     }
 }
 

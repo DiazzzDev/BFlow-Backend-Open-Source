@@ -3,6 +3,7 @@ package bflow.auth.services;
 import bflow.auth.DTO.user.UpdateUserProfileRequest;
 import bflow.auth.DTO.user.UserProfileResponse;
 import bflow.auth.entities.User;
+import bflow.auth.enums.NameSource;
 import bflow.auth.enums.UserStatus;
 import bflow.auth.repository.RepositoryUser;
 import java.util.UUID;
@@ -56,6 +57,7 @@ public class UserService {
 
         if (request.getName() != null) {
             user.setName(request.getName().trim());
+            user.setNameSource(NameSource.USER);
         }
 
         userRepository.save(user);

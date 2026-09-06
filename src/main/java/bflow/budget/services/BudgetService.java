@@ -903,9 +903,7 @@ public class BudgetService {
             BudgetResponse endResponse = calculationService.calculate(budget);
 
             if (endResponse.getStatus() != BudgetStatus.EXCEEDED) {
-                notificationService.sendBudgetSuccess(
-                        budget.getUser().getId(), endResponse
-                );
+                notifySuccess(budget, endResponse);
             }
 
             lifecycleService.resetBudgetPeriod(budget);
@@ -926,6 +924,44 @@ public class BudgetService {
         alertService.evaluate(response, budget.getUser().getId(), budget);
 
         repositoryBudget.save(budget);
+    }
+
+    /**
+     * Notifies about a completed, non-exceeded budget period. If the
+     * budget is tied to a shared wallet (scope WALLET or
+     * WALLET_CATEGORY) with more than one member, every member gets
+     * a team celebration instead of just the budget's owner —
+     * turning "stayed on budget" into a shared win rather than a
+     * private one. CATEGORY_GLOBAL budgets and single-member wallets
+     * keep the existing personal notification.
+     *
+     * @param budget the budget whose period just ended
+     * @param response the final calculated figures for the period
+     */
+    private void notifySuccess(
+            final Budget budget,
+            final BudgetResponse response
+    ) {
+        if (budget.getWallet() != null) {
+            List<WalletUser> walletMembers = repositoryWalletUser
+                    .findByWalletId(budget.getWallet().getId());
+
+            if (walletMembers.size() > 1) {
+                List<User> members = walletMembers.stream()
+                        .map(WalletUser::getUser)
+                        .distinct()
+                        .toList();
+
+                notificationService.sendBudgetGroupSuccess(
+                        members, budget.getWallet().getName(), response
+                );
+                return;
+            }
+        }
+
+        notificationService.sendBudgetSuccess(
+                budget.getUser().getId(), response
+        );
     }
 
     /**

@@ -322,6 +322,42 @@ public class ControllerWalletInvitation {
     }
 
     /**
+     * Leaves a shared wallet. The authenticated user removes
+     * themselves — the self-service counterpart to
+     * {@link #removeMember}, which only the owner can invoke on
+     * someone else. The owner cannot leave this way; they must
+     * transfer ownership or delete the wallet instead.
+     *
+     * @param walletId the wallet UUID
+     * @param authentication the authenticated user
+     * @param httpRequest the current HTTP request
+     * @return a successful response
+     */
+    @Operation(
+            summary = "Leaves a shared wallet.",
+            description = "Removes the authenticated user from the specified wallet. "
+                    + "The wallet owner cannot leave this way — ownership must be "
+                    + "transferred, or the wallet deleted, instead."
+    )
+    @DeleteMapping("/{walletId}/members/me")
+    public ApiResponse<Void> leaveWallet(
+            @PathVariable final UUID walletId,
+            final Authentication authentication,
+            final HttpServletRequest httpRequest
+    ) {
+
+        UUID userId = currentUserService.getCurrentUserId(authentication);
+
+        serviceWalletSharing.leaveWallet(walletId, userId);
+
+        return ApiResponse.success(
+                "You have left the wallet.",
+                null,
+                httpRequest.getRequestURI()
+        );
+    }
+
+    /**
      * Retrieves all pending invitations for the authenticated user.
      *
      * @param authentication the authenticated user

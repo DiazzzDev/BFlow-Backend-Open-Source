@@ -4,22 +4,28 @@ import bflow.auth.DTO.Record.SyncUserRequest;
 import bflow.auth.DTO.Record.SyncUserResponse;
 import bflow.auth.DTO.UserMeResponse;
 import bflow.auth.entities.User;
+import bflow.auth.enums.NameSource;
 import bflow.auth.enums.PictureSource;
 import bflow.auth.enums.UserStatus;
 import bflow.auth.mapper.UserMapper;
 import bflow.auth.repository.RepositoryUser;
 import bflow.auth.security.CognitoIdTokenValidator;
+import bflow.subscription.dto.CurrentSubscriptionResponse;
+import bflow.subscription.services.PlanLimitService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 
 /**
  * Synchronizes Cognito users with the local database.
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AuthSyncService {
@@ -43,6 +49,12 @@ public class AuthSyncService {
      * Mapper for building user-facing response DTOs.
      */
     private final UserMapper userMapper;
+
+    /**
+     * Service used to resolve the user's current plan (code, name,
+     * status, feature flags, and limits) for the sync response.
+     */
+    private final PlanLimitService planLimitService;
 
     /**
      * Synchronizes the authenticated Cognito user with the local database
@@ -113,7 +125,6 @@ public class AuthSyncService {
                 .build();
 
         repositoryUser.save(newUser);
-        authBootstrapService.bootstrap(newUser);
 
         return buildResponse(newUser, true);
     }
@@ -121,6 +132,15 @@ public class AuthSyncService {
     /**
      * Builds the session response returned after authentication
      * synchronization.
+     *
+     * Self-heals accounts missing their default wallet or free
+     * subscription — both {@link AuthBootstrapService#bootstrap}
+     * steps are idempotent, so this is safe (and cheap) to call for
+     * every sync, not only brand-new users. This matters because
+     * bootstrap previously only ran on first-ever registration:
+     * any account created another way (pre-dating the subscriptions
+     * feature, a data migration, etc.) never got a subscription row
+     * and would otherwise be stuck with a {@code null} plan forever.
      *
      * @param user authenticated user
      * @param isNewUser whether the user was created during synchronization
@@ -130,6 +150,8 @@ public class AuthSyncService {
             final User user,
             final boolean isNewUser
     ) {
+        authBootstrapService.bootstrap(user);
+
         UserMeResponse meResponse = userMapper.toMeResponse(user);
 
         return new SyncUserResponse(
@@ -138,9 +160,41 @@ public class AuthSyncService {
                 meResponse.roles(),
                 isNewUser,
                 meResponse.subscription(),
+                resolveCurrentPlan(user.getId()),
                 meResponse.wallets(),
                 meResponse.profile()
         );
+    }
+
+    /**
+     * Resolves the user's current plan for the sync response.
+     *
+     * Every user gets a free plan on registration (see
+     * {@link AuthBootstrapService#bootstrap}) and the free plan can
+     * never be canceled, so this should always succeed in practice.
+     * It's still wrapped defensively — sync sits on the critical
+     * login path, so a plan-resolution edge case (e.g. stale data
+     * from a migration) degrades to a {@code null} plan instead of
+     * failing the whole sign-in.
+     *
+     * @param userId the user identifier
+     * @return the current plan, or {@code null} if it couldn't be
+     *         resolved
+     */
+    private CurrentSubscriptionResponse resolveCurrentPlan(
+            final UUID userId
+    ) {
+        try {
+            return planLimitService.getCurrentSubscriptionInfo(userId);
+        } catch (IllegalStateException ex) {
+            log.warn(
+                    "Could not resolve current plan for user {} during "
+                            + "sync: {}",
+                    userId,
+                    ex.getMessage()
+            );
+            return null;
+        }
     }
 
     /**
@@ -156,7 +210,10 @@ public class AuthSyncService {
             final String name,
             final String picture
     ) {
-        if (name != null && !name.isBlank()) {
+        boolean canOverwriteName =
+                user.getNameSource() != NameSource.USER;
+
+        if (name != null && !name.isBlank() && canOverwriteName) {
             user.setName(name);
         }
 
